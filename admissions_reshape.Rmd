@@ -71,5 +71,20 @@ interviewee_data %<>% reduce(vars_to_spread, spread_join_var,
 interviewee_data %>% write_csv("data/admissions_interviews_wide_v1.csv", na = "")
 ```
 
+```{r, message = FALSE}
+screeners_path <- "data/screener_long.csv"
+interviews_path <- "data/interview_long.csv"
+
+spread_interviews <- function(path) {
+  long_data <- read_csv(path)
+  colnames(long_data) %<>% tolower()
+  
+  long_data %<>% 
+    mutate(score_submission_date = lubridate::dmy_hms(score_submission_date, tz = "EST"),
+           appl_person_id = replace(appl_person_id, appl_person_id == -9, NA_integer_))
+}
+
+
+```
 
 
