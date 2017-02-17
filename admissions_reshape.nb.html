@@ -208,11 +208,12 @@ $(document).ready(function () {
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeSh0aWR5dmVyc2UpXG5saWJyYXJ5KG1hZ3JpdHRyKVxuYWRtaXNzaW9uczFfcGF0aCA8LSBcImRhdGEvYWRtaXNzaW9uc19pbnRlcnZpZXdzX2xvbmdfdjEuY3N2XCJcbmFkbWlzc2lvbnMxIDwtIHJlYWRfY3N2KGFkbWlzc2lvbnMxX3BhdGgpXG5gYGAifQ== -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeSh0aWR5dmVyc2UpXG5saWJyYXJ5KG1hZ3JpdHRyKVxua25pdHI6Om9wdHNfY2h1bmskc2V0KG1lc3NhZ2UgPSBGQUxTRSwgY29tbWVudCA9IFwiICAgXCIpXG5hZG1pc3Npb25zMSA8LSBcImRhdGEvYWRtaXNzaW9uc19pbnRlcnZpZXdzX2xvbmdfdjEuY3N2XCIgJT4lXG4gIHJlYWRfY3N2KClcbmBgYCJ9 -->
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(tidyverse)
 <span class="kw">library</span>(magrittr)
-admissions1_path &lt;-<span class="st"> &quot;data/admissions_interviews_long_v1.csv&quot;</span>
-admissions1 &lt;-<span class="st"> </span><span class="kw">read_csv</span>(admissions1_path)</code></pre></div>
+knitr::opts_chunk$<span class="kw">set</span>(<span class="dt">message =</span> <span class="ot">FALSE</span>, <span class="dt">comment =</span> <span class="st">&quot;   &quot;</span>)
+admissions1 &lt;-<span class="st"> &quot;data/admissions_interviews_long_v1.csv&quot;</span> %&gt;%
+<span class="st">  </span><span class="kw">read_csv</span>()</code></pre></div>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
@@ -228,15 +229,10 @@ admissions1 %&lt;&gt;%<span class="st"> </span><span class="kw">mutate</span>(<s
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYWRtaXNzaW9uczEgJTw+JSBncm91cF9ieShhbWNhc19pZCwgYXBwX3llYXIsIGFwcGxpY2F0aW9uX2lkKSAlPiUgbXV0YXRlKG4gPSBuKCkpICU+JSBhcnJhbmdlKGRlc2MobikpIFxuYGBgIn0= -->
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">admissions1 %&lt;&gt;%<span class="st"> </span><span class="kw">group_by</span>(amcas_id, app_year, application_id) %&gt;%<span class="st"> </span><span class="kw">mutate</span>(<span class="dt">n =</span> <span class="kw">n</span>()) %&gt;%<span class="st"> </span><span class="kw">arrange</span>(<span class="kw">desc</span>(n)) </code></pre></div>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYWRtaXNzaW9uczEgJTw+JSB1bml0ZShmYWN1bHR5X25hbWUsIGZhY19sYXN0X25hbWUsIGZhY19maXJzdF9uYW1lLCBzZXAgPSBcIiwgXCIpXG5gYGAifQ== -->
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">admissions1 %&lt;&gt;%<span class="st"> </span><span class="kw">unite</span>(faculty_name, fac_last_name, fac_first_name, <span class="dt">sep =</span> <span class="st">&quot;, &quot;</span>)</code></pre></div>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYWRtaXNzaW9uczEgJTw+JSBncm91cF9ieShhbWNhc19pZCwgYXBwX3llYXIsIGFwcGxpY2F0aW9uX2lkKSAlPiUgXG4gIG11dGF0ZShuID0gbigpKSAlPiUgYXJyYW5nZShkZXNjKG4pKSAlPiVcbiAgdW5pdGUoZmFjdWx0eV9uYW1lLCBmYWNfbGFzdF9uYW1lLCBmYWNfZmlyc3RfbmFtZSwgc2VwID0gXCIsIFwiKVxuYGBgIn0= -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">admissions1 %&lt;&gt;%<span class="st"> </span><span class="kw">group_by</span>(amcas_id, app_year, application_id) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">n =</span> <span class="kw">n</span>()) %&gt;%<span class="st"> </span><span class="kw">arrange</span>(<span class="kw">desc</span>(n)) %&gt;%
+<span class="st">  </span><span class="kw">unite</span>(faculty_name, fac_last_name, fac_first_name, <span class="dt">sep =</span> <span class="st">&quot;, &quot;</span>)</code></pre></div>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
@@ -301,8 +297,56 @@ interviews &lt;-<span class="st"> </span><span class="kw">read_csv</span>(interv
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucGFyZW50X2RhdGEgPC0gXCJkYXRhL3BhcmVudF9ndWFyZGlhbl9sb25nX3YxLmNzdlwiICU+JSByZWFkX2NzdigpXG5jb2xuYW1lcyhwYXJlbnRfZGF0YSkgJTw+JSB0b2xvd2VyKCkgJT4lIHN0cmluZ3I6OnN0cl9yZXBsYWNlKFwiX3RleHRcIiwgXCJcIilcbmBgYCJ9 -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">parent_data &lt;-<span class="st"> &quot;data/parent_guardian_long_v1.csv&quot;</span> %&gt;%<span class="st"> </span><span class="kw">read_csv</span>()
+<span class="kw">colnames</span>(parent_data) %&lt;&gt;%<span class="st"> </span><span class="kw">tolower</span>() %&gt;%<span class="st"> </span>stringr::<span class="kw">str_replace</span>(<span class="st">&quot;_text&quot;</span>, <span class="st">&quot;&quot;</span>)</code></pre></div>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucGFyZW50X2RhdGEgJTw+JSBncm91cF9ieShhcHBsX3BlcnNvbl9pZCkgJT4lIG11dGF0ZShuX3BhcmVudHMgPSBuKCkpIFxucGFyZW50X2RhdGEgJTw+JSBtdXRhdGUoY29uc3Rjb2wgPSAxLCByYW5rID0gY3Vtc3VtKGNvbnN0Y29sKSkgJT4lXG4gIGZpbHRlcihyYW5rIDw9IDQpICU+JSBzZWxlY3QoLWNvbnN0Y29sKVxuYGBgIn0= -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">parent_data %&lt;&gt;%<span class="st"> </span><span class="kw">group_by</span>(appl_person_id) %&gt;%<span class="st"> </span><span class="kw">mutate</span>(<span class="dt">n_parents =</span> <span class="kw">n</span>()) 
+parent_data %&lt;&gt;%<span class="st"> </span><span class="kw">mutate</span>(<span class="dt">constcol =</span> <span class="dv">1</span>, <span class="dt">rank =</span> <span class="kw">cumsum</span>(constcol)) %&gt;%
+<span class="st">  </span><span class="kw">filter</span>(rank &lt;=<span class="st"> </span><span class="dv">4</span>) %&gt;%<span class="st"> </span><span class="kw">select</span>(-constcol)</code></pre></div>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucGFyZW50X3dpZGUgPC0gcGFyZW50X2RhdGEgJT4lIHNlbGVjdChhcHBsX3BlcnNvbl9pZCwgYXBwbF95ZWFyLCBuX3BhcmVudHMpICU+JSB1bmdyb3VwKCkgJT4lIGRpc3RpbmN0KClcbnNwcmVhZF9qb2luX3ZhcjIgPC0gZnVuY3Rpb24od2lkZV9kYXRhLCBsb25nX2RhdGEsIHZhcl9uYW1lKSB7XG4gIHdpZGVfZGF0YSA8LSBsb25nX2RhdGEgJT4lXG4gICAgc2VsZWN0Xyh+YXBwbF9wZXJzb25faWQsIH5yYW5rLCB2YXJfbmFtZSkgJT4lXG4gICAgbXV0YXRlKHJhbmsgPSBwYXN0ZTAodmFyX25hbWUsIFwiX3BhcmVudFwiLCByYW5rKSkgJT4lXG4gICAgc3ByZWFkXyhcInJhbmtcIiwgdmFsdWUgPSB2YXJfbmFtZSkgJT4lXG4gICAgbGVmdF9qb2luKHdpZGVfZGF0YSwgLilcbiAgcmV0dXJuKHdpZGVfZGF0YSlcbn1cbnZhcnNfdG9fc3ByZWFkIDwtIGMoXCJuYW1lXCIsIFwib2NjdXBhdGlvbl9kZXNjXCIsIFwib2NjdXBhdGlvblwiLCBcImVkdV9sZXZlbFwiKVxucGFyZW50X3dpZGUgJTw+JSByZWR1Y2UodmFyc190b19zcHJlYWQsIHNwcmVhZF9qb2luX3ZhcjIsIFxuICAgICAgICAgICAgICAgICAgICAgICAgbG9uZ19kYXRhID0gcGFyZW50X2RhdGEsIC5pbml0ID0gLilcbmBgYCJ9 -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">parent_wide &lt;-<span class="st"> </span>parent_data %&gt;%<span class="st"> </span><span class="kw">select</span>(appl_person_id, appl_year, n_parents) %&gt;%<span class="st"> </span><span class="kw">ungroup</span>() %&gt;%<span class="st"> </span><span class="kw">distinct</span>()
+spread_join_var2 &lt;-<span class="st"> </span>function(wide_data, long_data, var_name) {
+  wide_data &lt;-<span class="st"> </span>long_data %&gt;%
+<span class="st">    </span><span class="kw">select_</span>(~appl_person_id, ~rank, var_name) %&gt;%
+<span class="st">    </span><span class="kw">mutate</span>(<span class="dt">rank =</span> <span class="kw">paste0</span>(var_name, <span class="st">&quot;_parent&quot;</span>, rank)) %&gt;%
+<span class="st">    </span><span class="kw">spread_</span>(<span class="st">&quot;rank&quot;</span>, <span class="dt">value =</span> var_name) %&gt;%
+<span class="st">    </span><span class="kw">left_join</span>(wide_data, .)
+  <span class="kw">return</span>(wide_data)
+}
+vars_to_spread &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;name&quot;</span>, <span class="st">&quot;occupation_desc&quot;</span>, <span class="st">&quot;occupation&quot;</span>, <span class="st">&quot;edu_level&quot;</span>)
+parent_wide %&lt;&gt;%<span class="st"> </span><span class="kw">reduce</span>(vars_to_spread, spread_join_var2, 
+                        <span class="dt">long_data =</span> parent_data, <span class="dt">.init =</span> .)</code></pre></div>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiSm9pbmluZywgYnkgPSBcImFwcGxfcGVyc29uX2lkXCJcbkpvaW5pbmcsIGJ5ID0gXCJhcHBsX3BlcnNvbl9pZFwiXG5Kb2luaW5nLCBieSA9IFwiYXBwbF9wZXJzb25faWRcIlxuSm9pbmluZywgYnkgPSBcImFwcGxfcGVyc29uX2lkXCJcbiJ9 -->
+<pre><code>Joining, by = &quot;appl_person_id&quot;
+Joining, by = &quot;appl_person_id&quot;
+Joining, by = &quot;appl_person_id&quot;
+Joining, by = &quot;appl_person_id&quot;</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucGFyZW50X3dpZGUgJT4lIHdyaXRlX2NzdihcImRhdGEvcGFyZW50X2d1YXJkaWFuX3dpZGVfdjEuY3N2XCIsIG5hID0gXCJcIilcbmBgYCJ9 -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">parent_wide %&gt;%<span class="st"> </span><span class="kw">write_csv</span>(<span class="st">&quot;data/parent_guardian_wide_v1.csv&quot;</span>, <span class="dt">na =</span> <span class="st">&quot;&quot;</span>)</code></pre></div>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiQWRtaXNzaW9ucyBNTUkgSW50ZXJ2aWV3IGRhdGEiCmF1dGhvcjogIkphY3F1ZWxpbmUgR3V0bWFuIgpkYXRlOiAnTGFzdCB1cGRhdGVkOiBgciBmb3JtYXQoU3lzLkRhdGUoKSwgIiVCICVkLCAlWSIpIGAgJwpvdXRwdXQ6CiAgaHRtbF9kb2N1bWVudDoKICAgIHRvYzogeWVzCiAgICB0b2NfZGVwdGg6ICc0JwogIGh0bWxfbm90ZWJvb2s6CiAgICBoaWdobGlnaHQ6IHRhbmdvCiAgICB0aGVtZTogY29zbW8KICAgIHRvYzogeWVzCiAgICB0b2NfZGVwdGg6IDQKLS0tCgpgYGB7ciwgbWVzc2FnZSA9IEZBTFNFfQpsaWJyYXJ5KHRpZHl2ZXJzZSkKbGlicmFyeShtYWdyaXR0cikKYWRtaXNzaW9uczFfcGF0aCA8LSAiZGF0YS9hZG1pc3Npb25zX2ludGVydmlld3NfbG9uZ192MS5jc3YiCmFkbWlzc2lvbnMxIDwtIHJlYWRfY3N2KGFkbWlzc2lvbnMxX3BhdGgpCmBgYAoKYGBge3J9CmNvbG5hbWVzKGFkbWlzc2lvbnMxKSAlPD4lIHRvbG93ZXIoKQoKIyAtOTkgaW4gY29sdW1uIHVzZXJfaWQgYW5kIC05IGluIGNvbHVtbiBmYWN1bHR5X3VzZXJfaWQgZGVub3RlIG1pc3NpbmcgdmFsdWVzCmFkbWlzc2lvbnMxICU8PiUgbXV0YXRlKHVzZXJfaWQgPSByZXBsYWNlKHVzZXJfaWQsIHVzZXJfaWQgPT0gLTk5LCBOQV9pbnRlZ2VyXyksCiAgICBmYWN1bHR5X3VzZXJfaWQgPSByZXBsYWNlKGZhY3VsdHlfdXNlcl9pZCwgZmFjdWx0eV91c2VyX2lkID09IC05LCBOQV9pbnRlZ2VyXykpCmBgYAoKYGBge3J9CmFkbWlzc2lvbnMxICU8PiUgZ3JvdXBfYnkoYW1jYXNfaWQsIGFwcF95ZWFyLCBhcHBsaWNhdGlvbl9pZCkgJT4lIG11dGF0ZShuID0gbigpKSAlPiUgYXJyYW5nZShkZXNjKG4pKSAKYGBgCgpgYGB7cn0KYWRtaXNzaW9uczEgJTw+JSB1bml0ZShmYWN1bHR5X25hbWUsIGZhY19sYXN0X25hbWUsIGZhY19maXJzdF9uYW1lLCBzZXAgPSAiLCAiKQpgYGAKCmBgYHtyfQppbnRlcnZpZXdlZV9kYXRhIDwtIGFkbWlzc2lvbnMxICU+JSBzZWxlY3QoYXBwX3llYXI6YW1jYXNfaWQsIGludGVydmlld190eXBlLCBhcHBsX3BlcnNvbl9pZCkgJT4lIHVuZ3JvdXAoKSAlPiUgZGlzdGluY3QoKSAKCm5yb3coaW50ZXJ2aWV3ZWVfZGF0YSkgPT0ge2FkbWlzc2lvbnMxICU+JSBncm91cF9ieShhcHBsaWNhdGlvbl9pZCkgJT4lIG5fZ3JvdXBzKCl9CmBgYAoKYGBge3IsIG1lc3NhZ2UgPSBGQUxTRX0KaW50ZXJ2aWV3ZWVfZGF0YSA8LSBhZG1pc3Npb25zMSAlPiUKICBzdW1tYXJpemUobl9pbnRlcnZpZXdzID0gbigpLAogICAgICAgICAgICBtaW5fcmFuayA9IG1pbihyYW5rKSwKICAgICAgICAgICAgbWF4X3JhbmsgPSBtYXgocmFuayksCiAgICAgICAgICAgIG1lZGlhbl9yYW5rID0gbWVkaWFuKHJhbmspLAogICAgICAgICAgICBtZWFuX3JhbmsgPSBtZWFuKHJhbmspKSAlPiUKICBsZWZ0X2pvaW4oaW50ZXJ2aWV3ZWVfZGF0YSwgLikKCnNwcmVhZF9qb2luX3ZhciA8LSBmdW5jdGlvbih3aWRlX2RhdGEsIGxvbmdfZGF0YSwgdmFyX25hbWUpIHsKICB3aWRlX2RhdGEgPC0gbG9uZ19kYXRhICU+JQogICAgc2VsZWN0Xyh+YXBwbGljYXRpb25faWQsIH5pbnRlcnZpZXdlcl90eXBlLCB2YXJfbmFtZSkgJT4lCiAgICBtdXRhdGUoaW50ZXJ2aWV3ZXJfdHlwZSA9IHN0cmluZ3I6OnN0cl9yZXBsYWNlKGludGVydmlld2VyX3R5cGUsICJJbnRlcnZpZXdlciAiLCBwYXN0ZTAodmFyX25hbWUsICJfIikpKSAlPiUKICAgIHNwcmVhZF8oImludGVydmlld2VyX3R5cGUiLCB2YWx1ZSA9IHZhcl9uYW1lKSAlPiUKICAgIGxlZnRfam9pbih3aWRlX2RhdGEsIC4pCiAgcmV0dXJuKHdpZGVfZGF0YSkKfQpgYGAKCmBgYHtyLCBtZXNzYWdlID0gRkFMU0V9CnZhcnNfdG9fc3ByZWFkIDwtIGMoInJhbmsiLCAiZmFjdWx0eV9uYW1lIiwgImludGVydmlld19pZCIsICJtbWlfcXVlc3Rpb25faWQiKQppbnRlcnZpZXdlZV9kYXRhICU8PiUgcmVkdWNlKHZhcnNfdG9fc3ByZWFkLCBzcHJlYWRfam9pbl92YXIsIAogICAgICAgICAgICAgICAgICAgICAgICBsb25nX2RhdGEgPSBhZG1pc3Npb25zMSwgLmluaXQgPSAuKQpgYGAKCmBgYHtyfQppbnRlcnZpZXdlZV9kYXRhICU+JSB3cml0ZV9jc3YoImRhdGEvYWRtaXNzaW9uc19pbnRlcnZpZXdzX3dpZGVfdjEuY3N2IiwgbmEgPSAiIikKYGBgCgpgYGB7ciwgbWVzc2FnZSA9IEZBTFNFfQpzY3JlZW5lcnNfcGF0aCA8LSAiZGF0YS9zY3JlZW5lcl9sb25nLmNzdiIKaW50ZXJ2aWV3c19wYXRoIDwtICJkYXRhL2ludGVydmlld19sb25nLmNzdiIKCnNwcmVhZF9pbnRlcnZpZXdzIDwtIGZ1bmN0aW9uKHBhdGgpIHsKICBsb25nX2RhdGEgPC0gcmVhZF9jc3YocGF0aCkKICBjb2xuYW1lcyhsb25nX2RhdGEpICU8PiUgdG9sb3dlcigpCiAgCiAgbG9uZ19kYXRhICU8PiUgCiAgICBtdXRhdGUoc2NvcmVfc3VibWlzc2lvbl9kYXRlID0gbHVicmlkYXRlOjpkbXlfaG1zKHNjb3JlX3N1Ym1pc3Npb25fZGF0ZSwgdHogPSAiRVNUIiksCiAgICAgICAgICAgYXBwbF9wZXJzb25faWQgPSByZXBsYWNlKGFwcGxfcGVyc29uX2lkLCBhcHBsX3BlcnNvbl9pZCA9PSAtOSwgTkFfaW50ZWdlcl8pKQp9CgoKYGBgCgoK</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiQWRtaXNzaW9ucyBNTUkgSW50ZXJ2aWV3IGRhdGEiCmF1dGhvcjogIkphY3F1ZWxpbmUgR3V0bWFuIgpkYXRlOiAnTGFzdCB1cGRhdGVkOiBgciBmb3JtYXQoU3lzLkRhdGUoKSwgIiVCICVkLCAlWSIpIGAgJwpvdXRwdXQ6CiAgaHRtbF9kb2N1bWVudDoKICAgIHRvYzogeWVzCiAgICB0b2NfZGVwdGg6ICc0JwogIGh0bWxfbm90ZWJvb2s6CiAgICBoaWdobGlnaHQ6IHRhbmdvCiAgICB0aGVtZTogY29zbW8KICAgIHRvYzogeWVzCiAgICB0b2NfZGVwdGg6IDQKLS0tCgpgYGB7ciwgbWVzc2FnZSA9IEZBTFNFfQpsaWJyYXJ5KHRpZHl2ZXJzZSkKbGlicmFyeShtYWdyaXR0cikKa25pdHI6Om9wdHNfY2h1bmskc2V0KG1lc3NhZ2UgPSBGQUxTRSwgY29tbWVudCA9ICIgICAiKQoKYWRtaXNzaW9uczEgPC0gImRhdGEvYWRtaXNzaW9uc19pbnRlcnZpZXdzX2xvbmdfdjEuY3N2IiAlPiUgcmVhZF9jc3YoKQpgYGAKCmBgYHtyfQpjb2xuYW1lcyhhZG1pc3Npb25zMSkgJTw+JSB0b2xvd2VyKCkKCiMgLTk5IGluIGNvbHVtbiB1c2VyX2lkIGFuZCAtOSBpbiBjb2x1bW4gZmFjdWx0eV91c2VyX2lkIGRlbm90ZSBtaXNzaW5nIHZhbHVlcwphZG1pc3Npb25zMSAlPD4lIG11dGF0ZSh1c2VyX2lkID0gcmVwbGFjZSh1c2VyX2lkLCB1c2VyX2lkID09IC05OSwgTkFfaW50ZWdlcl8pLAogICAgZmFjdWx0eV91c2VyX2lkID0gcmVwbGFjZShmYWN1bHR5X3VzZXJfaWQsIGZhY3VsdHlfdXNlcl9pZCA9PSAtOSwgTkFfaW50ZWdlcl8pKQpgYGAKCmBgYHtyfQphZG1pc3Npb25zMSAlPD4lIGdyb3VwX2J5KGFtY2FzX2lkLCBhcHBfeWVhciwgYXBwbGljYXRpb25faWQpICU+JSAKICBtdXRhdGUobiA9IG4oKSkgJT4lIGFycmFuZ2UoZGVzYyhuKSkgJT4lCiAgdW5pdGUoZmFjdWx0eV9uYW1lLCBmYWNfbGFzdF9uYW1lLCBmYWNfZmlyc3RfbmFtZSwgc2VwID0gIiwgIikKYGBgCgpgYGB7cn0KaW50ZXJ2aWV3ZWVfZGF0YSA8LSBhZG1pc3Npb25zMSAlPiUgc2VsZWN0KGFwcF95ZWFyOmFtY2FzX2lkLCBpbnRlcnZpZXdfdHlwZSwgYXBwbF9wZXJzb25faWQpICU+JSB1bmdyb3VwKCkgJT4lIGRpc3RpbmN0KCkgCgpucm93KGludGVydmlld2VlX2RhdGEpID09IHthZG1pc3Npb25zMSAlPiUgZ3JvdXBfYnkoYXBwbGljYXRpb25faWQpICU+JSBuX2dyb3VwcygpfQpgYGAKCmBgYHtyfQppbnRlcnZpZXdlZV9kYXRhIDwtIGFkbWlzc2lvbnMxICU+JQogIHN1bW1hcml6ZShuX2ludGVydmlld3MgPSBuKCksCiAgICAgICAgICAgIG1pbl9yYW5rID0gbWluKHJhbmspLAogICAgICAgICAgICBtYXhfcmFuayA9IG1heChyYW5rKSwKICAgICAgICAgICAgbWVkaWFuX3JhbmsgPSBtZWRpYW4ocmFuayksCiAgICAgICAgICAgIG1lYW5fcmFuayA9IG1lYW4ocmFuaykpICU+JQogIGxlZnRfam9pbihpbnRlcnZpZXdlZV9kYXRhLCAuKQoKc3ByZWFkX2pvaW5fdmFyIDwtIGZ1bmN0aW9uKHdpZGVfZGF0YSwgbG9uZ19kYXRhLCB2YXJfbmFtZSkgewogIHdpZGVfZGF0YSA8LSBsb25nX2RhdGEgJT4lCiAgICBzZWxlY3RfKH5hcHBsaWNhdGlvbl9pZCwgfmludGVydmlld2VyX3R5cGUsIHZhcl9uYW1lKSAlPiUKICAgIG11dGF0ZShpbnRlcnZpZXdlcl90eXBlID0gc3RyaW5ncjo6c3RyX3JlcGxhY2UoaW50ZXJ2aWV3ZXJfdHlwZSwgIkludGVydmlld2VyICIsIHBhc3RlMCh2YXJfbmFtZSwgIl8iKSkpICU+JQogICAgc3ByZWFkXygiaW50ZXJ2aWV3ZXJfdHlwZSIsIHZhbHVlID0gdmFyX25hbWUpICU+JQogICAgbGVmdF9qb2luKHdpZGVfZGF0YSwgLikKICByZXR1cm4od2lkZV9kYXRhKQp9CmBgYAoKYGBge3J9CnZhcnNfdG9fc3ByZWFkIDwtIGMoInJhbmsiLCAiZmFjdWx0eV9uYW1lIiwgImludGVydmlld19pZCIsICJtbWlfcXVlc3Rpb25faWQiKQppbnRlcnZpZXdlZV9kYXRhICU8PiUgcmVkdWNlKHZhcnNfdG9fc3ByZWFkLCBzcHJlYWRfam9pbl92YXIsIAogICAgICAgICAgICAgICAgICAgICAgICBsb25nX2RhdGEgPSBhZG1pc3Npb25zMSwgLmluaXQgPSAuKQpgYGAKCmBgYHtyfQppbnRlcnZpZXdlZV9kYXRhICU+JSB3cml0ZV9jc3YoImRhdGEvYWRtaXNzaW9uc19pbnRlcnZpZXdzX3dpZGVfdjEuY3N2IiwgbmEgPSAiIikKYGBgCgpgYGB7cn0Kc2NyZWVuZXJzX3BhdGggPC0gImRhdGEvc2NyZWVuZXJfbG9uZy5jc3YiCmludGVydmlld3NfcGF0aCA8LSAiZGF0YS9pbnRlcnZpZXdfbG9uZy5jc3YiCgpzcHJlYWRfaW50ZXJ2aWV3cyA8LSBmdW5jdGlvbihwYXRoKSB7CiAgbG9uZ19kYXRhIDwtIHJlYWRfY3N2KHBhdGgpCiAgY29sbmFtZXMobG9uZ19kYXRhKSAlPD4lIHRvbG93ZXIoKQogIAogIGxvbmdfZGF0YSAlPD4lIAogICAgbXV0YXRlKHNjb3JlX3N1Ym1pc3Npb25fZGF0ZSA9IGx1YnJpZGF0ZTo6ZG15X2htcyhzY29yZV9zdWJtaXNzaW9uX2RhdGUsIHR6ID0gIkVTVCIpLAogICAgICAgICAgIGFwcGxfcGVyc29uX2lkID0gcmVwbGFjZShhcHBsX3BlcnNvbl9pZCwgYXBwbF9wZXJzb25faWQgPT0gLTksIE5BX2ludGVnZXJfKSkKfQpgYGAKCmBgYHtyLCBtZXNzYWdlID0gRkFMU0V9CnBhcmVudF9kYXRhIDwtICJkYXRhL3BhcmVudF9ndWFyZGlhbl9sb25nX3YxLmNzdiIgJT4lIHJlYWRfY3N2KCkKCmNvbG5hbWVzKHBhcmVudF9kYXRhKSAlPD4lIHRvbG93ZXIoKSAlPiUgc3RyaW5ncjo6c3RyX3JlcGxhY2UoIl90ZXh0IiwgIiIpCmBgYAoKYGBge3J9CnBhcmVudF9kYXRhICU8PiUgZ3JvdXBfYnkoYXBwbF9wZXJzb25faWQpICU+JSBtdXRhdGUobl9wYXJlbnRzID0gbigpKSAKCnBhcmVudF9kYXRhICU8PiUgbXV0YXRlKGNvbnN0Y29sID0gMSwgcmFuayA9IGN1bXN1bShjb25zdGNvbCkpICU+JQogIGZpbHRlcihyYW5rIDw9IDQpICU+JSBzZWxlY3QoLWNvbnN0Y29sKQoKYGBgCgpgYGB7cn0KcGFyZW50X3dpZGUgPC0gcGFyZW50X2RhdGEgJT4lIHNlbGVjdChhcHBsX3BlcnNvbl9pZCwgYXBwbF95ZWFyLCBuX3BhcmVudHMpICU+JSB1bmdyb3VwKCkgJT4lIGRpc3RpbmN0KCkKCnNwcmVhZF9qb2luX3ZhcjIgPC0gZnVuY3Rpb24od2lkZV9kYXRhLCBsb25nX2RhdGEsIHZhcl9uYW1lKSB7CiAgd2lkZV9kYXRhIDwtIGxvbmdfZGF0YSAlPiUKICAgIHNlbGVjdF8ofmFwcGxfcGVyc29uX2lkLCB+cmFuaywgdmFyX25hbWUpICU+JQogICAgbXV0YXRlKHJhbmsgPSBwYXN0ZTAodmFyX25hbWUsICJfcGFyZW50IiwgcmFuaykpICU+JQogICAgc3ByZWFkXygicmFuayIsIHZhbHVlID0gdmFyX25hbWUpICU+JQogICAgbGVmdF9qb2luKHdpZGVfZGF0YSwgLikKICByZXR1cm4od2lkZV9kYXRhKQp9Cgp2YXJzX3RvX3NwcmVhZCA8LSBjKCJuYW1lIiwgIm9jY3VwYXRpb25fZGVzYyIsICJvY2N1cGF0aW9uIiwgImVkdV9sZXZlbCIpCnBhcmVudF93aWRlICU8PiUgcmVkdWNlKHZhcnNfdG9fc3ByZWFkLCBzcHJlYWRfam9pbl92YXIyLCAKICAgICAgICAgICAgICAgICAgICAgICAgbG9uZ19kYXRhID0gcGFyZW50X2RhdGEsIC5pbml0ID0gLikKYGBgCgpgYGB7cn0KcGFyZW50X3dpZGUgJT4lIHdyaXRlX2NzdigiZGF0YS9wYXJlbnRfZ3VhcmRpYW5fd2lkZV92MS5jc3YiLCBuYSA9ICIiKQpgYGAKCg==</div>
 
 
 

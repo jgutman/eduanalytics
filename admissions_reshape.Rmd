@@ -16,8 +16,9 @@ output:
 ```{r, message = FALSE}
 library(tidyverse)
 library(magrittr)
-admissions1_path <- "data/admissions_interviews_long_v1.csv"
-admissions1 <- read_csv(admissions1_path)
+knitr::opts_chunk$set(message = FALSE, comment = "   ")
+
+admissions1 <- "data/admissions_interviews_long_v1.csv" %>% read_csv()
 ```
 
 ```{r}
@@ -29,11 +30,9 @@ admissions1 %<>% mutate(user_id = replace(user_id, user_id == -99, NA_integer_),
 ```
 
 ```{r}
-admissions1 %<>% group_by(amcas_id, app_year, application_id) %>% mutate(n = n()) %>% arrange(desc(n)) 
-```
-
-```{r}
-admissions1 %<>% unite(faculty_name, fac_last_name, fac_first_name, sep = ", ")
+admissions1 %<>% group_by(amcas_id, app_year, application_id) %>% 
+  mutate(n = n()) %>% arrange(desc(n)) %>%
+  unite(faculty_name, fac_last_name, fac_first_name, sep = ", ")
 ```
 
 ```{r}
@@ -42,7 +41,7 @@ interviewee_data <- admissions1 %>% select(app_year:amcas_id, interview_type, ap
 nrow(interviewee_data) == {admissions1 %>% group_by(application_id) %>% n_groups()}
 ```
 
-```{r, message = FALSE}
+```{r}
 interviewee_data <- admissions1 %>%
   summarize(n_interviews = n(),
             min_rank = min(rank),
@@ -61,7 +60,7 @@ spread_join_var <- function(wide_data, long_data, var_name) {
 }
 ```
 
-```{r, message = FALSE}
+```{r}
 vars_to_spread <- c("rank", "faculty_name", "interview_id", "mmi_question_id")
 interviewee_data %<>% reduce(vars_to_spread, spread_join_var, 
                         long_data = admissions1, .init = .)
@@ -71,7 +70,7 @@ interviewee_data %<>% reduce(vars_to_spread, spread_join_var,
 interviewee_data %>% write_csv("data/admissions_interviews_wide_v1.csv", na = "")
 ```
 
-```{r, message = FALSE}
+```{r}
 screeners_path <- "data/screener_long.csv"
 interviews_path <- "data/interview_long.csv"
 
@@ -83,8 +82,40 @@ spread_interviews <- function(path) {
     mutate(score_submission_date = lubridate::dmy_hms(score_submission_date, tz = "EST"),
            appl_person_id = replace(appl_person_id, appl_person_id == -9, NA_integer_))
 }
+```
 
+```{r, message = FALSE}
+parent_data <- "data/parent_guardian_long_v1.csv" %>% read_csv()
+
+colnames(parent_data) %<>% tolower() %>% stringr::str_replace("_text", "")
+```
+
+```{r}
+parent_data %<>% group_by(appl_person_id) %>% mutate(n_parents = n()) 
+
+parent_data %<>% mutate(constcol = 1, rank = cumsum(constcol)) %>%
+  filter(rank <= 4) %>% select(-constcol)
 
 ```
 
+```{r}
+parent_wide <- parent_data %>% select(appl_person_id, appl_year, n_parents) %>% ungroup() %>% distinct()
+
+spread_join_var2 <- function(wide_data, long_data, var_name) {
+  wide_data <- long_data %>%
+    select_(~appl_person_id, ~rank, var_name) %>%
+    mutate(rank = paste0(var_name, "_parent", rank)) %>%
+    spread_("rank", value = var_name) %>%
+    left_join(wide_data, .)
+  return(wide_data)
+}
+
+vars_to_spread <- c("name", "occupation_desc", "occupation", "edu_level")
+parent_wide %<>% reduce(vars_to_spread, spread_join_var2, 
+                        long_data = parent_data, .init = .)
+```
+
+```{r}
+parent_wide %>% write_csv("data/parent_guardian_wide_v1.csv", na = "")
+```
 
