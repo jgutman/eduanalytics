@@ -1,0 +1,20 @@
+---
+title: "Admissions MMI Interview data"
+author: "Jacqueline Gutman"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_document:
+    toc: yes
+    toc_depth: '4'
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+---
+
+```{r}
+library(tidyverse)
+admissions1 <- "data/admissions_interviews_long_v1.csv"
+```
+
