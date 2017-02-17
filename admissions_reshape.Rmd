@@ -16,7 +16,8 @@ output:
 ```{r, message = FALSE}
 library(tidyverse)
 library(magrittr)
-knitr::opts_chunk$set(message = FALSE, comment = "   ")
+library(knitr)
+opts_chunk$set(message = FALSE, comment = "   ")
 
 admissions1 <- "data/admissions_interviews_long_v1.csv" %>% read_csv()
 ```
