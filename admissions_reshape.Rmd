@@ -44,40 +44,27 @@ nrow(interviewee_data) == {admissions1 %>% group_by(application_id) %>% n_groups
 
 ```{r, message = FALSE}
 interviewee_data <- admissions1 %>%
-  summarize(min_rank = min(rank),
+  summarize(n_interviews = n(),
+            min_rank = min(rank),
             max_rank = max(rank),
             median_rank = median(rank),
             mean_rank = mean(rank)) %>%
   left_join(interviewee_data, .)
 
-interviewee_data <- admissions1 %>% 
-  select(application_id, interviewer_type, rank) %>% 
-  mutate(interviewer_type = stringr::str_replace(interviewer_type, "Interviewer ", "rank_")) %>%
-  spread(interviewer_type, value = rank) %>%
-  left_join(interviewee_data, .)
+spread_join_var <- function(wide_data, long_data, var_name) {
+  wide_data <- long_data %>%
+    select_(~application_id, ~interviewer_type, var_name) %>%
+    mutate(interviewer_type = stringr::str_replace(interviewer_type, "Interviewer ", paste0(var_name, "_"))) %>%
+    spread_("interviewer_type", value = var_name) %>%
+    left_join(wide_data, .)
+  return(wide_data)
+}
 ```
 
 ```{r, message = FALSE}
-interviewee_data <- admissions1 %>% 
-  select(application_id, interviewer_type, faculty_name) %>% 
-  mutate(interviewer_type = stringr::str_replace(interviewer_type, "Interviewer ", "faculty_name_")) %>%
-  spread(interviewer_type, value = faculty_name) %>%
-  left_join(interviewee_data, .)
-```
-
-```{r, message = FALSE}
-interviewee_data <- admissions1 %>% 
-  select(application_id, interviewer_type, interview_id) %>% 
-  mutate(interviewer_type = stringr::str_replace(interviewer_type, "Interviewer ", "interview_id_")) %>%
-  spread(interviewer_type, value = interview_id) %>%
-  left_join(interviewee_data, .)
-
-interviewee_data <- admissions1 %>% 
-  mutate(mmi_question_id = as.integer(mmi_question_id)) %>%
-  select(application_id, interviewer_type, mmi_question_id) %>% 
-  mutate(interviewer_type = stringr::str_replace(interviewer_type, "Interviewer ", "mmi_question_id_")) %>%
-  spread(interviewer_type, value = mmi_question_id) %>%
-  left_join(interviewee_data, .)
+vars_to_spread <- c("rank", "faculty_name", "interview_id", "mmi_question_id")
+interviewee_data %<>% reduce(vars_to_spread, spread_join_var, 
+                        long_data = admissions1, .init = .)
 ```
 
 ```{r}
