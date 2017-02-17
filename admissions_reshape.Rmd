@@ -13,8 +13,76 @@ output:
     toc_depth: 4
 ---
 
-```{r}
+```{r, message = FALSE}
 library(tidyverse)
-admissions1 <- "data/admissions_interviews_long_v1.csv"
+library(magrittr)
+admissions1_path <- "data/admissions_interviews_long_v1.csv"
+admissions1 <- read_csv(admissions1_path)
 ```
+
+```{r}
+colnames(admissions1) %<>% tolower()
+
+# -99 in column user_id and -9 in column faculty_user_id denote missing values
+admissions1 %<>% mutate(user_id = replace(user_id, user_id == -99, NA_integer_),
+    faculty_user_id = replace(faculty_user_id, faculty_user_id == -9, NA_integer_))
+```
+
+```{r}
+admissions1 %<>% group_by(amcas_id, app_year, application_id) %>% mutate(n = n()) %>% arrange(desc(n)) 
+```
+
+```{r}
+admissions1 %<>% unite(faculty_name, fac_last_name, fac_first_name, sep = ", ")
+```
+
+```{r}
+interviewee_data <- admissions1 %>% select(app_year:amcas_id, interview_type, appl_person_id) %>% ungroup() %>% distinct() 
+
+nrow(interviewee_data) == {admissions1 %>% group_by(application_id) %>% n_groups()}
+```
+
+```{r, message = FALSE}
+interviewee_data <- admissions1 %>%
+  summarize(min_rank = min(rank),
+            max_rank = max(rank),
+            median_rank = median(rank),
+            mean_rank = mean(rank)) %>%
+  left_join(interviewee_data, .)
+
+interviewee_data <- admissions1 %>% 
+  select(application_id, interviewer_type, rank) %>% 
+  mutate(interviewer_type = stringr::str_replace(interviewer_type, "Interviewer ", "rank_")) %>%
+  spread(interviewer_type, value = rank) %>%
+  left_join(interviewee_data, .)
+```
+
+```{r, message = FALSE}
+interviewee_data <- admissions1 %>% 
+  select(application_id, interviewer_type, faculty_name) %>% 
+  mutate(interviewer_type = stringr::str_replace(interviewer_type, "Interviewer ", "faculty_name_")) %>%
+  spread(interviewer_type, value = faculty_name) %>%
+  left_join(interviewee_data, .)
+```
+
+```{r, message = FALSE}
+interviewee_data <- admissions1 %>% 
+  select(application_id, interviewer_type, interview_id) %>% 
+  mutate(interviewer_type = stringr::str_replace(interviewer_type, "Interviewer ", "interview_id_")) %>%
+  spread(interviewer_type, value = interview_id) %>%
+  left_join(interviewee_data, .)
+
+interviewee_data <- admissions1 %>% 
+  mutate(mmi_question_id = as.integer(mmi_question_id)) %>%
+  select(application_id, interviewer_type, mmi_question_id) %>% 
+  mutate(interviewer_type = stringr::str_replace(interviewer_type, "Interviewer ", "mmi_question_id_")) %>%
+  spread(interviewer_type, value = mmi_question_id) %>%
+  left_join(interviewee_data, .)
+```
+
+```{r}
+interviewee_data %>% write_csv("data/admissions_interviews_wide_v1.csv", na = "")
+```
+
+
 

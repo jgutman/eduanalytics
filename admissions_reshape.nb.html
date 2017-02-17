@@ -208,14 +208,104 @@ $(document).ready(function () {
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeSh0aWR5dmVyc2UpXG5gYGAifQ== -->
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(tidyverse)</code></pre></div>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeSh0aWR5dmVyc2UpXG5saWJyYXJ5KG1hZ3JpdHRyKVxuYWRtaXNzaW9uczFfcGF0aCA8LSBcImRhdGEvYWRtaXNzaW9uc19pbnRlcnZpZXdzX2xvbmdfdjEuY3N2XCJcbmFkbWlzc2lvbnMxIDwtIHJlYWRfY3N2KGFkbWlzc2lvbnMxX3BhdGgpXG5gYGAifQ== -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(tidyverse)
+<span class="kw">library</span>(magrittr)
+admissions1_path &lt;-<span class="st"> &quot;data/admissions_interviews_long_v1.csv&quot;</span>
+admissions1 &lt;-<span class="st"> </span><span class="kw">read_csv</span>(admissions1_path)</code></pre></div>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY29sbmFtZXMoYWRtaXNzaW9uczEpICU8PiUgdG9sb3dlcigpXG4jIC05OSBpbiBjb2x1bW4gdXNlcl9pZCBhbmQgLTkgaW4gY29sdW1uIGZhY3VsdHlfdXNlcl9pZCBkZW5vdGUgbWlzc2luZyB2YWx1ZXNcbmFkbWlzc2lvbnMxICU8PiUgbXV0YXRlKHVzZXJfaWQgPSByZXBsYWNlKHVzZXJfaWQsIHVzZXJfaWQgPT0gLTk5LCBOQV9pbnRlZ2VyXyksXG4gICAgZmFjdWx0eV91c2VyX2lkID0gcmVwbGFjZShmYWN1bHR5X3VzZXJfaWQsIGZhY3VsdHlfdXNlcl9pZCA9PSAtOSwgTkFfaW50ZWdlcl8pKVxuYGBgIn0= -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">colnames</span>(admissions1) %&lt;&gt;%<span class="st"> </span><span class="kw">tolower</span>()
+<span class="co"># -99 in column user_id and -9 in column faculty_user_id denote missing values</span>
+admissions1 %&lt;&gt;%<span class="st"> </span><span class="kw">mutate</span>(<span class="dt">user_id =</span> <span class="kw">replace</span>(user_id, user_id ==<span class="st"> </span>-<span class="dv">99</span>, <span class="ot">NA_integer_</span>),
+    <span class="dt">faculty_user_id =</span> <span class="kw">replace</span>(faculty_user_id, faculty_user_id ==<span class="st"> </span>-<span class="dv">9</span>, <span class="ot">NA_integer_</span>))</code></pre></div>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYWRtaXNzaW9uczEgJTw+JSBncm91cF9ieShhbWNhc19pZCwgYXBwX3llYXIsIGFwcGxpY2F0aW9uX2lkKSAlPiUgbXV0YXRlKG4gPSBuKCkpICU+JSBhcnJhbmdlKGRlc2MobikpIFxuYGBgIn0= -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">admissions1 %&lt;&gt;%<span class="st"> </span><span class="kw">group_by</span>(amcas_id, app_year, application_id) %&gt;%<span class="st"> </span><span class="kw">mutate</span>(<span class="dt">n =</span> <span class="kw">n</span>()) %&gt;%<span class="st"> </span><span class="kw">arrange</span>(<span class="kw">desc</span>(n)) </code></pre></div>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYWRtaXNzaW9uczEgJTw+JSB1bml0ZShmYWN1bHR5X25hbWUsIGZhY19sYXN0X25hbWUsIGZhY19maXJzdF9uYW1lLCBzZXAgPSBcIiwgXCIpXG5gYGAifQ== -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">admissions1 %&lt;&gt;%<span class="st"> </span><span class="kw">unite</span>(faculty_name, fac_last_name, fac_first_name, <span class="dt">sep =</span> <span class="st">&quot;, &quot;</span>)</code></pre></div>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuaW50ZXJ2aWV3ZWVfZGF0YSA8LSBhZG1pc3Npb25zMSAlPiUgc2VsZWN0KGFwcF95ZWFyOmFtY2FzX2lkLCBpbnRlcnZpZXdfdHlwZSwgYXBwbF9wZXJzb25faWQpICU+JSB1bmdyb3VwKCkgJT4lIGRpc3RpbmN0KCkgXG5ucm93KGludGVydmlld2VlX2RhdGEpID09IHthZG1pc3Npb25zMSAlPiUgZ3JvdXBfYnkoYXBwbGljYXRpb25faWQpICU+JSBuX2dyb3VwcygpfVxuYGBgIn0= -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">interviewee_data &lt;-<span class="st"> </span>admissions1 %&gt;%<span class="st"> </span><span class="kw">select</span>(app_year:amcas_id, interview_type, appl_person_id) %&gt;%<span class="st"> </span><span class="kw">ungroup</span>() %&gt;%<span class="st"> </span><span class="kw">distinct</span>() 
+<span class="kw">nrow</span>(interviewee_data) ==<span class="st"> </span>{admissions1 %&gt;%<span class="st"> </span><span class="kw">group_by</span>(application_id) %&gt;%<span class="st"> </span><span class="kw">n_groups</span>()}</code></pre></div>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFRSVUVcbiJ9 -->
+<pre><code>[1] TRUE</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuaW50ZXJ2aWV3ZWVfZGF0YSA8LSBhZG1pc3Npb25zMSAlPiVcbiAgc3VtbWFyaXplKG1pbl9yYW5rID0gbWluKHJhbmspLFxuICAgICAgICAgICAgbWF4X3JhbmsgPSBtYXgocmFuayksXG4gICAgICAgICAgICBtZWRpYW5fcmFuayA9IG1lZGlhbihyYW5rKSxcbiAgICAgICAgICAgIG1lYW5fcmFuayA9IG1lYW4ocmFuaykpICU+JVxuICBsZWZ0X2pvaW4oaW50ZXJ2aWV3ZWVfZGF0YSwgLilcbmludGVydmlld2VlX2RhdGEgPC0gYWRtaXNzaW9uczEgJT4lIFxuICBzZWxlY3QoYXBwbGljYXRpb25faWQsIGludGVydmlld2VyX3R5cGUsIHJhbmspICU+JSBcbiAgbXV0YXRlKGludGVydmlld2VyX3R5cGUgPSBzdHJpbmdyOjpzdHJfcmVwbGFjZShpbnRlcnZpZXdlcl90eXBlLCBcIkludGVydmlld2VyIFwiLCBcInJhbmtfXCIpKSAlPiVcbiAgc3ByZWFkKGludGVydmlld2VyX3R5cGUsIHZhbHVlID0gcmFuaykgJT4lXG4gIGxlZnRfam9pbihpbnRlcnZpZXdlZV9kYXRhLCAuKVxuYGBgIn0= -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">interviewee_data &lt;-<span class="st"> </span>admissions1 %&gt;%
+<span class="st">  </span><span class="kw">summarize</span>(<span class="dt">min_rank =</span> <span class="kw">min</span>(rank),
+            <span class="dt">max_rank =</span> <span class="kw">max</span>(rank),
+            <span class="dt">median_rank =</span> <span class="kw">median</span>(rank),
+            <span class="dt">mean_rank =</span> <span class="kw">mean</span>(rank)) %&gt;%
+<span class="st">  </span><span class="kw">left_join</span>(interviewee_data, .)
+interviewee_data &lt;-<span class="st"> </span>admissions1 %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">select</span>(application_id, interviewer_type, rank) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">interviewer_type =</span> stringr::<span class="kw">str_replace</span>(interviewer_type, <span class="st">&quot;Interviewer &quot;</span>, <span class="st">&quot;rank_&quot;</span>)) %&gt;%
+<span class="st">  </span><span class="kw">spread</span>(interviewer_type, <span class="dt">value =</span> rank) %&gt;%
+<span class="st">  </span><span class="kw">left_join</span>(interviewee_data, .)</code></pre></div>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuaW50ZXJ2aWV3ZWVfZGF0YSA8LSBhZG1pc3Npb25zMSAlPiUgXG4gIHNlbGVjdChhcHBsaWNhdGlvbl9pZCwgaW50ZXJ2aWV3ZXJfdHlwZSwgZmFjdWx0eV9uYW1lKSAlPiUgXG4gIG11dGF0ZShpbnRlcnZpZXdlcl90eXBlID0gc3RyaW5ncjo6c3RyX3JlcGxhY2UoaW50ZXJ2aWV3ZXJfdHlwZSwgXCJJbnRlcnZpZXdlciBcIiwgXCJmYWN1bHR5X25hbWVfXCIpKSAlPiVcbiAgc3ByZWFkKGludGVydmlld2VyX3R5cGUsIHZhbHVlID0gZmFjdWx0eV9uYW1lKSAlPiVcbiAgbGVmdF9qb2luKGludGVydmlld2VlX2RhdGEsIC4pXG5gYGAifQ== -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">interviewee_data &lt;-<span class="st"> </span>admissions1 %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">select</span>(application_id, interviewer_type, faculty_name) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">interviewer_type =</span> stringr::<span class="kw">str_replace</span>(interviewer_type, <span class="st">&quot;Interviewer &quot;</span>, <span class="st">&quot;faculty_name_&quot;</span>)) %&gt;%
+<span class="st">  </span><span class="kw">spread</span>(interviewer_type, <span class="dt">value =</span> faculty_name) %&gt;%
+<span class="st">  </span><span class="kw">left_join</span>(interviewee_data, .)</code></pre></div>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuaW50ZXJ2aWV3ZWVfZGF0YSA8LSBhZG1pc3Npb25zMSAlPiUgXG4gIHNlbGVjdChhcHBsaWNhdGlvbl9pZCwgaW50ZXJ2aWV3ZXJfdHlwZSwgaW50ZXJ2aWV3X2lkKSAlPiUgXG4gIG11dGF0ZShpbnRlcnZpZXdlcl90eXBlID0gc3RyaW5ncjo6c3RyX3JlcGxhY2UoaW50ZXJ2aWV3ZXJfdHlwZSwgXCJJbnRlcnZpZXdlciBcIiwgXCJpbnRlcnZpZXdfaWRfXCIpKSAlPiVcbiAgc3ByZWFkKGludGVydmlld2VyX3R5cGUsIHZhbHVlID0gaW50ZXJ2aWV3X2lkKSAlPiVcbiAgbGVmdF9qb2luKGludGVydmlld2VlX2RhdGEsIC4pXG5pbnRlcnZpZXdlZV9kYXRhIDwtIGFkbWlzc2lvbnMxICU+JSBcbiAgbXV0YXRlKG1taV9xdWVzdGlvbl9pZCA9IGFzLmludGVnZXIobW1pX3F1ZXN0aW9uX2lkKSkgJT4lXG4gIHNlbGVjdChhcHBsaWNhdGlvbl9pZCwgaW50ZXJ2aWV3ZXJfdHlwZSwgbW1pX3F1ZXN0aW9uX2lkKSAlPiUgXG4gIG11dGF0ZShpbnRlcnZpZXdlcl90eXBlID0gc3RyaW5ncjo6c3RyX3JlcGxhY2UoaW50ZXJ2aWV3ZXJfdHlwZSwgXCJJbnRlcnZpZXdlciBcIiwgXCJtbWlfcXVlc3Rpb25faWRfXCIpKSAlPiVcbiAgc3ByZWFkKGludGVydmlld2VyX3R5cGUsIHZhbHVlID0gbW1pX3F1ZXN0aW9uX2lkKSAlPiVcbiAgbGVmdF9qb2luKGludGVydmlld2VlX2RhdGEsIC4pXG5gYGAifQ== -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">interviewee_data &lt;-<span class="st"> </span>admissions1 %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">select</span>(application_id, interviewer_type, interview_id) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">interviewer_type =</span> stringr::<span class="kw">str_replace</span>(interviewer_type, <span class="st">&quot;Interviewer &quot;</span>, <span class="st">&quot;interview_id_&quot;</span>)) %&gt;%
+<span class="st">  </span><span class="kw">spread</span>(interviewer_type, <span class="dt">value =</span> interview_id) %&gt;%
+<span class="st">  </span><span class="kw">left_join</span>(interviewee_data, .)
+interviewee_data &lt;-<span class="st"> </span>admissions1 %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">mmi_question_id =</span> <span class="kw">as.integer</span>(mmi_question_id)) %&gt;%
+<span class="st">  </span><span class="kw">select</span>(application_id, interviewer_type, mmi_question_id) %&gt;%<span class="st"> </span>
+<span class="st">  </span><span class="kw">mutate</span>(<span class="dt">interviewer_type =</span> stringr::<span class="kw">str_replace</span>(interviewer_type, <span class="st">&quot;Interviewer &quot;</span>, <span class="st">&quot;mmi_question_id_&quot;</span>)) %&gt;%
+<span class="st">  </span><span class="kw">spread</span>(interviewer_type, <span class="dt">value =</span> mmi_question_id) %&gt;%
+<span class="st">  </span><span class="kw">left_join</span>(interviewee_data, .)</code></pre></div>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuaW50ZXJ2aWV3ZWVfZGF0YSAlPiUgd3JpdGVfY3N2KFwiZGF0YS9hZG1pc3Npb25zX2ludGVydmlld3Nfd2lkZV92MS5jc3ZcIiwgbmEgPSBcIlwiKVxuYGBgIn0= -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">interviewee_data %&gt;%<span class="st"> </span><span class="kw">write_csv</span>(<span class="st">&quot;data/admissions_interviews_wide_v1.csv&quot;</span>, <span class="dt">na =</span> <span class="st">&quot;&quot;</span>)</code></pre></div>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiQWRtaXNzaW9ucyBNTUkgSW50ZXJ2aWV3IGRhdGEiCmF1dGhvcjogIkphY3F1ZWxpbmUgR3V0bWFuIgpkYXRlOiAnTGFzdCB1cGRhdGVkOiBgciBmb3JtYXQoU3lzLkRhdGUoKSwgIiVCICVkLCAlWSIpIGAgJwpvdXRwdXQ6CiAgaHRtbF9kb2N1bWVudDoKICAgIHRvYzogeWVzCiAgICB0b2NfZGVwdGg6ICc0JwogIGh0bWxfbm90ZWJvb2s6CiAgICBoaWdobGlnaHQ6IHRhbmdvCiAgICB0aGVtZTogY29zbW8KICAgIHRvYzogeWVzCiAgICB0b2NfZGVwdGg6IDQKLS0tCgpgYGB7cn0KbGlicmFyeSh0aWR5dmVyc2UpCmFkbWlzc2lvbnMxIDwtICJkYXRhL2FkbWlzc2lvbnNfaW50ZXJ2aWV3c19sb25nX3YxLmNzdiIKYGBgCgo=</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiQWRtaXNzaW9ucyBNTUkgSW50ZXJ2aWV3IGRhdGEiCmF1dGhvcjogIkphY3F1ZWxpbmUgR3V0bWFuIgpkYXRlOiAnTGFzdCB1cGRhdGVkOiBgciBmb3JtYXQoU3lzLkRhdGUoKSwgIiVCICVkLCAlWSIpIGAgJwpvdXRwdXQ6CiAgaHRtbF9kb2N1bWVudDoKICAgIHRvYzogeWVzCiAgICB0b2NfZGVwdGg6ICc0JwogIGh0bWxfbm90ZWJvb2s6CiAgICBoaWdobGlnaHQ6IHRhbmdvCiAgICB0aGVtZTogY29zbW8KICAgIHRvYzogeWVzCiAgICB0b2NfZGVwdGg6IDQKLS0tCgpgYGB7ciwgbWVzc2FnZSA9IEZBTFNFfQpsaWJyYXJ5KHRpZHl2ZXJzZSkKbGlicmFyeShtYWdyaXR0cikKYWRtaXNzaW9uczFfcGF0aCA8LSAiZGF0YS9hZG1pc3Npb25zX2ludGVydmlld3NfbG9uZ192MS5jc3YiCmFkbWlzc2lvbnMxIDwtIHJlYWRfY3N2KGFkbWlzc2lvbnMxX3BhdGgpCmBgYAoKYGBge3J9CmNvbG5hbWVzKGFkbWlzc2lvbnMxKSAlPD4lIHRvbG93ZXIoKQoKIyAtOTkgaW4gY29sdW1uIHVzZXJfaWQgYW5kIC05IGluIGNvbHVtbiBmYWN1bHR5X3VzZXJfaWQgZGVub3RlIG1pc3NpbmcgdmFsdWVzCmFkbWlzc2lvbnMxICU8PiUgbXV0YXRlKHVzZXJfaWQgPSByZXBsYWNlKHVzZXJfaWQsIHVzZXJfaWQgPT0gLTk5LCBOQV9pbnRlZ2VyXyksCiAgICBmYWN1bHR5X3VzZXJfaWQgPSByZXBsYWNlKGZhY3VsdHlfdXNlcl9pZCwgZmFjdWx0eV91c2VyX2lkID09IC05LCBOQV9pbnRlZ2VyXykpCmBgYAoKYGBge3J9CmFkbWlzc2lvbnMxICU8PiUgZ3JvdXBfYnkoYW1jYXNfaWQsIGFwcF95ZWFyLCBhcHBsaWNhdGlvbl9pZCkgJT4lIG11dGF0ZShuID0gbigpKSAlPiUgYXJyYW5nZShkZXNjKG4pKSAKYGBgCgpgYGB7cn0KYWRtaXNzaW9uczEgJTw+JSB1bml0ZShmYWN1bHR5X25hbWUsIGZhY19sYXN0X25hbWUsIGZhY19maXJzdF9uYW1lLCBzZXAgPSAiLCAiKQpgYGAKCmBgYHtyfQppbnRlcnZpZXdlZV9kYXRhIDwtIGFkbWlzc2lvbnMxICU+JSBzZWxlY3QoYXBwX3llYXI6YW1jYXNfaWQsIGludGVydmlld190eXBlLCBhcHBsX3BlcnNvbl9pZCkgJT4lIHVuZ3JvdXAoKSAlPiUgZGlzdGluY3QoKSAKCm5yb3coaW50ZXJ2aWV3ZWVfZGF0YSkgPT0ge2FkbWlzc2lvbnMxICU+JSBncm91cF9ieShhcHBsaWNhdGlvbl9pZCkgJT4lIG5fZ3JvdXBzKCl9CmBgYAoKYGBge3IsIG1lc3NhZ2UgPSBGQUxTRX0KaW50ZXJ2aWV3ZWVfZGF0YSA8LSBhZG1pc3Npb25zMSAlPiUKICBzdW1tYXJpemUobWluX3JhbmsgPSBtaW4ocmFuayksCiAgICAgICAgICAgIG1heF9yYW5rID0gbWF4KHJhbmspLAogICAgICAgICAgICBtZWRpYW5fcmFuayA9IG1lZGlhbihyYW5rKSwKICAgICAgICAgICAgbWVhbl9yYW5rID0gbWVhbihyYW5rKSkgJT4lCiAgbGVmdF9qb2luKGludGVydmlld2VlX2RhdGEsIC4pCgppbnRlcnZpZXdlZV9kYXRhIDwtIGFkbWlzc2lvbnMxICU+JSAKICBzZWxlY3QoYXBwbGljYXRpb25faWQsIGludGVydmlld2VyX3R5cGUsIHJhbmspICU+JSAKICBtdXRhdGUoaW50ZXJ2aWV3ZXJfdHlwZSA9IHN0cmluZ3I6OnN0cl9yZXBsYWNlKGludGVydmlld2VyX3R5cGUsICJJbnRlcnZpZXdlciAiLCAicmFua18iKSkgJT4lCiAgc3ByZWFkKGludGVydmlld2VyX3R5cGUsIHZhbHVlID0gcmFuaykgJT4lCiAgbGVmdF9qb2luKGludGVydmlld2VlX2RhdGEsIC4pCmBgYAoKYGBge3IsIG1lc3NhZ2UgPSBGQUxTRX0KaW50ZXJ2aWV3ZWVfZGF0YSA8LSBhZG1pc3Npb25zMSAlPiUgCiAgc2VsZWN0KGFwcGxpY2F0aW9uX2lkLCBpbnRlcnZpZXdlcl90eXBlLCBmYWN1bHR5X25hbWUpICU+JSAKICBtdXRhdGUoaW50ZXJ2aWV3ZXJfdHlwZSA9IHN0cmluZ3I6OnN0cl9yZXBsYWNlKGludGVydmlld2VyX3R5cGUsICJJbnRlcnZpZXdlciAiLCAiZmFjdWx0eV9uYW1lXyIpKSAlPiUKICBzcHJlYWQoaW50ZXJ2aWV3ZXJfdHlwZSwgdmFsdWUgPSBmYWN1bHR5X25hbWUpICU+JQogIGxlZnRfam9pbihpbnRlcnZpZXdlZV9kYXRhLCAuKQpgYGAKCmBgYHtyLCBtZXNzYWdlID0gRkFMU0V9CmludGVydmlld2VlX2RhdGEgPC0gYWRtaXNzaW9uczEgJT4lIAogIHNlbGVjdChhcHBsaWNhdGlvbl9pZCwgaW50ZXJ2aWV3ZXJfdHlwZSwgaW50ZXJ2aWV3X2lkKSAlPiUgCiAgbXV0YXRlKGludGVydmlld2VyX3R5cGUgPSBzdHJpbmdyOjpzdHJfcmVwbGFjZShpbnRlcnZpZXdlcl90eXBlLCAiSW50ZXJ2aWV3ZXIgIiwgImludGVydmlld19pZF8iKSkgJT4lCiAgc3ByZWFkKGludGVydmlld2VyX3R5cGUsIHZhbHVlID0gaW50ZXJ2aWV3X2lkKSAlPiUKICBsZWZ0X2pvaW4oaW50ZXJ2aWV3ZWVfZGF0YSwgLikKCmludGVydmlld2VlX2RhdGEgPC0gYWRtaXNzaW9uczEgJT4lIAogIG11dGF0ZShtbWlfcXVlc3Rpb25faWQgPSBhcy5pbnRlZ2VyKG1taV9xdWVzdGlvbl9pZCkpICU+JQogIHNlbGVjdChhcHBsaWNhdGlvbl9pZCwgaW50ZXJ2aWV3ZXJfdHlwZSwgbW1pX3F1ZXN0aW9uX2lkKSAlPiUgCiAgbXV0YXRlKGludGVydmlld2VyX3R5cGUgPSBzdHJpbmdyOjpzdHJfcmVwbGFjZShpbnRlcnZpZXdlcl90eXBlLCAiSW50ZXJ2aWV3ZXIgIiwgIm1taV9xdWVzdGlvbl9pZF8iKSkgJT4lCiAgc3ByZWFkKGludGVydmlld2VyX3R5cGUsIHZhbHVlID0gbW1pX3F1ZXN0aW9uX2lkKSAlPiUKICBsZWZ0X2pvaW4oaW50ZXJ2aWV3ZWVfZGF0YSwgLikKYGBgCgpgYGB7cn0KaW50ZXJ2aWV3ZWVfZGF0YSAlPiUgd3JpdGVfY3N2KCJkYXRhL2FkbWlzc2lvbnNfaW50ZXJ2aWV3c193aWRlX3YxLmNzdiIsIG5hID0gIiIpCmBgYAoKCgo=</div>
 
 
 
