@@ -1,0 +1,24 @@
+title: "Admissions dataset generation"
+author: "Jacqueline Gutman, Suvam Paul"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_document:
+    toc: yes
+    toc_depth: '4'
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+---
+
+```{r, message = FALSE}
+library(tidyverse)
+library(magrittr)
+library(knitr)
+opts_chunk$set(message = FALSE, comment = "   ")
+
+list.dirs("/Volumes/", full.names = FALSE, recursive = FALSE)
+admissions_path <- "/Volumes/Groups/IIME/IIME/EDS/data/admissions/"
+list.files(admissions_path)
+```
