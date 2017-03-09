@@ -16,9 +16,29 @@ output:
 library(tidyverse)
 library(magrittr)
 library(knitr)
-opts_chunk$set(message = FALSE, comment = "   ")
+opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
+               cache = TRUE, autodep = TRUE, cache.comments = FALSE)
 
-list.dirs("/Volumes/", full.names = FALSE, recursive = FALSE)
-admissions_path <- "/Volumes/Groups/IIME/IIME/EDS/data/admissions/"
-list.files(admissions_path)
+# list.dirs("/Volumes/", full.names = FALSE, recursive = FALSE)
+admissions_path <- "/Volumes/Groups/IIME/IIME/EDS/data/admissions"
+(raw_files <- list.files(admissions_path, full.names = TRUE))
 ```
+
+```{r, message = FALSE}
+applications <- raw_files %>% 
+  extract2(1) %>% 
+  read_csv() %>%
+  set_colnames(tolower(colnames(.))) %>%
+  select(-first_name, -last_name)
+
+applications
+```
+
+```{r}
+applications %>%
+  filter(program_name == "Regular M.D.") %>%
+  group_by(appl_year, application_status) %>%
+  summarize(count = n()) %>%
+  spread(application_status, count, fill = 0)
+```
+
