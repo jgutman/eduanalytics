@@ -19,15 +19,15 @@ library(knitr)
 opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
                cache = TRUE, autodep = TRUE, cache.comments = FALSE)
 
-# list.dirs("/Volumes/", full.names = FALSE, recursive = FALSE)
+# list.dirs("/Volumes/", full.names = TRUE, recursive = FALSE)
 admissions_path <- "/Volumes/IIME/EDS/data/admissions"
 (raw_files <- list.files(admissions_path, full.names = TRUE))
 ```
 
 ```{r, message = FALSE}
-extract_data <- function(file_list, keyword) {
-  data <- file_list %>%
-    stringr::str_detect(keyword) %>%
+extract_data <- function(file_list, pattern) {
+  file_list %>%
+    stringr::str_detect(regex(pattern, ignore_case = TRUE)) %>%
     which() %>%
     extract2(file_list, .) %>%
     read_csv() %>%
@@ -49,6 +49,15 @@ applications %>%
   spread(application_status, count, fill = 0)
 ```
 
+```{r}
+applications %>% 
+  group_by(aamc_id) %>%
+  summarize(n_times_applied = n_distinct(appl_year)) %>%
+  group_by(n_times_applied) %>%
+  summarize(n_applicants = n())
+```
+
+
 ```{r, message = FALSE}
 mcat_old <- raw_files %>% 
   extract_data("/mcat") %>%
@@ -58,3 +67,26 @@ mcat_new <- raw_files %>%
   extract_data("new_mcat")
 ```
 
+```{r, message = FALSE}
+mmi_full <- raw_files %>% 
+  extract_data("/mmi")
+```
+
+```{r, message = FALSE}
+# get percent missing by column by year
+mmi_full %>%
+  group_by(app_year) %>%
+  summarize_all(funs(mean(is.na(.))))
+
+# all rows and applicants included
+mmi_full %>%
+  group_by(app_year) %>%
+  summarize(n = n(),
+            n_applicants = n_distinct(appl_person_id))
+
+# non-null rows and applicants only
+mmi_full %>% 
+  group_by(app_year) %>% 
+  filter(!is.na(rank) | !is.na(interviewer_type)) %>%
+  summarize(n = n(), n_applicants = n_distinct(appl_person_id))
+```
