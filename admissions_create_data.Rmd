@@ -16,13 +16,15 @@ output:
 library(tidyverse)
 library(magrittr)
 library(knitr)
+
 opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
                cache = TRUE, autodep = TRUE, cache.comments = FALSE)
 
-# list.dirs("/Volumes/", full.names = TRUE, recursive = FALSE)
-admissions_path <- "/Volumes/IIME/EDS/data/admissions"
+#list.dirs("/Volumes/", full.names = TRUE, recursive = FALSE)
+admissions_path <- "/Volumes/admissions"
 (raw_files <- list.files(admissions_path, full.names = TRUE))
 ```
+
 
 ```{r, message = FALSE}
 extract_data <- function(file_list, pattern) {
@@ -35,10 +37,47 @@ extract_data <- function(file_list, pattern) {
 }
 
 applications <- raw_files %>%
-  extract_data("application") %>%
+  extract_data("/application") %>%
   select(-first_name, -last_name)
 
-applications
+app_repeated_count <- applications %>% 
+  group_by(aamc_id) %>% 
+  summarise(count_num = n()) %>% 
+  filter(count_num > 1) %>% 
+  arrange(aamc_id) %>% 
+  ungroup()
+
+applications_rep_info <- left_join(applications, app_repeated_count, by = "aamc_id")
+applications_rep_info <- applications_rep_info %>% arrange(aamc_id, desc(appl_year))
+
+applications_rep_info_14_17 <- applications_rep_info %>% filter(appl_year == 2014 | appl_year == 2015 | appl_year == 2016 | appl_year == 2017)
+
+
+table(as.factor(applications_rep_info_14_17$application_status))
+
+
+table(as.factor(applications_rep_info_14_17$appl_year))
+table(as.factor(applications_rep_info_14_17$application_status))
+table(as.factor(applications_rep_info_14_17$count_num))
+table(is.na(applications_rep_info_14_17$count_num))
+
+head(applications_rep_info_14_17)
+
+#how do I handle students in multiple years? 
+#combine year and aamc_id
+applications_rep_info_14_17_non_null_numcount <- applications_rep_info_14_17 %>% 
+  filter(count_num == 2 | count_num == 3) %>% arrange(aamc_id)
+
+
+#someone could have applied multiple years,and get rejected. How about someone who got rejected, and then accepted
+applications_rep_info_14_17_non_null_numcount_accepted <- applications_rep_info_14_17_non_null_numcount %>% filter(application_status == "Accepted")
+
+
+
+examine_repeates <- applications_rep_info_14_17_non_null_numcount %>% filter(aamc_id == 13791324)
+
+
+
 ```
 
 ```{r}
@@ -68,8 +107,10 @@ mcat_new <- raw_files %>%
 ```
 
 ```{r, message = FALSE}
+
 mmi_full <- raw_files %>% 
-  extract_data("/mmi")
+  extract_data("/mmi.csv")
+
 ```
 
 ```{r, message = FALSE}
@@ -77,6 +118,7 @@ mmi_full <- raw_files %>%
 mmi_full %>%
   group_by(app_year) %>%
   summarize_all(funs(mean(is.na(.))))
+
 
 # all rows and applicants included
 mmi_full %>%
@@ -89,4 +131,29 @@ mmi_full %>%
   group_by(app_year) %>% 
   filter(!is.na(rank) | !is.na(interviewer_type)) %>%
   summarize(n = n(), n_applicants = n_distinct(appl_person_id))
+
+
+#mmi dataset that's non-null and applicants only
+mmi_nonnull_applicants <- mmi_full %>% 
+    filter(!is.na(rank) | !is.na(interviewer_type)) %>% 
+  arrange(aamc_id)
+
+
+mmi_nonnull_examine <- mmi_full %>% filter(aamc_id == 13791324)
+mmi_nonnull_examine
+
 ```
+
+
+```{r, message=FALSE}
+
+#new mmi pull
+mmi_pull_2 <- raw_files %>% 
+  extract_data("/MMI_Scores_Admission")
+
+
+mmi_nonnull_examine_2 <- mmi_pull_2 %>% filter(amcas_id == 13791324)
+
+
+```
+
