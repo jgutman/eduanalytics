@@ -40,6 +40,11 @@ applications <- raw_files %>%
   extract_data("/application") %>%
   select(-first_name, -last_name)
 
+
+table(applications$appl_year)
+#2006-2017
+
+#what does a repeated applications look like? 
 app_repeated_count <- applications %>% 
   group_by(aamc_id) %>% 
   summarise(count_num = n()) %>% 
@@ -52,40 +57,39 @@ applications_rep_info <- applications_rep_info %>% arrange(aamc_id, desc(appl_ye
 
 applications_rep_info_14_17 <- applications_rep_info %>% filter(appl_year == 2014 | appl_year == 2015 | appl_year == 2016 | appl_year == 2017)
 
-
-table(as.factor(applications_rep_info_14_17$application_status))
-
-
-table(as.factor(applications_rep_info_14_17$appl_year))
-table(as.factor(applications_rep_info_14_17$application_status))
-table(as.factor(applications_rep_info_14_17$count_num))
-table(is.na(applications_rep_info_14_17$count_num))
-
-head(applications_rep_info_14_17)
-
-#how do I handle students in multiple years? 
-#combine year and aamc_id
 applications_rep_info_14_17_non_null_numcount <- applications_rep_info_14_17 %>% 
   filter(count_num == 2 | count_num == 3) %>% arrange(aamc_id)
 
-
-#someone could have applied multiple years,and get rejected. How about someone who got rejected, and then accepted
 applications_rep_info_14_17_non_null_numcount_accepted <- applications_rep_info_14_17_non_null_numcount %>% filter(application_status == "Accepted")
 
+examine_repeates <- applications_rep_info_14_17_non_null_numcount %>% filter(aamc_id == 13791324) #deferred application for 2 years and then accepted offer (but unclear if ultimately enrolled?)
+examine_repeates2 <- applications_rep_info_14_17_non_null_numcount %>% filter(aamc_id == 13995803) #rejected and the accepted!
 
-
-examine_repeates <- applications_rep_info_14_17_non_null_numcount %>% filter(aamc_id == 13791324)
-
+##Thoughts
+#How do I handle applications in multiple years? 
+    #--combine year and aamc_id?
 
 
 ```
 
+
 ```{r}
+
 applications %>%
   filter(program_name == "Regular M.D.") %>%
   group_by(appl_year, application_status) %>%
   summarize(count = n()) %>%
   spread(application_status, count, fill = 0)
+
+
+#Types of aplication status
+
+#Accepted
+#Alternate list
+#Deferred to future class
+#Matriculated
+#No action
+
 ```
 
 ```{r}
@@ -102,45 +106,227 @@ mcat_old <- raw_files %>%
   extract_data("/mcat") %>%
   set_colnames(stringr::str_replace(colnames(.), "_p$", "_percentile"))
 
+
+#prase months from string date
+parse_betweeen_first_second_dash <- function(stringval) {
+  loc <- stringr::str_locate_all(stringval, "-")
+  stringr::str_sub(stringval, (sapply(loc, "[[", 1)) + 1, (sapply(loc, "[[", 2)) - 1)
+}
+
+parse_before_first_dash <- function(stringval) {
+  loc <- stringr::str_locate(stringval, "-")
+  stringr::str_sub(stringval, 1, loc[, "start"] -1)
+}
+
+parse_after_second_dash <- function(stringval) {
+  loc <- stringr::str_locate_all(stringval, "-")
+  stringr::str_sub(stringval, unlist((lapply(loc, "[[", 2))) + 1)
+}
+
+rename_month_to_number <- function(type) {
+ switch(type,
+        "JAN" = "1",
+        "FEB" = "2",
+        "MAR" = "3",
+        "APR" = "4",
+        "MAY" = "5",
+        "JUN" = "6",
+        "JUL" = "7",
+        "AUG" = "8",
+        "SEP" = "9",
+        "OCT" = "10",
+        "NOV" = "11",
+        "DEC" = "12",
+        "Not available")
+}
+
+
+#create date variable
+mcat_old <- mcat_old %>% 
+  mutate(month_letter = parse_betweeen_first_second_dash(test_date), 
+         month_number = purrr::map(month_letter, rename_month_to_number),
+         date_number = parse_before_first_dash(test_date),
+         year_number= parse_after_second_dash(test_date),
+         date = lubridate::mdy(paste(month_number, date_number, year_number, sep = "/")))
+
+
+
+
+#keep only distinct combinations of date and aamc_id
+mcat_old2 <- mcat_old %>% 
+  distinct(aamc_id, date, .keep_all = TRUE)
+
+
+#rank mcat by date taken
+mcat_old2 <- mcat_old2 %>% 
+  group_by(aamc_id) %>% 
+  mutate(rank = rank(desc(date), ties = "min")) %>% 
+  arrange(aamc_id, rank) %>% 
+  ungroup()
+
+
+#test for correct ranking of multiple mcat score for one person
+mcat_old2_examine <- mcat_old2 %>% 
+  filter(aamc_id == 10038666) #has multiple mcat scores
+
+
+#keep the latest mcat score - but problem if they took the new mcat, then not latest score
+final_mcat_old <- mcat_old2 %>% 
+  filter(rank == 1) 
+
+table(as.factor(final_mcat_old$appl_year))
+
+
+```
+
+
+```{r, message = FALSE}
 mcat_new <- raw_files %>% 
   extract_data("new_mcat")
+
+head(mcat_new)
+
+table(as.factor(mcat_new$appl_year))
+
+names(mcat_new)
+
+mcat_new <- mcat_new %>% 
+  mutate(month_letter = parse_betweeen_first_second_dash(new_mcat_test_date), 
+         month_number = purrr::map(month_letter, rename_month_to_number),
+         date_number = parse_before_first_dash(new_mcat_test_date),
+         year_number= parse_after_second_dash(new_mcat_test_date),
+         date = lubridate::mdy(paste(month_number, date_number, year_number, sep = "/")))
+
+
+mcat_new2 <- mcat_new %>% 
+  distinct(aamc_id, date, .keep_all = TRUE)
+
+mcat_new2 <- mcat_new2 %>% 
+  group_by(aamc_id) %>% 
+  mutate(rank = rank(desc(date), ties = "min")) %>% 
+  arrange(aamc_id, rank) %>% 
+  ungroup()
+
+
+#test that ranks are done the same way
+mcat_new2_examine <- mcat_new2 %>% filter(aamc_id == 11012697) #has multiple mcat scores
+
+
+#new mcat final
+final_mcat_new <- mcat_new2 %>% 
+  filter(rank == 1)
+
+table(as.factor(final_mcat_new$appl_year))
+table(final_mcat_new$appl_year)
 ```
 
-```{r, message = FALSE}
 
-mmi_full <- raw_files %>% 
-  extract_data("/mmi.csv")
+```{r}
+#I have the latest old mcat for each person and the latest new mact for each person
 
-```
+#what if someone took an old mcat and new mcat? 
 
-```{r, message = FALSE}
-# get percent missing by column by year
-mmi_full %>%
-  group_by(app_year) %>%
-  summarize_all(funs(mean(is.na(.))))
+final_mcat_old <- final_mcat_old %>% mutate(mcat_type = "old")
+final_mcat_new <- final_mcat_new %>% mutate(mcat_type = "new")
 
+sub_mcat_old <- final_mcat_old %>% dplyr::select(aamc_id, mcat_type, rank, appl_year)
+sub_mcat_new <- final_mcat_new %>% dplyr::select(aamc_id, mcat_type, rank, appl_year)
 
-# all rows and applicants included
-mmi_full %>%
-  group_by(app_year) %>%
-  summarize(n = n(),
-            n_applicants = n_distinct(appl_person_id))
+sub_mcat_both <- rbind(sub_mcat_old, sub_mcat_new)
 
-# non-null rows and applicants only
-mmi_full %>% 
-  group_by(app_year) %>% 
-  filter(!is.na(rank) | !is.na(interviewer_type)) %>%
-  summarize(n = n(), n_applicants = n_distinct(appl_person_id))
+sub_mcat_both <- sub_mcat_both %>% arrange(aamc_id)
 
-
-#mmi dataset that's non-null and applicants only
-mmi_nonnull_applicants <- mmi_full %>% 
-    filter(!is.na(rank) | !is.na(interviewer_type)) %>% 
+sub_mcat_both_count <- sub_mcat_both %>% 
+  group_by(aamc_id, mcat_type) %>% 
+  summarise(count = n()) %>% 
   arrange(aamc_id)
 
+table(as.factor(sub_mcat_both_count$count))
+table(as.factor(sub_mcat_both_count$count), sub_mcat_both_count$mcat_type)
 
-mmi_nonnull_examine <- mmi_full %>% filter(aamc_id == 13791324)
-mmi_nonnull_examine
+sub_mcat_both_count_wide <- sub_mcat_both_count %>% 
+  spread(mcat_type, count) 
+
+sub_mcat_both_count_wide <- sub_mcat_both_count_wide %>%
+  filter(new ==1 & old == 1)
+
+dim(sub_mcat_both_count_wide) 
+
+#2518 applicants has both old and new mcats
+
+
+#compare the dates of the old and new mcats, and only take the the ones that has a latest, update the old and new mcat datases accordingly
+
+old_mcat_dates <- left_join(sub_mcat_both_count_wide, final_mcat_old, by = "aamc_id") %>% 
+  dplyr::select(aamc_id, date2) %>% 
+  rename(latest_old_mcat_date = date2)
+
+dim(old_mcat_dates)
+
+new_mcat_dates <- left_join(sub_mcat_both_count_wide, final_mcat_new, by = "aamc_id") %>% 
+  dplyr::select(aamc_id, date) %>% 
+  rename(latest_new_mcat_date = date)
+
+dim(new_mcat_dates)
+names(new_mcat_dates)
+
+mcat_score_dates <- left_join(old_mcat_dates, new_mcat_dates) %>% 
+  mutate(old_mcat_latest = as.numeric(latest_old_mcat_date > latest_new_mcat_date), 
+         new_mcat_latest = as.numeric(latest_old_mcat_date < latest_new_mcat_date))
+
+table(as.factor(mcat_score_dates$old_mcat_latest), as.factor(mcat_score_dates$new_mcat_latest))
+
+#For everyone who took both mcats, their latest mcat is the new one
+
+#Therefore remove them from the old mcat dataset who has a new mcat score
+
+final_mcat_old2 <- left_join(final_mcat_old, mcat_score_dates) %>% 
+  filter(is.na(new_mcat_latest))
+
+table(final_mcat_old2$appl_year)
+#2006-2017
+```
+
+
+```{r, message = FALSE}
+
+# mmi_full <- raw_files %>% 
+#   extract_data("/mmi.csv")
+
+```
+
+
+```{r, message = FALSE}
+# # get percent missing by column by year
+# mmi_full %>%
+#   group_by(app_year) %>%
+#   summarize_all(funs(mean(is.na(.))))
+# 
+# 
+# # all rows and applicants included
+# mmi_full %>%
+#   group_by(app_year) %>%
+#   summarize(n = n(),
+#             n_applicants = n_distinct(appl_person_id))
+# 
+# # non-null rows and applicants only
+# mmi_full %>% 
+#   group_by(app_year) %>% 
+#   filter(!is.na(rank) | !is.na(interviewer_type)) %>%
+#   summarize(n = n(), n_applicants = n_distinct(appl_person_id))
+# 
+# 
+# #mmi dataset that's non-null and applicants only
+# mmi_nonnull_applicants <- mmi_full %>% 
+#     filter(!is.na(rank) | !is.na(interviewer_type)) %>% 
+#   arrange(aamc_id)
+# 
+# 
+# #test
+# mmi_nonnull_examine <- mmi_full %>% filter(aamc_id == 13791324)
+# 
+# mmi_nonnull_examine_2 <- mmi_full %>% filter(aamc_id == 13995803)
+
 
 ```
 
@@ -151,8 +337,55 @@ mmi_nonnull_examine
 mmi_pull_2 <- raw_files %>% 
   extract_data("/MMI_Scores_Admission")
 
+names(mmi_pull_2)[2] <- "aamc_id"
 
-mmi_nonnull_examine_2 <- mmi_pull_2 %>% filter(amcas_id == 13791324)
+mmi_pull_2 %>%
+  group_by(app_year) %>%
+  summarize_all(funs(mean(is.na(.))))
+
+table(mmi_pull_2$app_year)
+#MMI data 2013-2017 app year
+
+#test for matching of info with application data
+mmi_examine <- mmi_pull_2 %>% filter(aamc_id == 13791324) #deferred application for 2 years and then accepted
+
+mmi_examine_2 <- mmi_pull_2 %>% filter(aamc_id == 13995803) #rejected and the accepted!
+
+
+```
+
+
+
+
+```{r}
+
+committee <- raw_files %>% 
+  extract_data("/Committee")
+
+names(committee)
+
+table(as.factor(committee$app_year))
+#2012-2017 app year, committee decision for all applicants, regular and non interviews 
+
+committee <- committee %>%
+  arrange(aamc_id) 
+
+committee %>% 
+  group_by(aamc_id) %>%
+  summarize(n_times_applied = n_distinct(app_year)) %>%
+  group_by(n_times_applied) %>%
+  summarize(n_applicants = n())
+
+examine_repeates_committe <- committee %>% filter(aamc_id == 13995803) #rejected and the accepted!
+examine_repeates_committe2 <- committee %>% filter(aamc_id == 13791324) #deferred application for 2 years and then accepted
+
+table(as.factor(committee$activity_text), as.factor(committee$faculty_activity))
+table(as.factor(committee$activity_text), as.factor(committee$committee_chair_score_text))
+table(as.factor(committee$committee_chair_score_text), as.factor(committee$faculty_activity))
+table(as.factor(committee$activity_text), as.factor(committee$app_year))
+
+examine_hold <- committee %>% filter(activity_text == "Hold" & !is.na(committee_chair_score_text)) 
+
 
 
 ```
