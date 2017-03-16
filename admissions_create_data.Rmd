@@ -379,8 +379,6 @@ committee %>%
   group_by(n_times_applied) %>%
   summarize(n_applicants = n())
 
-examine_repeates_committe <- committee %>% filter(aamc_id == 13995803) #rejected and the accepted!
-examine_repeates_committe2 <- committee %>% filter(aamc_id == 13791324) #deferred application for 2 years and then accepted
 
 table(as.factor(committee$activity_text), as.factor(committee$faculty_activity))
 table(as.factor(committee$activity_text), as.factor(committee$committee_chair_score_text))
