@@ -21,7 +21,7 @@ opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
                cache = TRUE, autodep = TRUE, cache.comments = FALSE)
 
 #list.dirs("/Volumes/", full.names = TRUE, recursive = FALSE)
-admissions_path <- "/Volumes/admissions"
+admissions_path <- "/Volumes/admissions" 
 (raw_files <- list.files(admissions_path, full.names = TRUE))
 ```
 
@@ -43,6 +43,26 @@ applications <- raw_files %>%
 
 table(applications$appl_year)
 #2006-2017
+
+table(applications$application_status)
+#Create accepted from Marticulated and Withdrawn after accepted! 
+
+
+#create accepted
+create_accepted_variable <- function(type) {
+  switch(type, 
+         "Accepted" = "Accepted",
+         "Withdrawn after acceptance" = "Accepted",
+         "Rescinded acceptance" = "Accepted", 
+         "Matriculated" = "Accepted",
+         "Other"
+         )
+}
+
+applications <- applications %>% 
+  mutate(accepted = purrr::map_chr(application_status, create_accepted_variable))
+table(as.factor(applications$application_status), as.factor(applications$accepted))
+
 
 #what does a repeated applications look like? 
 app_repeated_count <- applications %>% 
@@ -101,7 +121,7 @@ applications %>%
 ```
 
 
-```{r, message = FALSE}
+```{r, mcat_old}
 mcat_old <- raw_files %>% 
   extract_data("/mcat") %>%
   set_colnames(stringr::str_replace(colnames(.), "_p$", "_percentile"))
@@ -174,13 +194,12 @@ mcat_old2_examine <- mcat_old2 %>%
 final_mcat_old <- mcat_old2 %>% 
   filter(rank == 1) 
 
-table(as.factor(final_mcat_old$appl_year))
 
 
 ```
 
 
-```{r, message = FALSE}
+```{r, mcat_new}
 mcat_new <- raw_files %>% 
   extract_data("new_mcat")
 
@@ -212,16 +231,15 @@ mcat_new2 <- mcat_new2 %>%
 mcat_new2_examine <- mcat_new2 %>% filter(aamc_id == 11012697) #has multiple mcat scores
 
 
-#new mcat final
 final_mcat_new <- mcat_new2 %>% 
-  filter(rank == 1)
+  filter(rank == 1) %>% 
+  select(-(month_letter:year_number))
 
-table(as.factor(final_mcat_new$appl_year))
-table(final_mcat_new$appl_year)
+
 ```
 
 
-```{r}
+```{r, further_analysis_mcat_old_new}
 #I have the latest old mcat for each person and the latest new mact for each person
 
 #what if someone took an old mcat and new mcat? 
@@ -258,8 +276,8 @@ dim(sub_mcat_both_count_wide)
 #compare the dates of the old and new mcats, and only take the the ones that has a latest, update the old and new mcat datases accordingly
 
 old_mcat_dates <- left_join(sub_mcat_both_count_wide, final_mcat_old, by = "aamc_id") %>% 
-  dplyr::select(aamc_id, date2) %>% 
-  rename(latest_old_mcat_date = date2)
+  dplyr::select(aamc_id, date) %>% 
+  rename(latest_old_mcat_date = date)
 
 dim(old_mcat_dates)
 
@@ -276,15 +294,25 @@ mcat_score_dates <- left_join(old_mcat_dates, new_mcat_dates) %>%
 
 table(as.factor(mcat_score_dates$old_mcat_latest), as.factor(mcat_score_dates$new_mcat_latest))
 
+
 #For everyone who took both mcats, their latest mcat is the new one
 
 #Therefore remove them from the old mcat dataset who has a new mcat score
 
-final_mcat_old2 <- left_join(final_mcat_old, mcat_score_dates) %>% 
-  filter(is.na(new_mcat_latest))
 
-table(final_mcat_old2$appl_year)
-#2006-2017
+#write this file for old mcat scores
+final_mcat_old2 <- left_join(final_mcat_old, mcat_score_dates) %>% 
+  filter(is.na(new_mcat_latest)) %>% 
+  dplyr::select(-(month_letter:year_number)) %>% 
+  dplyr::select(-(mcat_type:new_mcat_latest)) %>% 
+  dplyr::select(-appl_year)
+
+#write this file for new mcat score
+final_mcat_new <- final_mcat_new %>% 
+  dplyr::select(-appl_year) %>% 
+  dplyr::select(-mcat_type)
+
+names(final_mcat_new)
 ```
 
 
@@ -331,7 +359,7 @@ table(final_mcat_old2$appl_year)
 ```
 
 
-```{r, message=FALSE}
+```{r, mmi}
 
 #new mmi pull
 mmi_pull_2 <- raw_files %>% 
@@ -351,14 +379,13 @@ mmi_examine <- mmi_pull_2 %>% filter(aamc_id == 13791324) #deferred application 
 
 mmi_examine_2 <- mmi_pull_2 %>% filter(aamc_id == 13995803) #rejected and the accepted!
 
-
+#write this dataset for final mmi dataset
 ```
 
 
 
 
-```{r}
-
+```{r, committee}
 committee <- raw_files %>% 
   extract_data("/Committee")
 
@@ -386,7 +413,97 @@ table(as.factor(committee$activity_text), as.factor(committee$app_year))
 
 examine_hold <- committee %>% filter(activity_text == "Hold" & !is.na(committee_chair_score_text)) 
 
+#No committee data prior to 2013
+```
 
 
+
+
+```{r, gpa}
+gpa <- raw_files %>% 
+  extract_data("/GPA_Scores")
+
+
+names(gpa)
+table(gpa$appl_year)
+
+
+#Question on data quality: are there any unnecessary duplicates? 
+gpa_examine <- gpa %>% filter(aamc_id == 13995803) #rejected and the accepted!
+#Yes!
+
+gpa_final <- gpa %>% 
+  distinct(aamc_id, aca_status_desc, .keep_all = TRUE) 
+#write this paper for final dataset
+
+#test
+gpa_examine2 <- gpa_final %>% filter(aamc_id == 13995803) #rejected and the accepted!
+
+names(gpa_final)
+
+#Question's for model building
+#What's the gpa at time of application? 
+#What's the gpa at from their primary institution? 
+
+```
+
+
+```{r, ethnicity}
+
+ethnicity <- raw_files %>% 
+  extract_data("/Ethnicity")
+
+eth_examine <- ethnicity %>% filter(aamc_id == 13995803) #rejected and then accepted
+
+ethnicity_final <- ethnicity %>% 
+  distinct(aamc_id, ethnicity, .keep_all = TRUE) %>% 
+  dplyr::select(-appl_year)
+#write this for the final dataset
+
+eth_examine2 <- ethnicity_final %>% filter(aamc_id == 13995803) #rejected and then accepted
+```
+
+
+```{r, race}
+race <- raw_files %>% 
+  extract_data("/Race")
+
+race_examine <- race %>% filter(aamc_id == 13791324) #deferred twice
+race_examine2 <- race %>% filter(aamc_id == 13995803) #rejected and then accepted
+
+race_final <- race %>% 
+  distinct(aamc_id, race, .keep_all = TRUE) %>% dplyr::select(-appl_year)
+#write this file for final dataset
+
+race_examine3 <- race_final %>% filter(aamc_id == 13791324) #deferred twice
+```
+
+```{r, school}
+
+schools <- raw_files %>% 
+  extract_data("/School.csv")
+
+names(schools)
+
+#Question on data quality: are there any unnecessary duplicates? 
+schools_examine <- schools %>% filter(aamc_id == 13995803) #rejected and the accepted!
+schools_examine <- schools %>% filter(aamc_id == 13791324) #deferred twice
+
+#Yes!
+
+
+#create a distinct dataset that's the unique combincation of id, name of school, and type of schools
+schools_final <- schools %>% 
+  distinct(aamc_id, mod_school_desc, program_type_desc, .keep_all = TRUE) %>% 
+  dplyr::select(-appl_year)
+#write this datatset for final dataset
+
+#test
+schools_examine2 <- schools_final %>% filter(aamc_id == 13995803) #rejected and the accepted!
+schools_examine3 <- schools_final %>% filter(aamc_id == 13791324) #deferred twice
+
+
+#What is the student's primary undergraduate institution
+#Has a master's degree? 
 ```
 
