@@ -12,6 +12,32 @@ output:
     toc_depth: 4
 ---
 
+
+About the problem: 
+
+
+About the data: 
+
+The MCAT and GPA data are available from application years 2006-2017 and MMI data is available for application years 2013-2017. However, interview, acceptance, and matriculation data are available for 2013-2017, please use these years in the analysis. Please note that 2017 application year is still in progress. 
+
+The variable "aamc_id" is the unique identfier for each applicant. This variable can be used to merge across these datasets. Please note that the applicants have applied to the medical school in multiple application years. The first time they applied, they might have been rejected or withdrew the application, only to apply again in a later application year and was accepted. In that case, the combination of aamc_id and application year each will uniquely identify each applicant (applicants are allowed to apply only once in a application year). 
+ 
+There are two MCAT datsets as the format of the MCAT changed a few years ago. Applicants also took the MCAT multiple times. The MCAT datasets has the "date" variable that indicates when they took the exam as well as the "rank" variable that indicates the order of the MCATs (MCAT with rank is the latest MCAT for that applicant). Additional features will need to be built for analysis, for example, the MCAT score at the time of FIRST application to NYU School of Meidicine (applicants have applied many times). This can be calculated from looking at the application dataset to see when an applicant first applied and determine the staus of her application (rejected or accepted) using the aamc_id and application year. Then you can match this infomration with the MCAT scores at the time of application in one of the MCAT datasets (again using aamc_id and application year).  
+
+Finally, from our discussions with admissions team, we found that Regular M.D. applicants undergo a very different process than the combined PhD/MD applicants. Therefore, we recommend that from the applicant datasets remove any applicant who is a Phd/MD applicants (from the "program_name" variable), and to keep using this filter as you combine datasets. 
+
+
+Datasets: 
+
+Application 
+Committee 
+Ethnicity 
+Race
+MMI Scores - MMI interview scores, application year 2013-2017
+GPA - the GPA across many schools they attended by the applicants
+School - the schools attended by the applicants
+
+
 ```{r, message = FALSE}
 library(tidyverse)
 library(magrittr)
@@ -62,6 +88,7 @@ create_accepted_variable <- function(type) {
 applications <- applications %>% 
   mutate(accepted = purrr::map_chr(application_status, create_accepted_variable))
 table(as.factor(applications$application_status), as.factor(applications$accepted))
+
 
 
 #what does a repeated applications look like? 
@@ -184,11 +211,11 @@ mcat_old2 <- mcat_old2 %>%
 
 
 
-#keep the latest mcat score - but problem if they took the new mcat, then not latest score
-final_mcat_old <- mcat_old2 %>% 
-  filter(rank == 1) 
+#write this for final mcat scores
+mcat_old2 <- mcat_old2 %>% 
+  dplyr::select(-(month_letter:year_number)) 
 
-
+names(mcat_old2)
 
 ```
 
@@ -221,12 +248,11 @@ mcat_new2 <- mcat_new2 %>%
   ungroup()
 
 
-
-final_mcat_new <- mcat_new2 %>% 
-  filter(rank == 1) %>% 
+#write this file for new mcat scores
+mcat_new2 <- mcat_new2 %>% 
   select(-(month_letter:year_number))
 
-
+names(mcat_new2)
 ```
 
 
@@ -235,75 +261,75 @@ final_mcat_new <- mcat_new2 %>%
 
 #what if someone took an old mcat and new mcat? 
 
-final_mcat_old <- final_mcat_old %>% mutate(mcat_type = "old")
-final_mcat_new <- final_mcat_new %>% mutate(mcat_type = "new")
-
-sub_mcat_old <- final_mcat_old %>% dplyr::select(aamc_id, mcat_type, rank, appl_year)
-sub_mcat_new <- final_mcat_new %>% dplyr::select(aamc_id, mcat_type, rank, appl_year)
-
-sub_mcat_both <- rbind(sub_mcat_old, sub_mcat_new)
-
-sub_mcat_both <- sub_mcat_both %>% arrange(aamc_id)
-
-sub_mcat_both_count <- sub_mcat_both %>% 
-  group_by(aamc_id, mcat_type) %>% 
-  summarise(count = n()) %>% 
-  arrange(aamc_id)
-
-table(as.factor(sub_mcat_both_count$count))
-table(as.factor(sub_mcat_both_count$count), sub_mcat_both_count$mcat_type)
-
-sub_mcat_both_count_wide <- sub_mcat_both_count %>% 
-  spread(mcat_type, count) 
-
-sub_mcat_both_count_wide <- sub_mcat_both_count_wide %>%
-  filter(new ==1 & old == 1)
-
-dim(sub_mcat_both_count_wide) 
-
-#2518 applicants has both old and new mcats
-
-
-#compare the dates of the old and new mcats, and only take the the ones that has a latest, update the old and new mcat datases accordingly
-
-old_mcat_dates <- left_join(sub_mcat_both_count_wide, final_mcat_old, by = "aamc_id") %>% 
-  dplyr::select(aamc_id, date) %>% 
-  rename(latest_old_mcat_date = date)
-
-dim(old_mcat_dates)
-
-new_mcat_dates <- left_join(sub_mcat_both_count_wide, final_mcat_new, by = "aamc_id") %>% 
-  dplyr::select(aamc_id, date) %>% 
-  rename(latest_new_mcat_date = date)
-
-dim(new_mcat_dates)
-names(new_mcat_dates)
-
-mcat_score_dates <- left_join(old_mcat_dates, new_mcat_dates) %>% 
-  mutate(old_mcat_latest = as.numeric(latest_old_mcat_date > latest_new_mcat_date), 
-         new_mcat_latest = as.numeric(latest_old_mcat_date < latest_new_mcat_date))
-
-table(as.factor(mcat_score_dates$old_mcat_latest), as.factor(mcat_score_dates$new_mcat_latest))
-
-
-#For everyone who took both mcats, their latest mcat is the new one
-
-#Therefore remove them from the old mcat dataset who has a new mcat score
-
-
-#write this file for old mcat scores
-final_mcat_old2 <- left_join(final_mcat_old, mcat_score_dates) %>% 
-  filter(is.na(new_mcat_latest)) %>% 
-  dplyr::select(-(month_letter:year_number)) %>% 
-  dplyr::select(-(mcat_type:new_mcat_latest)) %>% 
-  dplyr::select(-appl_year)
-
-#write this file for new mcat score
-final_mcat_new <- final_mcat_new %>% 
-  dplyr::select(-appl_year) %>% 
-  dplyr::select(-mcat_type)
-
-names(final_mcat_new)
+# first_mcat_old <- mcat_old2 %>% filter(rank == 1) %>% mutate(mcat_type = "old")
+# first_mcat_new <- mcat_new2 %>% filter(rank == 1) %>% mutate(mcat_type = "new")
+# 
+# names(first_mcat_old)
+# names(first_mcat_new)
+# 
+# sub_mcat_old <- first_mcat_old %>% dplyr::select(aamc_id, mcat_type, rank, appl_year)
+# sub_mcat_new <- first_mcat_new %>% dplyr::select(aamc_id, mcat_type, rank, appl_year)
+# 
+# sub_mcat_both <- rbind(sub_mcat_old, sub_mcat_new)
+# 
+# sub_mcat_both <- sub_mcat_both %>% arrange(aamc_id)
+# 
+# sub_mcat_both_count <- sub_mcat_both %>% 
+#   group_by(aamc_id, mcat_type) %>% 
+#   summarise(count = n()) %>% 
+#   arrange(aamc_id)
+# 
+# table(as.factor(sub_mcat_both_count$count))
+# table(as.factor(sub_mcat_both_count$count), sub_mcat_both_count$mcat_type)
+# 
+# sub_mcat_both_count_wide <- sub_mcat_both_count %>% 
+#   spread(mcat_type, count) 
+# 
+# sub_mcat_both_count_wide <- sub_mcat_both_count_wide %>%
+#   filter(new ==1 & old == 1)
+# 
+# dim(sub_mcat_both_count_wide) 
+# 
+# #2518 applicants has both old and new mcats
+# 
+# 
+# #compare the dates of the old and new mcats, and only take the the ones that has a latest, update the old and new mcat datases accordingly
+# 
+# old_mcat_dates <- left_join(sub_mcat_both_count_wide, final_mcat_old, by = "aamc_id") %>% 
+#   dplyr::select(aamc_id, date) %>% 
+#   rename(latest_old_mcat_date = date)
+# 
+# dim(old_mcat_dates)
+# 
+# new_mcat_dates <- left_join(sub_mcat_both_count_wide, final_mcat_new, by = "aamc_id") %>% 
+#   dplyr::select(aamc_id, date) %>% 
+#   rename(latest_new_mcat_date = date)
+# 
+# dim(new_mcat_dates)
+# names(new_mcat_dates)
+# 
+# mcat_score_dates <- left_join(old_mcat_dates, new_mcat_dates) %>% 
+#   mutate(old_mcat_latest = as.numeric(latest_old_mcat_date > latest_new_mcat_date), 
+#          new_mcat_latest = as.numeric(latest_old_mcat_date < latest_new_mcat_date))
+# 
+# table(as.factor(mcat_score_dates$old_mcat_latest), as.factor(mcat_score_dates$new_mcat_latest))
+# 
+# 
+# #For everyone who took both mcats, their latest mcat is the new one
+# 
+# #Therefore remove them from the old mcat dataset who has a new mcat score
+# 
+# #old mcat
+# first_mcat_old <- left_join(first_mcat_old, mcat_score_dates) %>% 
+#   filter(is.na(new_mcat_latest)) %>% 
+#   dplyr::select(-mcat_type)
+# names(first_mcat_old)
+# 
+# 
+# #new mcat
+# first_mcat_new <- first_mcat_new %>% 
+#   dplyr::select(-mcat_type)
+# names(first_mcat_new)
 ```
 
 
@@ -350,13 +376,45 @@ names(final_mcat_new)
 mmi_pull_2 <- raw_files %>% 
   extract_data("/MMI_Scores_Admission")
 
-names(mmi_pull_2)[2] <- "aamc_id"
-
 mmi_pull_2 %>%
   group_by(app_year) %>%
   summarize_all(funs(mean(is.na(.))))
+
+
+names(mmi_pull_2)[2] <- "aamc_id"
 #write this dataset for final mmi dataset
+
+table(mmi_pull_2$app_year)
+
+
+
+
+#2013
+#2 -> 4 Exceeds
+#5 -> 1 Far below
+#3 -> 3 Meets 
+#1 -> 5 Far exceels
+#4 -> 2 Below
+
+
+
+recode_vars <- function(type) {
+ switch(type,
+        "1" = "5",
+        "2" = "4",
+        "3" = "3",
+        "4" = "2",
+        "5" = "1",
+        "Not available")
+}
+
+
+mmi_pull_2 <- mmi_pull_2 %>% 
+  mutate(rank = as.character(rank), rank = ifelse(app_year == 2013, purrr::map_chr(rank, recode_vars), rank))
+
+
 ```
+
 
 
 
@@ -433,6 +491,7 @@ race_final <- race %>%
 
 ```
 
+
 ```{r, school}
 
 schools <- raw_files %>% 
@@ -443,12 +502,37 @@ names(schools)
 
 #create a distinct dataset that's the unique combincation of id, name of school, and type of schools
 schools_final <- schools %>% 
-  distinct(aamc_id, mod_school_desc, program_type_desc, .keep_all = TRUE) %>% 
-  dplyr::select(-appl_year)
+  distinct(aamc_id, mod_school_desc, program_type_desc, .keep_all = TRUE)
 #write this datatset for final dataset
 
 
 #What is the student's primary undergraduate institution
 #Has a master's degree? 
+```
+
+
+
+```{r, write_to_drive}
+
+#old mcat
+write_csv(mcat_old2, "/Volumes/admissions/final_datasets/old_mcat_scores.csv")
+
+#new mcat
+write_csv(mcat_new2, "/Volumes/admissions/final_datasets/new_mcat_scores.csv")
+
+#ethnicity
+write_csv(ethnicity_final, "/Volumes/admissions/final_datasets/ethnicity.csv")
+
+#race
+write_csv(race_final, "/Volumes/admissions/final_datasets/race.csv")
+
+#gpa 
+write_csv(gpa_final, "/Volumes/admissions/final_datasets/gpa.csv")
+
+#schools
+write_csv(schools_final, "/Volumes/admissions/final_datasets/schools.csv")
+
+#mmi
+write_csv(mmi_pull_2, "/Volumes/admissions/final_datasets/mmi_scores.csv")
 ```
 
