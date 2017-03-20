@@ -42,12 +42,14 @@ School - the schools attended by the applicants
 library(tidyverse)
 library(magrittr)
 library(knitr)
+library(stringr)
 
 opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
                cache = TRUE, autodep = TRUE, cache.comments = FALSE)
 
 #list.dirs("/Volumes/", full.names = TRUE, recursive = FALSE)
-admissions_path <- "/Volumes/admissions" 
+#admissions_path <- "/Volumes/admissions" 
+admissions_path <- "/Volumes/IIME/EDS/data/admissions" 
 (raw_files <- list.files(admissions_path, full.names = TRUE))
 ```
 
@@ -55,7 +57,7 @@ admissions_path <- "/Volumes/admissions"
 ```{r, message = FALSE}
 extract_data <- function(file_list, pattern) {
   file_list %>%
-    stringr::str_detect(regex(pattern, ignore_case = TRUE)) %>%
+    str_detect(regex(pattern, ignore_case = TRUE)) %>%
     which() %>%
     extract2(file_list, .) %>%
     read_csv() %>%
@@ -151,56 +153,10 @@ mcat_old <- raw_files %>%
   extract_data("/mcat") %>%
   set_colnames(stringr::str_replace(colnames(.), "_p$", "_percentile"))
 
-
-#prase months from string date
-parse_betweeen_first_second_dash <- function(stringval) {
-  loc <- stringr::str_locate_all(stringval, "-")
-  stringr::str_sub(stringval, (sapply(loc, "[[", 1)) + 1, (sapply(loc, "[[", 2)) - 1)
-}
-
-parse_before_first_dash <- function(stringval) {
-  loc <- stringr::str_locate(stringval, "-")
-  stringr::str_sub(stringval, 1, loc[, "start"] -1)
-}
-
-parse_after_second_dash <- function(stringval) {
-  loc <- stringr::str_locate_all(stringval, "-")
-  stringr::str_sub(stringval, unlist((lapply(loc, "[[", 2))) + 1)
-}
-
-rename_month_to_number <- function(type) {
- switch(type,
-        "JAN" = "1",
-        "FEB" = "2",
-        "MAR" = "3",
-        "APR" = "4",
-        "MAY" = "5",
-        "JUN" = "6",
-        "JUL" = "7",
-        "AUG" = "8",
-        "SEP" = "9",
-        "OCT" = "10",
-        "NOV" = "11",
-        "DEC" = "12",
-        "Not available")
-}
-
-
-#create date variable
-mcat_old <- mcat_old %>% 
-  mutate(month_letter = parse_betweeen_first_second_dash(test_date), 
-         month_number = purrr::map(month_letter, rename_month_to_number),
-         date_number = parse_before_first_dash(test_date),
-         year_number= parse_after_second_dash(test_date),
-         date = lubridate::mdy(paste(month_number, date_number, year_number, sep = "/")))
-
-
-
-
 #keep only distinct combinations of date and aamc_id
 mcat_old2 <- mcat_old %>% 
+  mutate(date = lubridate::dmy(test_date)) %>%
   distinct(aamc_id, date, .keep_all = TRUE)
-
 
 #rank mcat by date taken
 mcat_old2 <- mcat_old2 %>% 
@@ -208,12 +164,6 @@ mcat_old2 <- mcat_old2 %>%
   mutate(rank = rank(desc(date), ties = "min")) %>% 
   arrange(aamc_id, rank) %>% 
   ungroup()
-
-
-
-#write this for final mcat scores
-mcat_old2 <- mcat_old2 %>% 
-  dplyr::select(-(month_letter:year_number)) 
 
 names(mcat_old2)
 
