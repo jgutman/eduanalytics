@@ -174,21 +174,12 @@ names(mcat_old2)
 mcat_new <- raw_files %>% 
   extract_data("new_mcat")
 
-head(mcat_new)
-
 table(as.factor(mcat_new$appl_year))
 
 names(mcat_new)
 
-mcat_new <- mcat_new %>% 
-  mutate(month_letter = parse_betweeen_first_second_dash(new_mcat_test_date), 
-         month_number = purrr::map(month_letter, rename_month_to_number),
-         date_number = parse_before_first_dash(new_mcat_test_date),
-         year_number= parse_after_second_dash(new_mcat_test_date),
-         date = lubridate::mdy(paste(month_number, date_number, year_number, sep = "/")))
-
-
-mcat_new2 <- mcat_new %>% 
+mcat_new2 <- mcat_new %>%
+  mutate(date = lubridate::dmy(new_mcat_test_date))
   distinct(aamc_id, date, .keep_all = TRUE)
 
 mcat_new2 <- mcat_new2 %>% 
@@ -197,126 +188,81 @@ mcat_new2 <- mcat_new2 %>%
   arrange(aamc_id, rank) %>% 
   ungroup()
 
-
-#write this file for new mcat scores
-mcat_new2 <- mcat_new2 %>% 
-  select(-(month_letter:year_number))
-
 names(mcat_new2)
 ```
 
 
-```{r, further_analysis_mcat_old_new}
-#I have the latest old mcat for each person and the latest new mact for each person
+```{r, further_analysis_mcat_old_new, eval = FALSE}
+# I have the latest old mcat for each person and the latest new mcat for each person
 
-#what if someone took an old mcat and new mcat? 
+# what if someone took an old mcat and new mcat? 
 
-# first_mcat_old <- mcat_old2 %>% filter(rank == 1) %>% mutate(mcat_type = "old")
-# first_mcat_new <- mcat_new2 %>% filter(rank == 1) %>% mutate(mcat_type = "new")
-# 
-# names(first_mcat_old)
-# names(first_mcat_new)
-# 
-# sub_mcat_old <- first_mcat_old %>% dplyr::select(aamc_id, mcat_type, rank, appl_year)
-# sub_mcat_new <- first_mcat_new %>% dplyr::select(aamc_id, mcat_type, rank, appl_year)
-# 
-# sub_mcat_both <- rbind(sub_mcat_old, sub_mcat_new)
-# 
-# sub_mcat_both <- sub_mcat_both %>% arrange(aamc_id)
-# 
-# sub_mcat_both_count <- sub_mcat_both %>% 
-#   group_by(aamc_id, mcat_type) %>% 
-#   summarise(count = n()) %>% 
-#   arrange(aamc_id)
-# 
-# table(as.factor(sub_mcat_both_count$count))
-# table(as.factor(sub_mcat_both_count$count), sub_mcat_both_count$mcat_type)
-# 
-# sub_mcat_both_count_wide <- sub_mcat_both_count %>% 
-#   spread(mcat_type, count) 
-# 
-# sub_mcat_both_count_wide <- sub_mcat_both_count_wide %>%
-#   filter(new ==1 & old == 1)
-# 
-# dim(sub_mcat_both_count_wide) 
-# 
-# #2518 applicants has both old and new mcats
-# 
-# 
-# #compare the dates of the old and new mcats, and only take the the ones that has a latest, update the old and new mcat datases accordingly
-# 
-# old_mcat_dates <- left_join(sub_mcat_both_count_wide, final_mcat_old, by = "aamc_id") %>% 
-#   dplyr::select(aamc_id, date) %>% 
-#   rename(latest_old_mcat_date = date)
-# 
-# dim(old_mcat_dates)
-# 
-# new_mcat_dates <- left_join(sub_mcat_both_count_wide, final_mcat_new, by = "aamc_id") %>% 
-#   dplyr::select(aamc_id, date) %>% 
-#   rename(latest_new_mcat_date = date)
-# 
-# dim(new_mcat_dates)
-# names(new_mcat_dates)
-# 
-# mcat_score_dates <- left_join(old_mcat_dates, new_mcat_dates) %>% 
-#   mutate(old_mcat_latest = as.numeric(latest_old_mcat_date > latest_new_mcat_date), 
-#          new_mcat_latest = as.numeric(latest_old_mcat_date < latest_new_mcat_date))
-# 
-# table(as.factor(mcat_score_dates$old_mcat_latest), as.factor(mcat_score_dates$new_mcat_latest))
-# 
-# 
-# #For everyone who took both mcats, their latest mcat is the new one
-# 
-# #Therefore remove them from the old mcat dataset who has a new mcat score
-# 
-# #old mcat
-# first_mcat_old <- left_join(first_mcat_old, mcat_score_dates) %>% 
-#   filter(is.na(new_mcat_latest)) %>% 
-#   dplyr::select(-mcat_type)
-# names(first_mcat_old)
-# 
-# 
-# #new mcat
-# first_mcat_new <- first_mcat_new %>% 
-#   dplyr::select(-mcat_type)
-# names(first_mcat_new)
-```
+first_mcat_old <- mcat_old2 %>% filter(rank == 1) %>% mutate(mcat_type = "old")
+first_mcat_new <- mcat_new2 %>% filter(rank == 1) %>% mutate(mcat_type = "new")
+ 
+names(first_mcat_old)
+names(first_mcat_new)
+ 
+sub_mcat_old <- first_mcat_old %>% dplyr::select(aamc_id, mcat_type, rank, appl_year)
+sub_mcat_new <- first_mcat_new %>% dplyr::select(aamc_id, mcat_type, rank, appl_year)
 
+sub_mcat_both <- rbind(sub_mcat_old, sub_mcat_new)
 
-```{r, message = FALSE}
+sub_mcat_both <- sub_mcat_both %>% arrange(aamc_id)
 
-# mmi_full <- raw_files %>% 
-#   extract_data("/mmi.csv")
+sub_mcat_both_count <- sub_mcat_both %>% 
+  group_by(aamc_id, mcat_type) %>% 
+  summarise(count = n()) %>% 
+  arrange(aamc_id)
 
-```
+  table(as.factor(sub_mcat_both_count$count))
+  table(as.factor(sub_mcat_both_count$count), sub_mcat_both_count$mcat_type)
 
+sub_mcat_both_count_wide <- sub_mcat_both_count %>% 
+  spread(mcat_type, count) 
 
-```{r, message = FALSE}
-# # get percent missing by column by year
-# mmi_full %>%
-#   group_by(app_year) %>%
-#   summarize_all(funs(mean(is.na(.))))
-# 
-# 
-# # all rows and applicants included
-# mmi_full %>%
-#   group_by(app_year) %>%
-#   summarize(n = n(),
-#             n_applicants = n_distinct(appl_person_id))
-# 
-# # non-null rows and applicants only
-# mmi_full %>% 
-#   group_by(app_year) %>% 
-#   filter(!is.na(rank) | !is.na(interviewer_type)) %>%
-#   summarize(n = n(), n_applicants = n_distinct(appl_person_id))
-# 
-# 
-# #mmi dataset that's non-null and applicants only
-# mmi_nonnull_applicants <- mmi_full %>% 
-#     filter(!is.na(rank) | !is.na(interviewer_type)) %>% 
-#   arrange(aamc_id)
-# 
+sub_mcat_both_count_wide <- sub_mcat_both_count_wide %>%
+  filter(new ==1 & old == 1)
 
+dim(sub_mcat_both_count_wide) 
+
+#2518 applicants has both old and new mcats
+
+#compare the dates of the old and new mcats, and only take the the ones that has a latest, update the old and new mcat datases accordingly
+
+old_mcat_dates <- left_join(sub_mcat_both_count_wide, final_mcat_old, by = "aamc_id") %>% 
+   dplyr::select(aamc_id, date) %>% 
+   rename(latest_old_mcat_date = date)
+ 
+dim(old_mcat_dates)
+
+new_mcat_dates <- left_join(sub_mcat_both_count_wide, final_mcat_new, by = "aamc_id") %>%   
+  dplyr::select(aamc_id, date) %>% 
+  rename(latest_new_mcat_date = date)
+ 
+dim(new_mcat_dates)
+names(new_mcat_dates)
+ 
+mcat_score_dates <- left_join(old_mcat_dates, new_mcat_dates) %>% 
+  mutate(old_mcat_latest = as.numeric(latest_old_mcat_date > latest_new_mcat_date), 
+        new_mcat_latest = as.numeric(latest_old_mcat_date < latest_new_mcat_date))
+ 
+table(as.factor(mcat_score_dates$old_mcat_latest), 
+      as.factor(mcat_score_dates$new_mcat_latest))
+
+#For everyone who took both mcats, their latest mcat is the new one
+#Therefore remove them from the old mcat dataset who has a new mcat score
+
+#old mcat
+first_mcat_old <- left_join(first_mcat_old, mcat_score_dates) %>% 
+  filter(is.na(new_mcat_latest)) %>% 
+  dplyr::select(-mcat_type)
+  names(first_mcat_old)
+
+#new mcat
+first_mcat_new <- first_mcat_new %>% 
+  dplyr::select(-mcat_type)
+names(first_mcat_new)
 ```
 
 
@@ -324,44 +270,24 @@ names(mcat_new2)
 
 #new mmi pull
 mmi_pull_2 <- raw_files %>% 
-  extract_data("/MMI_Scores_Admission")
+  extract_data("MMI_Scores")
 
 mmi_pull_2 %>%
   group_by(app_year) %>%
-  summarize_all(funs(mean(is.na(.))))
-
-
-names(mmi_pull_2)[2] <- "aamc_id"
-#write this dataset for final mmi dataset
+  summarize_all(funs(mean(is.na(.)))) %>%
+  rename(aamc_id = amcas_id) %>%
+  mutate(rank = if_else(app_year == 2013, 6L - rank, rank))
 
 table(mmi_pull_2$app_year)
 
-
-
-
 #2013
-#2 -> 4 Exceeds
 #5 -> 1 Far below
-#3 -> 3 Meets 
-#1 -> 5 Far exceels
 #4 -> 2 Below
+#3 -> 3 Meets 
+#2 -> 4 Exceeds
+#1 -> 5 Far exceeds
 
-
-
-recode_vars <- function(type) {
- switch(type,
-        "1" = "5",
-        "2" = "4",
-        "3" = "3",
-        "4" = "2",
-        "5" = "1",
-        "Not available")
-}
-
-
-mmi_pull_2 <- mmi_pull_2 %>% 
-  mutate(rank = as.character(rank), rank = ifelse(app_year == 2013, purrr::map_chr(rank, recode_vars), rank))
-
+mmi_only <- mmi_pull_2 %>% filter(app_year != 2013)
 
 ```
 
@@ -371,7 +297,7 @@ mmi_pull_2 <- mmi_pull_2 %>%
 
 ```{r, committee}
 committee <- raw_files %>% 
-  extract_data("/Committee")
+  extract_data("committee")
 
 names(committee)
 
@@ -403,7 +329,7 @@ examine_hold <- committee %>% filter(activity_text == "Hold" & !is.na(committee_
 
 ```{r, gpa}
 gpa <- raw_files %>% 
-  extract_data("/GPA_Scores")
+  extract_data("/gpa")
 
 
 gpa_final <- gpa %>% 
@@ -411,9 +337,9 @@ gpa_final <- gpa %>%
 #write this paper for final dataset
 
 
-#Question's for model building
+#Questions for model building
 #What's the gpa at time of application? 
-#What's the gpa at from their primary institution? 
+#What's the gpa from their primary institution? 
 
 ```
 
@@ -421,7 +347,7 @@ gpa_final <- gpa %>%
 ```{r, ethnicity}
 
 ethnicity <- raw_files %>% 
-  extract_data("/Ethnicity")
+  extract_data("ethnicity")
 
 ethnicity_final <- ethnicity %>% 
   distinct(aamc_id, ethnicity, .keep_all = TRUE) %>% 
