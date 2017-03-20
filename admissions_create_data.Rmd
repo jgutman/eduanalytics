@@ -69,13 +69,14 @@ applications <- raw_files %>%
   select(-first_name, -last_name)
 
 
-table(applications$appl_year)
+table(applications$appl_year, useNA = "ifany")
 #2006-2017
 
-table(applications$application_status)
-#Create accepted from Marticulated and Withdrawn after accepted! 
+table(applications$application_status, useNA = "ifany")
+#Create accepted from Matriculated and Withdrawn after accepted! 
+```
 
-
+```{r}
 #create accepted
 create_accepted_variable <- function(type) {
   switch(type, 
@@ -89,9 +90,7 @@ create_accepted_variable <- function(type) {
 
 applications <- applications %>% 
   mutate(accepted = purrr::map_chr(application_status, create_accepted_variable))
-table(as.factor(applications$application_status), as.factor(applications$accepted))
-
-
+table(applications$application_status, applications$accepted, useNA = "ifany")
 
 #what does a repeated applications look like? 
 app_repeated_count <- applications %>% 
@@ -101,16 +100,13 @@ app_repeated_count <- applications %>%
   arrange(aamc_id) %>% 
   ungroup()
 
-applications_rep_info <- left_join(applications, app_repeated_count, by = "aamc_id")
-applications_rep_info <- applications_rep_info %>% arrange(aamc_id, desc(appl_year))
+applications_rep_info <- applications %>% 
+  left_join(app_repeated_count, by = "aamc_id") %>% 
+  arrange(aamc_id, desc(appl_year)) %>%
+  filter(appl_year >= 2014, appl_year <= 2017)
 
-applications_rep_info_14_17 <- applications_rep_info %>% filter(appl_year == 2014 | appl_year == 2015 | appl_year == 2016 | appl_year == 2017)
-
-applications_rep_info_14_17_non_null_numcount <- applications_rep_info_14_17 %>% 
-  filter(count_num == 2 | count_num == 3) %>% arrange(aamc_id)
-
-applications_rep_info_14_17_non_null_numcount_accepted <- applications_rep_info_14_17_non_null_numcount %>% filter(application_status == "Accepted")
-
+# This includes people who show up once in applications_rep_info but have applied more than once
+# (applied prior to 2014)
 
 ##Thoughts
 #How do I handle applications in multiple years? 
@@ -288,7 +284,7 @@ table(mmi_pull_2$app_year)
 #1 -> 5 Far exceeds
 
 mmi_only <- mmi_pull_2 %>% filter(app_year != 2013)
-
+#write this for final dataset
 ```
 
 
@@ -297,15 +293,11 @@ mmi_only <- mmi_pull_2 %>% filter(app_year != 2013)
 
 ```{r, committee}
 committee <- raw_files %>% 
-  extract_data("committee")
+  extract_data("committee") %>%
+  arrange(aamc_id)
 
-names(committee)
-
-table(as.factor(committee$app_year))
+table(committee$app_year, useNA = "always")
 #2012-2017 app year, committee decision for all applicants, regular and non interviews 
-
-committee <- committee %>%
-  arrange(aamc_id) 
 
 committee %>% 
   group_by(aamc_id) %>%
@@ -313,15 +305,16 @@ committee %>%
   group_by(n_times_applied) %>%
   summarize(n_applicants = n())
 
+xtabs <- purrr::partial(table, useNA = "ifany")
+with(committee, xtabs(activity_text, faculty_activity))
+with(committee, xtabs(activity_text, committee_chair_score_text))
+with(committee, xtabs(committee_chair_score_text, faculty_activity))
 
-table(as.factor(committee$activity_text), as.factor(committee$faculty_activity))
-table(as.factor(committee$activity_text), as.factor(committee$committee_chair_score_text))
-table(as.factor(committee$committee_chair_score_text), as.factor(committee$faculty_activity))
-table(as.factor(committee$activity_text), as.factor(committee$app_year))
-
-examine_hold <- committee %>% filter(activity_text == "Hold" & !is.na(committee_chair_score_text)) 
+with(committee, xtabs(committee_chair_score_text, app_year))
+with(committee, xtabs(activity_text, app_year))
 
 #No committee data prior to 2013
+committee_intermediate <- filter(committee, app_year != 2012)
 ```
 
 
@@ -331,11 +324,9 @@ examine_hold <- committee %>% filter(activity_text == "Hold" & !is.na(committee_
 gpa <- raw_files %>% 
   extract_data("/gpa")
 
-
 gpa_final <- gpa %>% 
   distinct(aamc_id, aca_status_desc, .keep_all = TRUE) 
-#write this paper for final dataset
-
+# write this for final dataset
 
 #Questions for model building
 #What's the gpa at time of application? 
@@ -359,10 +350,11 @@ ethnicity_final <- ethnicity %>%
 
 ```{r, race}
 race <- raw_files %>% 
-  extract_data("/Race")
+  extract_data("race")
 
 race_final <- race %>% 
-  distinct(aamc_id, race, .keep_all = TRUE) %>% dplyr::select(-appl_year)
+  distinct(aamc_id, race, .keep_all = TRUE) %>% 
+  dplyr::select(-appl_year)
 #write this file for final dataset
 
 ```
@@ -371,10 +363,7 @@ race_final <- race %>%
 ```{r, school}
 
 schools <- raw_files %>% 
-  extract_data("/School.csv")
-
-names(schools)
-
+  extract_data("school.csv")
 
 #create a distinct dataset that's the unique combincation of id, name of school, and type of schools
 schools_final <- schools %>% 
@@ -409,6 +398,6 @@ write_csv(gpa_final, "/Volumes/admissions/final_datasets/gpa.csv")
 write_csv(schools_final, "/Volumes/admissions/final_datasets/schools.csv")
 
 #mmi
-write_csv(mmi_pull_2, "/Volumes/admissions/final_datasets/mmi_scores.csv")
+write_csv(mmi_only, "/Volumes/admissions/final_datasets/mmi_scores.csv")
 ```
 
