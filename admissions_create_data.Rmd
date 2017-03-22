@@ -288,9 +288,6 @@ mmi_only <- mmi_pull_2 %>% filter(app_year != 2013)
 ```
 
 
-
-
-
 ```{r, committee}
 committee <- raw_files %>% 
   extract_data("committee") %>%
@@ -317,7 +314,14 @@ with(committee, xtabs(activity_text, app_year))
 committee_intermediate <- filter(committee, app_year != 2012)
 ```
 
-
+```{r}
+committee_intermediate %>%
+  filter(faculty_activity == "Screener") %>%
+  group_by(appl_person_id) %>%
+  distinct(appl_person_id, faculty_kerberos_id, .keep_all = TRUE) %>%
+  summarize(n = n()) %>%
+  {table(.$n)}
+```
 
 
 ```{r, gpa}
