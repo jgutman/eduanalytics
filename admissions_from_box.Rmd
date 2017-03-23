@@ -22,14 +22,17 @@ library(readxl)
 opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
                cache = TRUE, autodep = TRUE, cache.comments = FALSE)
 
-admissions_path <- "/Volumes/IIME/EDS/data/admissions/data_documentation_from_lisa_admissions/Data" 
+parent_path <- "/Volumes/IIME/EDS/data/admissions/data_documentation_from_lisa_admissions"
+admissions_path <- paste(parent_path, "Data", sep = "/")
 (raw_files <- list.files(admissions_path, full.names = TRUE))
 ```
 
-```{r, eval = FALSE}
-applicants_data <- purrr::map(seq(from = 1, by = 3, length.out = 4),
-              function(i) readxl::read_excel(raw_files[i])) %>%
-  set_names(2013:2016)
+```{r, warning = FALSE, eval = FALSE}
+raw_files %>% 
+  str_detect(regex("/\\d{4} all applicants", ignore_case = TRUE)) %>%
+  which() %>% extract(raw_files, .) %>%
+  purrr::map(function(path) readxl::read_excel(path)) %>%
+  set_names(2013:2016) -> applicants_data
 
 # Make sure the column names in the 4 dataframes are all identical
 applicants_data %>% map(colnames) %>% {all.equal(.$`2013`, .$`2014`)}
@@ -43,43 +46,48 @@ coltypes_df <- applicants_data %>%
   as_data_frame() %>% 
   unnest()
 
+single_value <- function(a) {
+  length(unique(a)) == 1
+}
+
 coltypes_df <- coltypes_df %>%
   mutate_all(funs(str_replace_all(., 
         c("character" = "text", "POSIXct" = "date")))) %>%
   invoke_rows(c, ., .collate = "list", .to = "coltypes") %>%
   mutate(colname = colnames(applicants_data[[1]]),
-         agreement = map_lgl()) 
+         agreement = map_lgl(coltypes, single_value),
+         coltypes_factor = map(coltypes, function(.x) {
+           factor(.x, levels = c("numeric", "text", "date"), ordered = TRUE)})) %>%
+  mutate(primary_coltype = map_chr(coltypes_factor, 
+            function(.x) {as.character(max(.x))})) 
 
-```
-
+documentation_path <- paste(parent_path, "Documentation", "coltypes_admissions.csv", sep = "/")
+coltypes_df %>% select(colname, primary_coltype) %>% write_csv(documentation_path)
 ```
 
 
 ```{r}
+documentation_path <- paste(parent_path, "Documentation", "coltypes_admissions.csv", sep = "/")
+coltypes_df <- read_csv(documentation_path)
 
-
-coltypes <- c("numeric", "numeric", rep("text", 10), "date", "text", "text",
-              rep("numeric", 5), rep("text", 6), "numeric", "numeric", "date",
-              "numeric", "numeric", "text", "text", "text", "numeric", "text", 
-              "date", "text", "text", rep("date", 10), "text",
-              "numeric", "numeric", "text", "text", "numeric", "text", "text",
-              "date", "text", "numeric", "text", "numeric", "numeric", "text",
-              "text", "numeric", "text", "text", "text", "date", "numeric", 
-              "text", "text", rep("numeric", 6), "text", "text", )
-              
+# raw_files <- list.files("~/Desktop/Box Sync/Data for Admissions/", full.names = TRUE)
 ```
 
 
 ```{r, message = FALSE, warning = FALSE}
+raw_files %>% 
+  str_detect(regex("/\\d{4} all applicants", ignore_case = TRUE)) %>%
+  which() %>% extract(raw_files, .) %>%
+  purrr::map(function(path) readxl::read_excel(path, col_types = coltypes_df$primary_coltype)) %>%
+  set_names(2013:2016) -> applicants_data
 
-applicants_data <- purrr::map(seq(from = 1, by = 3, length.out = 4),
-              function(i) readxl::read_excel(raw_files[i])) %>%
-  set_names(2013:2016)
-
+applicants_all_years <- bind_rows(applicants_data)
 applicants_2013 <- applicants_data$`2013`
 applicants_2014 <- applicants_data$`2014`
 applicants_2015 <- applicants_data$`2015`
 applicants_2016 <- applicants_data$`2016`
+
+colnames(applicants_all_years)
 
 id_columns <- c("amcas_id", "app_year")
 tracking_columns <- c("appl_submit_date",
@@ -92,14 +100,7 @@ tracking_columns <- c("appl_submit_date",
                       "committee_date",
                       "offer_date",
                       "accept_date")
-
-colnames(applicants_2013)
 ```
-
-```{r}
-
-```
-
 
 ```{r}
 filter_applications <- . %>%
@@ -108,14 +109,25 @@ filter_applications <- . %>%
   filter(appl_type_desc %in% c("Regular M.D.", "Combined  Medical Degree/Graduate")) %>%
   filter(!is.na(appl_submit_date) & !is.na(appl_complete_date))
 
-n_applications_by_phase <- function(applicants) {
-  
+n_applications_by_phase <- function(applications) {
+  applications %>%
+    mutate(n_total_applications = map_int(total_applications, nrow),
+           screening_eligible = map(total_applications, filter_applications),
+           n_screening_eligible = map_int(screening_eligible, nrow),
+           faculty_screened = map(screening_eligible, function(df)
+             filter(df, !is.na(scr_dec))),
+           n_faculty_screened = map_int(faculty_screened, nrow)) ->
+    screened_applications
+    
 }
 
-applicants_2013 %>% nrow()  
-applicants_2013 %>% filter_applications() %>% nrow()
-applicants_2013 %>% filter_applications() %>%
-  filter(!is.na(scr_dec)) %>% nrow()
+applicants_all_years %>% 
+  group_by(app_year) %>% 
+  nest(.key = total_applications) -> nested_applicants
+
+nested_applicants %>% 
+  n_applications_by_phase %>%
+  select(n_total_applications, n_screening_eligible, n_faculty_screened)
 ```
 
 ```{r}
