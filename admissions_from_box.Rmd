@@ -165,6 +165,16 @@ n_applications_by_phase <- function(applications) {
     filter_pile_by(pile_name = "committee_reviewed", 
                    filter_name = "committee_date",
                    superset_name = "interviewed") %>%
+    mutate(n_fast_track = map_int(committee_reviewed, function(df)
+              sum(df$committee_score == "Fast Track")),
+           n_a_plus = map_int(committee_reviewed, function(df)
+              sum(df$committee_score == "A+")),
+           n_pwl = map_int(committee_reviewed, function(df)
+              sum(df$committee_score == "PWL")),
+           n_waitlist = map_int(committee_reviewed, function(df)
+              sum(df$committee_score == "WL")),
+           n_rejected_from_committee = map_int(committee_reviewed, function(df)
+              sum(df$committee_score == "RJ"))) %>%
     filter_pile_by(pile_name = "offered_admission", 
                    filter_name = "offer_date",
                    superset_name = "interviewed") ->
