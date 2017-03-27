@@ -78,7 +78,9 @@ coltypes_df <- read_csv(documentation_path)
 raw_files %>% 
   str_detect(regex("/\\d{4} all applicants", ignore_case = TRUE)) %>%
   which() %>% extract(raw_files, .) %>%
-  purrr::map(function(path) readxl::read_excel(path, col_types = coltypes_df$primary_coltype)) %>%
+  map(function(path) read_excel(path, col_types = coltypes_df$primary_coltype)) %>%
+  map(function(df) set_names(df, str_replace(colnames(df), " ", "_"))) %>%
+  map(function(df) set_names(df, tolower(colnames(df)))) %>%
   set_names(2013:2016) -> applicants_data
 
 applicants_all_years <- bind_rows(applicants_data)
@@ -107,27 +109,86 @@ filter_applications <- . %>%
   # filter out M.D./Ph.D. applicants, special programs (i.e. linkages), and 
   # deferred applicants from previous years
   filter(appl_type_desc %in% c("Regular M.D.", "Combined  Medical Degree/Graduate")) %>%
+  filter(status != "MSR") %>%
   filter(!is.na(appl_submit_date) & !is.na(appl_complete_date))
+
+split_screener_score <- . %>% 
+  mutate(screener_a_b = recode(scr_dec, 
+          `2` = "1_1", `3` = "1_2", `4` = "4", `5` = "2_3", `6` = "3_3"),
+        screener_a_b = if_else(scr_dec == 4, 
+          if_else(screener_sd == 0, "2_2", "1_3"), screener_a_b)) %>%
+  separate(screener_a_b, c("screener_a", "screener_b"))
+
+tally_screened_by_score <- . %>%
+  {table(screener_a = .$screener_a, screener_b = .$screener_b)} %>% 
+  as.data.frame() %>%
+  filter(Freq > 0)
+
+filter_pile_by <- function(data, pile_name, filter_name, superset_name) {
+  
+  filter_condition <- lazyeval::interp(~ map(data_col, 
+      function(df) filter(df, !is.na(filter_col))), 
+    data_col = as.name(superset_name), 
+    filter_col = as.name(filter_name))
+  
+  count_filtered <- lazyeval::interp(~ map_int(filtered_pile, nrow),
+    filtered_pile = as.name(pile_name))
+  
+  count_name <- paste0("n_", pile_name)
+  
+  data %>%
+    mutate_(.dots = set_names( list(filter_condition), pile_name)) %>%
+    mutate_(.dots = set_names( list(count_filtered), count_name))
+}
 
 n_applications_by_phase <- function(applications) {
   applications %>%
     mutate(n_total_applications = map_int(total_applications, nrow),
            screening_eligible = map(total_applications, filter_applications),
-           n_screening_eligible = map_int(screening_eligible, nrow),
-           faculty_screened = map(screening_eligible, function(df)
-             filter(df, !is.na(scr_dec))),
-           n_faculty_screened = map_int(faculty_screened, nrow)) ->
+           n_screening_eligible = map_int(screening_eligible, nrow)) %>%
+    filter_pile_by(pile_name = "faculty_screened", 
+                   filter_name = "scr_dec",
+                   superset_name = "screening_eligible") %>%
+    mutate(faculty_screened = map(faculty_screened, split_screener_score)) %>%
+    mutate(n_invited_from_screening = map_int(faculty_screened, function(df)
+              sum(df$scr_dec == 2)),
+           n_held_from_screening = map_int(faculty_screened, function(df)
+              sum((df$scr_dec == 3) | (df$scr_dec == 4))),
+           n_rejected_from_screening = map_int(faculty_screened, function(df)
+              sum(df$scr_dec >=5))) %>%
+    filter_pile_by(pile_name = "invited_for_interview", 
+                   filter_name = "interview_invite_date",
+                   superset_name = "faculty_screened") %>%
+    filter_pile_by(pile_name = "interviewed", 
+                   filter_name = "interview_day",
+                   superset_name = "invited_for_interview") %>%
+    filter_pile_by(pile_name = "committee_reviewed", 
+                   filter_name = "committee_date",
+                   superset_name = "interviewed") %>%
+    filter_pile_by(pile_name = "offered_admission", 
+                   filter_name = "offer_date",
+                   superset_name = "interviewed") ->
     screened_applications
-    
 }
 
 applicants_all_years %>% 
   group_by(app_year) %>% 
-  nest(.key = total_applications) -> nested_applicants
+  nest(.key = total_applications) %>%
+  n_applications_by_phase() -> nested_applicants
 
-nested_applicants %>% 
-  n_applications_by_phase %>%
-  select(n_total_applications, n_screening_eligible, n_faculty_screened)
+nested_applicants %>%
+  select(starts_with("n_"))
+```
+
+```{r}
+a2016 <- nested_applicants %>% 
+  filter(app_year == 2016) %>% 
+  select(faculty_screened) %>% 
+  unnest()
+
+a2016 %>% 
+  split_screener_score() %>% 
+  tally_screened_by_score()
 ```
 
 ```{r}
@@ -147,10 +208,18 @@ applicants_2016 %>% application_status_by_month
 
 
 ```{r}
-expand.grid(screener1 = 1:3, screener2 = 1:3) %>%
-  mutate(scr_dec = screener1 + screener2,
-         screener_sd = purrr::map2_dbl(screener1, screener2, 
-                                       function(a, b) sd( c(a, b) )
-                                       ))
+screener_codes <- expand.grid(screener_a = 1:3, screener_b = 1:3) %>%
+  mutate(scr_dec = screener_a + screener_b,
+         screener_sd = purrr::map2_dbl(screener_a, screener_b, 
+                          function(a, b) sd( c(a, b) )
+                       )) %>% 
+  arrange(scr_dec, screener_sd) %>%
+  distinct(scr_dec, screener_sd, .keep_all = TRUE)
+
+screener_codes
+```
+
+```{r}
+
 ```
 
