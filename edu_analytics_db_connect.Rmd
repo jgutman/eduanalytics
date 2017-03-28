@@ -19,6 +19,11 @@ library(tidyverse)
 library(knitr)
 library(RMySQL)
 library(yaml)
+library(tidyverse)
+library(magrittr)
+library(knitr)
+library(stringr)
+library(purrr)
 
 sessionInfo()$otherPkgs %>% 
   map_chr(function(pkg) paste(pkg$Package, pkg$Version)) %>%
@@ -29,7 +34,8 @@ opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
 ```
 
 ```{r, echo=FALSE}
-credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
+#credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
+credentials_path <- "/Volumes/IIME/IIME/EDS/data/admissions/db_credentials/"
 credentials_file <- "owner_credentials.yaml"
 credentials <- paste0(credentials_path, credentials_file) %>% 
   yaml::yaml.load_file()
@@ -51,11 +57,17 @@ rm(credentials)
 ```
 
 ```{r}
-(table_names <- db_list_tables(edu_db$con))
-all_applicants_2013 <- tbl(edu_db, table_names[[1]])
 
-# db_info <- dbGetInfo(edu_db_con)
-# edu_db <- src_sql("mysql", edu_db_con, info = db_info)
+(table_names <- db_list_tables(edu_db$con))
+
+table_names %>% 
+  str_detect(regex("^\\d{4}_all_applicants$", ignore_case = TRUE)) %>%
+  which() %>% 
+  extract(table_names, .) %>% 
+  purrr::map(., function(tbl_name) tbl(edu_db, tbl_name)) %>%
+  purrr::map(., function(x) collect(x)) %>%
+  set_names(2013:2016) -> applicants_data
+  
 ```
 
 ```{r}
