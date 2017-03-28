@@ -1,10 +1,10 @@
 PackratFormat: 1.4
 PackratVersion: 0.4.8.1
-RVersion: 3.3.1
-Repos: BioCsoft=https://bioconductor.org/packages/3.3/bioc,
-    BioCann=https://bioconductor.org/packages/3.3/data/annotation,
-    BioCexp=https://bioconductor.org/packages/3.3/data/experiment,
-    BioCextra=https://bioconductor.org/packages/3.3/extra,
+RVersion: 3.3.2
+Repos: BioCsoft=https://bioconductor.org/packages/3.4/bioc,
+    BioCann=https://bioconductor.org/packages/3.4/data/annotation,
+    BioCexp=https://bioconductor.org/packages/3.4/data/experiment,
+    BioCextra=https://bioconductor.org/packages/3.4/extra,
     CRAN=https://cran.rstudio.com/
 
 Package: BH
@@ -26,6 +26,12 @@ Package: RColorBrewer
 Source: CRAN
 Version: 1.1-2
 Hash: c0d56cd15034f395874c870141870c25
+
+Package: RMySQL
+Source: CRAN
+Version: 0.10.9
+Hash: b8bcdfdc9acae319991297c75ffad5d8
+Requires: DBI
 
 Package: Rcpp
 Source: CRAN
@@ -320,7 +326,18 @@ Version: 1.1.1
 Hash: b913af17a4e43c2fb83f3b60b5353a27
 Requires: BH, Rcpp
 
+Package: xts
+Source: CRAN
+Version: 0.9-7
+Hash: fb3f81d7a2fa2323879b6b49722ddc5e
+Requires: zoo
+
 Package: yaml
 Source: CRAN
 Version: 2.1.14
 Hash: c81230c3a7d9ba20607ad6b4331173d1
+
+Package: zoo
+Source: CRAN
+Version: 1.7-14
+Hash: a4c3a385cd122b5d6af30732bf267060

@@ -79,8 +79,9 @@ raw_files %>%
   str_detect(regex("/\\d{4} all applicants", ignore_case = TRUE)) %>%
   which() %>% extract(raw_files, .) %>%
   map(function(path) read_excel(path, col_types = coltypes_df$primary_coltype)) %>%
-  map(function(df) set_names(df, str_replace(colnames(df), " ", "_"))) %>%
+  map(function(df) set_names(df, str_replace_all(colnames(df), " ", "_"))) %>%
   map(function(df) set_names(df, tolower(colnames(df)))) %>%
+  map(function(df) rename(df, aamc_id = amcas_id)) %>%
   set_names(2013:2016) -> applicants_data
 
 applicants_all_years <- bind_rows(applicants_data)
@@ -187,8 +188,40 @@ applicants_all_years %>%
   n_applications_by_phase() -> nested_applicants
 
 nested_applicants %>%
-  select(starts_with("n_"))
+  select(app_year, starts_with("n_")) %>%
+  write_csv("application_phase_counts_by_year.csv")
 ```
+
+```{r}
+nested_applicants %>% 
+  select(app_year, faculty_screened) %>% 
+  unnest() %>% 
+  mutate(invited_interview = !is.na(interview_invite_date),
+         interviewed = !is.na(interview_day)) -> temp_screened
+
+with(temp_screened, table(scr_dec, invited_interview))
+with(temp_screened, table(scr_dec, interviewed))
+
+temp_screened %>% 
+  filter(scr_dec >=5, invited_interview) %>%
+  select(aamc_id, status, total_gpa, cu_sci_gpa, gender, disadvantaged_ind, urm, ses)
+
+temp_screened %>% 
+  filter(scr_dec == 2, !invited_interview) %>%
+  select(aamc_id, app_year, status)
+```
+
+```{r}
+nested_applicants %>% 
+  select(committee_reviewed) %>% 
+  unnest() %>% 
+  mutate(offered_admission = !is.na(offer_date),
+         matriculated = ((status == "MM") | (status == "MD"))) -> temp_committee
+
+with(temp_committee, table(committee_score, offered_admission))
+with(temp_committee, table(committee_score, matriculated))
+```
+
 
 ```{r}
 a2016 <- nested_applicants %>% 
@@ -200,6 +233,7 @@ a2016 %>%
   split_screener_score() %>% 
   tally_screened_by_score()
 ```
+
 
 ```{r}
 application_status_by_month <- . %>% 

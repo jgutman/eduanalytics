@@ -1,0 +1,5 @@
+app_year,n_total_applications,n_screening_eligible,n_faculty_screened,n_invited_from_screening,n_held_from_screening,n_rejected_from_screening,n_invited_for_interview,n_interviewed,n_committee_reviewed,n_fast_track,n_a_plus,n_pwl,n_waitlist,n_rejected_from_committee,n_offered_admission
+2013.0,8830,6123,3028,711,1343,974,970,906,904,20,447,190,167,80,447
+2014.0,8253,5768,2953,832,1307,814,970,915,914,59,329,277,156,93,481
+2015.0,7806,5523,3281,762,1474,1045,1069,1025,1025,54,337,335,178,121,377
+2016.0,7359,5310,3049,810,1339,900,1013,981,981,47,334,265,166,169,333
