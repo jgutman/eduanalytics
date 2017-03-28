@@ -52,6 +52,7 @@ rm(credentials)
 
 ```{r}
 (table_names <- db_list_tables(edu_db$con))
+all_applicants_2013 <- tbl(edu_db, table_names[[1]])
 
 # db_info <- dbGetInfo(edu_db_con)
 # edu_db <- src_sql("mysql", edu_db_con, info = db_info)
