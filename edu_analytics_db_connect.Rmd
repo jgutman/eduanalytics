@@ -1,6 +1,5 @@
 ---
 title: "Education Analytics Admissions Screening Project"
-subtitle: "Connection to edu_analytics database"
 author: "Jacqueline Gutman, Suvam Paul"
 date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
 output:
@@ -12,6 +11,7 @@ output:
     theme: cosmo
     toc: yes
     toc_depth: 4
+subtitle: Connection to edu_analytics database
 ---
 
 ```{r, message=FALSE}
@@ -25,7 +25,7 @@ library(knitr)
 library(stringr)
 library(purrr)
 
-sessionInfo()$otherPkgs %>% 
+sessionInfo()$otherPkgs %>%
   map_chr(function(pkg) paste(pkg$Package, pkg$Version)) %>%
   cat(sep = "\n")
 opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
@@ -34,16 +34,16 @@ opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
 ```
 
 ```{r, echo=FALSE}
-#credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
-credentials_path <- "/Volumes/IIME/IIME/EDS/data/admissions/db_credentials/"
+credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
+#credentials_path <- "/Volumes/IIME/IIME/EDS/data/admissions/db_credentials/"
 credentials_file <- "owner_credentials.yaml"
-credentials <- paste0(credentials_path, credentials_file) %>% 
+credentials <- paste0(credentials_path, credentials_file) %>%
   yaml::yaml.load_file()
 
-# edu_db_con <- dbConnect(MySQL(), 
-#         user = credentials$user, 
-#         password = credentials$password, 
-#         dbname = credentials$dbname, 
+# edu_db_con <- dbConnect(MySQL(),
+#         user = credentials$user,
+#         password = credentials$password,
+#         dbname = credentials$dbname,
 #         host = credentials$host,
 #         port = credentials$port)
 
@@ -60,14 +60,14 @@ rm(credentials)
 
 ```{r}
 
-table_names %>% 
+table_names %>%
   str_detect(regex("^\\d{4}_all_applicants$", ignore_case = TRUE)) %>%
-  which() %>% 
-  extract(table_names, .) %>% 
+  which() %>%
+  extract(table_names, .) %>%
   purrr::map(., function(tbl_name) tbl(edu_db, tbl_name)) %>%
   purrr::map(., function(x) collect(x)) %>%
   set_names(2013:2016) -> applicants_data
-  
+
 
 applicants_data_2013 <- applicants_data[["2013"]]
 
@@ -245,4 +245,3 @@ write_csv(parents_clean_deid, "/Volumes/admissions/data_for_itai/parents_clean_d
 ```{r}
 dbDisconnect(edu_db$con)
 ```
-
