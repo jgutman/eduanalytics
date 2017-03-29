@@ -111,7 +111,7 @@ filter_applications <- . %>%
   # filter out M.D./Ph.D. applicants, special programs (i.e. linkages), and 
   # deferred applicants from previous years
   filter(appl_type_desc %in% c("Regular M.D.", "Combined  Medical Degree/Graduate")) %>%
-  filter(status != "MSR") %>%
+  filter(!str_detect(status, "M\\w{2}")) %>%
   filter(!is.na(appl_submit_date) & !is.na(appl_complete_date))
 
 split_screener_score <- . %>% 
