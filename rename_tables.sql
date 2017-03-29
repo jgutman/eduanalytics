@@ -20,4 +20,11 @@ RENAME TABLE edu_analytics.`2016_Tracking_Report` TO edu_analytics.`2016_trackin
 
 RENAME TABLE edu_analytics.Parent_Guardian TO edu_analytics.parent_guardian;
 
-select * from gpa where study_id = '3bdcd19ea5a52ab4ee3aecc0635fefce';
+RENAME TABLE edu_analytics.ETHNICITY_RAW_ORIG TO edu_analytics.ethnicity_raw_orig;
+RENAME TABLE edu_analytics.GPA_SCORES_RAW_ORIG TO edu_analytics.gpa_scores_raw_orig;
+RENAME TABLE edu_analytics.MCAT_RAW_ORIG TO edu_analytics.mcat_raw_orig;
+RENAME TABLE edu_analytics.RACE_RAW_ORIG TO edu_analytics.race_raw_orig;
+RENAME TABLE edu_analytics.SCHOOL_RAW_ORIG TO edu_analytics.school_raw_orig;
+RENAME TABLE edu_analytics.MMI_SCORES_ADMISSION_RAW_ORIG TO edu_analytics.mmi_scores_raw_orig;
+RENAME TABLE edu_analytics.NEW_MCAT_RAW_ORIG TO edu_analytics.new_mcat_raw_orig;
+RENAME TABLE edu_analytics.mmi_scores_admission_raw TO edu_analytics.mmi_scores_raw;
