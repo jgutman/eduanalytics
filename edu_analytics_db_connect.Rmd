@@ -66,9 +66,70 @@ table_names %>%
   extract(table_names, .) %>%
   purrr::map(., function(tbl_name) tbl(edu_db, tbl_name)) %>%
   purrr::map(., function(x) collect(x)) %>%
+  map(function(df) set_names(df, str_replace_all(colnames(df), " ", "_"))) %>%
+  map(function(df) set_names(df, tolower(colnames(df)))) %>%
   set_names(2013:2016) -> applicants_data
-
 ```
+
+```{r}
+# filter out irrelevant and identifying columns
+cols_to_keep <- read_lines("cols_to_keep_admissions.yaml")
+applicants_data %<>% 
+  map(function(df) select_(df, .dots = cols_to_keep))
+```
+
+```{r}
+# check that all columns and coltypes are the same for all application years
+
+is_single_value <- . %>% 
+  flatten_chr() %>%
+  n_distinct() %>%
+  equals(1)
+
+applicants_data %>% 
+  at_depth(2, typeof) -> coltypes
+
+coltypes %>% 
+  as_data_frame() %>% 
+  mutate_all(flatten_chr) -> coltypes_df
+
+coltypes %>% 
+  map(names) %>% 
+  as_data_frame() %>% 
+  by_row(is_single_value, .collate = "rows", .to = "col_names_match") %>% 
+  use_series(col_names_match) %>%
+  all()
+
+coltypes %>% 
+  extract2(1) %>% 
+  names() %>%
+  mutate(coltypes_df, colname = .) %>%
+  select(colname, everything()) %>%
+  by_row(function(a) is_single_value(a[-1]), .collate = "rows", .to = "col_types_match") ->
+  coltypes_df
+
+coltypes_df %>% use_series(col_types_match) %>% all()
+```
+
+```{r}
+applicants_all_years <- bind_rows(applicants_data)
+applicants_2013 <- applicants_data$`2013`
+applicants_2014 <- applicants_data$`2014`
+applicants_2015 <- applicants_data$`2015`
+applicants_2016 <- applicants_data$`2016`
+
+colnames(applicants_all_years)
+```
+
+```{r}
+# write deidentified data to file
+deidentified_output <- "/Volumes/IIME/EDS/data/admissions/data_for_itai/"
+
+applicants_all_years %>%
+  write_csv(paste0(deidentified_output, "admissions_all_applicants_deidentified.csv"))
+```
+
+
 
 ```{r}
 dbDisconnect(edu_db$con)
