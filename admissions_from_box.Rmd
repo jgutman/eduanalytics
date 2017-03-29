@@ -204,11 +204,15 @@ with(temp_screened, table(scr_dec, interviewed))
 
 temp_screened %>% 
   filter(scr_dec >=5, invited_interview) %>%
-  select(aamc_id, status, total_gpa, cu_sci_gpa, gender, disadvantaged_ind, urm, ses)
+  select(aamc_id, status, scr_dec, total_gpa, cu_sci_gpa, gender, disadvantaged_ind, urm, ses, special_interest) %>%
+  {table(.$scr_dec, .$special_interest)}
 
+ind <- temp_screened %>% filter(aamc_id == 13284807)
 temp_screened %>% 
   filter(scr_dec == 2, !invited_interview) %>%
-  select(aamc_id, app_year, status)
+  select(aamc_id, app_year, status, screening_complete_date) -> screening_reject_2
+
+temp_screened %>% filter(aamc_id %in% screening_reject_2$aamc_id)
 ```
 
 ```{r}

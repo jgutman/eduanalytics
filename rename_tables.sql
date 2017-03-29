@@ -20,3 +20,4 @@ RENAME TABLE edu_analytics.`2016_Tracking_Report` TO edu_analytics.`2016_trackin
 
 RENAME TABLE edu_analytics.Parent_Guardian TO edu_analytics.parent_guardian;
 
+select * from gpa where study_id = '3bdcd19ea5a52ab4ee3aecc0635fefce';
