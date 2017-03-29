@@ -5,3 +5,5 @@ data/*
 *.zip
 *.RData
 *.Rhistory
+*.html
+*_cache/*
