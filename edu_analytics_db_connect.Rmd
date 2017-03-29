@@ -56,9 +56,9 @@ edu_db <- src_mysql(credentials$dbname,
 rm(credentials)
 ```
 
-```{r}
 
-(table_names <- db_list_tables(edu_db$con))
+
+```{r}
 
 table_names %>% 
   str_detect(regex("^\\d{4}_all_applicants$", ignore_case = TRUE)) %>%
@@ -68,7 +68,179 @@ table_names %>%
   purrr::map(., function(x) collect(x)) %>%
   set_names(2013:2016) -> applicants_data
   
+
+applicants_data_2013 <- applicants_data[["2013"]]
+
+names(applicants_data_2013)
+
+applicants_data_2013$appl_type_desc
 ```
+
+
+
+```{r}
+
+make_data_frame <- function(tables_list, pattern) {
+  tables_list %>%
+    str_detect(regex(pattern, ignore_case = TRUE)) %>%
+    which() %>%
+    extract(tables_list, .) %>% 
+    tbl(edu_db, .) %>% 
+    as.data.frame() %>% 
+    set_colnames(tolower(colnames(.)))
+}
+
+```
+
+
+```{r, ethnicity, echo=FALSE}
+
+ethnicity_raw_deid <- table_names %>% 
+  make_data_frame("^ethnicity_raw$") %>% 
+  select(-(appl_person_id), -(aamc_id))
+
+ethnicity_clean_deid <- table_names %>% 
+  make_data_frame("^ethnicity$") %>% 
+  select(-(appl_person_id), -(aamc_id))
+
+
+#write data
+write_csv(ethnicity_raw_deid, "/Volumes/admissions/data_for_itai/ethnicity_raw_deidentified.csv")
+write_csv(ethnicity_clean_deid, "/Volumes/admissions/data_for_itai/ethnicity_clean_deidentified.csv")
+```
+
+
+
+```{r, race, echo=FALSE}
+
+race_raw_deid <- table_names %>% 
+  make_data_frame("^race_raw$") %>% 
+  select(-(appl_person_id), -(aamc_id))
+
+race_clean_deid <- table_names %>% 
+  make_data_frame("^race$") %>% 
+  select(-(appl_person_id), -(aamc_id))
+
+
+#write data
+write_csv(race_raw_deid, "/Volumes/admissions/data_for_itai/race_raw_deidentified.csv")
+write_csv(race_clean_deid, "/Volumes/admissions/data_for_itai/race_clean_deidentified.csv")
+
+```
+
+
+
+```{r, schools, echo=FALSE}
+
+schools_raw_deid <- table_names %>% 
+  make_data_frame("^school_raw$") %>% 
+  select(-(appl_person_id), -(aamc_id))
+
+
+schools_clean_deid <- table_names %>% 
+  make_data_frame("^schools$") %>%
+  select(-(appl_person_id), -(aamc_id))
+
+  
+#write data
+write_csv(schools_raw_deid, "/Volumes/admissions/data_for_itai/schools_raw_deidentified.csv")
+write_csv(schools_clean_deid, "/Volumes/admissions/data_for_itai/schools_clean_deidentified.csv")
+
+```
+
+
+
+```{r, gpa, echo=FALSE}
+
+gpa_raw_deid <- table_names %>% 
+  make_data_frame("^gpa_scores_raw$") %>% 
+  select(-appl_person_id, -aamc_id)
+
+gpa_clean_deid <- table_names %>% 
+  make_data_frame("^gpa$") %>% 
+  select(-appl_person_id, -aamc_id)
+
+#write data
+write_csv(gpa_raw_deid, "/Volumes/admissions/data_for_itai/gpa_raw_deidentified.csv")
+write_csv(gpa_clean_deid, "/Volumes/admissions/data_for_itai/gpa_clean_deidentified.csv")
+
+```
+
+
+
+```{r, mmi, echo = FALSE}
+
+mmi_clean_deid <- table_names %>% 
+  make_data_frame("^mmi_scores$") %>% 
+  select(-application_id, -amcas_id, -appl_person_id, -fac_last_name, -fac_first_name, -comment, -avg, -stdev, -conflict, -interview_id, -scenario, -interview_type, -interview_type, 
+         -faculty_id, -code, -mmi_question_id)
+
+write_csv(mmi_clean_deid, "/Volumes/admissions/data_for_itai/mmi_clean_deidentified.csv")
+```
+
+
+
+```{r, mcat_old, echo=FALSE}
+
+oldmcat_raw_deid <- table_names %>% 
+  make_data_frame("^mcat_raw$") %>% 
+  set_colnames(stringr::str_replace(colnames(.), "_p$", "_percentile")) %>% 
+  select(-appl_person_id, -aamc_id)
+
+oldmcat_clean_deid <- table_names %>% 
+  make_data_frame("^old_mcat_scores$") %>% 
+  select(-appl_person_id, -aamc_id)
+
+#write data
+write_csv(oldmcat_raw_deid, "/Volumes/admissions/data_for_itai/oldmact_raw_deidentified.csv")
+write_csv(oldmcat_clean_deid, "/Volumes/admissions/data_for_itai/oldmact_clean_deidentified.csv")
+```
+
+
+
+```{r, new_mcat, echo=FALSE}
+
+newmcat_raw_deid <- table_names %>% 
+  make_data_frame("^new_mcat_raw$") %>% 
+  select(-appl_person_id, -aamc_id)
+  
+newmcat_clean_deid <- table_names %>% 
+  make_data_frame("^new_mcat_scores$") %>% 
+  select(-appl_person_id, -aamc_id)
+
+#write data
+
+write_csv(newmcat_raw_deid, "/Volumes/admissions/data_for_itai/newmact_raw_deidentified.csv")
+write_csv(newmcat_clean_deid, "/Volumes/admissions/data_for_itai/newmact_clean_deidentified.csv")
+
+```
+
+
+
+```{r, parent_guardian, echo=FALSE}
+
+(table_names <- db_list_tables(edu_db$con))
+
+
+parents_raw_deid <- table_names %>% 
+  make_data_frame("^parent_guardian$") %>% 
+  select(-appl_person_id, -appl_year, -aamc_id, -name)
+
+
+parents_clean_deid <- table_names %>% 
+  make_data_frame("^parent_guardian$") %>% 
+  distinct(aamc_id, name, .keep_all = TRUE) %>% 
+  select(-appl_person_id, -appl_year, -aamc_id, -name, -appl_year)
+
+
+#write data
+write_csv(parents_raw_deid, "/Volumes/admissions/data_for_itai/parents_raw_deidentified.csv")
+write_csv(parents_clean_deid, "/Volumes/admissions/data_for_itai/parents_clean_deidentified.csv")
+
+
+```
+
+
 
 ```{r}
 dbDisconnect(edu_db$con)
