@@ -14,6 +14,10 @@ output:
 subtitle: Connection to edu_analytics database
 ---
 
+# Setup
+
+## Load packages
+
 ```{r, message=FALSE}
 library(tidyverse)
 library(knitr)
@@ -32,6 +36,8 @@ opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
             cache = TRUE, autodep = TRUE, cache.comments = FALSE)
 
 ```
+
+## Read in database credentials and open connection
 
 ```{r, echo=FALSE}
 credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
@@ -56,12 +62,15 @@ edu_db <- src_mysql(credentials$dbname,
 rm(credentials)
 ```
 
-```{r}
+# Admissions applicants datasets: 2013-2016
 
+## Read in all_applicants tables from database
+
+```{r}
 (table_names <- db_list_tables(edu_db$con))
 
 table_names %>%
-  str_detect(regex("^\\d{4}_all_applicants$", ignore_case = TRUE)) %>%
+  str_detect(regex("^\\identified\\Wraw\\W\\d{4}_all_applicants$", ignore_case = TRUE)) %>%
   which() %>%
   extract(table_names, .) %>%
   purrr::map(., function(tbl_name) tbl(edu_db, tbl_name)) %>%
@@ -112,22 +121,9 @@ coltypes_df %>% use_series(col_types_match) %>% all()
 ```
 
 ```{r}
-
-```
-
-
-```{r}
 applicants_all_years <- bind_rows(applicants_data)
 colnames(applicants_all_years)
 ```
-
-```{r}
-applicants_all_years %>% 
-  mutate(committee_date = if_else(is.na(committee_date), NA_character_, paste0(committee_date, "0:00"))) %>%
-  #mutate_at(vars(ends_with("_date"), ends_with("_day")), lubridate::mdy_hm) %>% 
-  use_series(committee_date) %>% unique()
-```
-
 
 ```{r, eval = FALSE}
 # write deidentified data to file
@@ -137,8 +133,161 @@ applicants_all_years %>%
   write_csv(paste0(deidentified_output, "admissions_all_applicants_deidentified.csv"))
 ```
 
+
+# Raw features from eduDW tables
+
 ```{r}
-dbWriteTable(edu_db$con, )
+
+make_data_frame <- function(tables_list, pattern) {
+  tables_list %>%
+    str_detect(regex(pattern, ignore_case = TRUE)) %>%
+    which() %>%
+    extract(tables_list, .) %>% 
+    tbl(edu_db, .) %>% 
+    as.data.frame() %>% 
+    set_colnames(tolower(colnames(.)))
+}
+
+```
+
+## Ethnicity
+
+```{r, ethnicity, echo=FALSE}
+
+ethnicity_raw_deid <- table_names %>% 
+  make_data_frame("^hashed\\Wraw\\Wethnicity$") %>% 
+  select(-(appl_person_id), -(aamc_id))
+
+# ethnicity_clean_deid <- table_names %>% 
+#   make_data_frame("^hashed\\Wclean\\Wethnicity$") %>% 
+#   select(-(appl_person_id), -(aamc_id))
+
+# write data
+write_csv(ethnicity_raw_deid, "/Volumes/admissions/data_for_itai/ethnicity_raw_deidentified.csv")
+# write_csv(ethnicity_clean_deid, "/Volumes/admissions/data_for_itai/ethnicity_clean_deidentified.csv")
+```
+
+## Race
+
+```{r, race, echo=FALSE}
+
+race_raw_deid <- table_names %>% 
+  make_data_frame("^hashed\\Wraw\\Wrace$") %>% 
+  select(-(appl_person_id), -(aamc_id))
+
+# race_clean_deid <- table_names %>% 
+#   make_data_frame("^hashed\\Wclean\\Wrace$") %>% 
+#   select(-(appl_person_id), -(aamc_id))
+
+# write data
+write_csv(race_raw_deid, "/Volumes/admissions/data_for_itai/race_raw_deidentified.csv")
+# write_csv(race_clean_deid, "/Volumes/admissions/data_for_itai/race_clean_deidentified.csv")
+
+```
+
+## School
+
+```{r, schools, echo=FALSE}
+
+schools_raw_deid <- table_names %>% 
+  make_data_frame("^hashed\\Wraw\\Wschool$") %>% 
+  select(-(appl_person_id), -(aamc_id))
+
+
+# schools_clean_deid <- table_names %>% 
+#   make_data_frame("^hashed\\Wclean\\Wschool$") %>%
+#   select(-(appl_person_id), -(aamc_id))
+  
+# write data
+write_csv(schools_raw_deid, "/Volumes/admissions/data_for_itai/schools_raw_deidentified.csv")
+# write_csv(schools_clean_deid, "/Volumes/admissions/data_for_itai/schools_clean_deidentified.csv")
+
+```
+
+## GPA
+
+```{r, gpa, echo=FALSE}
+
+gpa_raw_deid <- table_names %>% 
+  make_data_frame("^hashed\\Wraw\\Wgpa$") %>% 
+  select(-appl_person_id, -aamc_id)
+
+# gpa_clean_deid <- table_names %>% 
+#   make_data_frame("^hashed\\Wclean\\Wgpa$") %>% 
+#   select(-appl_person_id, -aamc_id)
+
+# write data
+write_csv(gpa_raw_deid, "/Volumes/admissions/data_for_itai/gpa_raw_deidentified.csv")
+# write_csv(gpa_clean_deid, "/Volumes/admissions/data_for_itai/gpa_clean_deidentified.csv")
+
+```
+
+## MMI
+
+```{r, mmi, echo = FALSE}
+
+mmi_raw_deid <- table_names %>% 
+  make_data_frame("^hashed\\Wraw\\Wmmi_scores$") %>% 
+  select(-application_id, -amcas_id, -appl_person_id, -fac_last_name, -fac_first_name, 
+         -comment, -avg, -stdev, -conflict, -interview_id, -scenario, -interview_type, -interview_type, 
+         -faculty_id, -code, -mmi_question_id)
+
+write_csv(mmi_raw_deid, "/Volumes/admissions/data_for_itai/mmi_raw_deidentified.csv")
+```
+
+## MCAT: OLD
+
+```{r, mcat_old, echo=FALSE}
+
+oldmcat_raw_deid <- table_names %>% 
+  make_data_frame("^hashed\\Wraw\\Wold_mcat$") %>% 
+  set_colnames(stringr::str_replace(colnames(.), "_p$", "_percentile")) %>% 
+  select(-appl_person_id, -aamc_id)
+
+# oldmcat_clean_deid <- table_names %>% 
+#   make_data_frame("^hashed\\Wclean\\Wmmi_scores$") %>% 
+#   select(-appl_person_id, -aamc_id)
+
+# write data
+write_csv(oldmcat_raw_deid, "/Volumes/admissions/data_for_itai/oldmcat_raw_deidentified.csv")
+# write_csv(oldmcat_clean_deid, "/Volumes/admissions/data_for_itai/oldmcat_clean_deidentified.csv")
+```
+
+## MCAT: NEW
+
+```{r, new_mcat, echo=FALSE}
+
+newmcat_raw_deid <- table_names %>% 
+  make_data_frame("^hashed\\Wraw\\Wnew_mcat$") %>% 
+  select(-appl_person_id, -aamc_id)
+  
+# newmcat_clean_deid <- table_names %>% 
+#   make_data_frame("^hashed\\Wclean\\Wnew_mcat$") %>% 
+#   select(-appl_person_id, -aamc_id)
+
+# write data
+write_csv(newmcat_raw_deid, "/Volumes/admissions/data_for_itai/newmcat_raw_deidentified.csv")
+# write_csv(newmcat_clean_deid, "/Volumes/admissions/data_for_itai/newmcat_clean_deidentified.csv")
+
+```
+
+## Parent/Guardian
+
+```{r, parent_guardian, echo=FALSE}
+
+parents_raw_deid <- table_names %>% 
+  make_data_frame("^hashed\\Wraw\\Wparent_guardian$") %>% 
+  select(-appl_person_id, -appl_year, -aamc_id, -name)
+
+# parents_clean_deid <- table_names %>% 
+#   make_data_frame("^hashed\\Wclean\\Wparent_guardian$") %>% 
+#   distinct(aamc_id, name, .keep_all = TRUE) %>% 
+#   select(-appl_person_id, -appl_year, -aamc_id, -name, -appl_year)
+
+#write data
+write_csv(parents_raw_deid, "/Volumes/admissions/data_for_itai/parents_raw_deidentified.csv")
+# write_csv(parents_clean_deid, "/Volumes/admissions/data_for_itai/parents_clean_deidentified.csv")
+
 ```
 
 
