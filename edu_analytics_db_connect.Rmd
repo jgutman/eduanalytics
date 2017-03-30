@@ -112,16 +112,24 @@ coltypes_df %>% use_series(col_types_match) %>% all()
 ```
 
 ```{r}
-applicants_all_years <- bind_rows(applicants_data)
-applicants_2013 <- applicants_data$`2013`
-applicants_2014 <- applicants_data$`2014`
-applicants_2015 <- applicants_data$`2015`
-applicants_2016 <- applicants_data$`2016`
 
+```
+
+
+```{r}
+applicants_all_years <- bind_rows(applicants_data)
 colnames(applicants_all_years)
 ```
 
 ```{r}
+applicants_all_years %>% 
+  mutate(committee_date = if_else(is.na(committee_date), NA_character_, paste0(committee_date, "0:00"))) %>%
+  #mutate_at(vars(ends_with("_date"), ends_with("_day")), lubridate::mdy_hm) %>% 
+  use_series(committee_date) %>% unique()
+```
+
+
+```{r, eval = FALSE}
 # write deidentified data to file
 deidentified_output <- "/Volumes/IIME/EDS/data/admissions/data_for_itai/"
 
@@ -129,6 +137,9 @@ applicants_all_years %>%
   write_csv(paste0(deidentified_output, "admissions_all_applicants_deidentified.csv"))
 ```
 
+```{r}
+dbWriteTable(edu_db$con, )
+```
 
 
 ```{r}
