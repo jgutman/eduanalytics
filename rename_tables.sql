@@ -57,3 +57,5 @@ RENAME TABLE edu_analytics.school_raw_orig TO edu_analytics.`identified$raw$scho
 RENAME TABLE edu_analytics.school_raw TO edu_analytics.`hashed$raw$school`;
 RENAME TABLE edu_analytics.schools_orig TO edu_analytics.`identified$clean$school`;
 RENAME TABLE edu_analytics.schools TO edu_analytics.`hashed$clean$school`;
+
+ALTER TABLE `identified$raw$mmi_scores` MODIFY start_time datetime;
