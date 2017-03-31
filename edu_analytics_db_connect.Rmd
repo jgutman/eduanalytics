@@ -276,7 +276,7 @@ write_csv(newmcat_raw_deid, "/Volumes/admissions/data_for_itai/newmcat_raw_deide
 ```{r, parent_guardian, echo=FALSE}
 
 parents_raw_deid <- table_names %>% 
-  make_data_frame("^parent_guardian$") %>% 
+  make_data_frame("^hashed\\Wclean\\Wparent_guardian$") %>% 
   select(-appl_person_id, -appl_year, -aamc_id, -name, -living_ind)
 
 
