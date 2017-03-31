@@ -221,13 +221,13 @@ write_csv(newmcat_raw_deid, "/Volumes/admissions/data_for_itai/newmcat_raw_deide
 
 parents_raw_deid <- table_names %>% 
   make_data_frame("^parent_guardian$") %>% 
-  select(-appl_person_id, -appl_year, -aamc_id, -name)
+  select(-appl_person_id, -appl_year, -aamc_id, -name, -living_ind)
 
 
 # parents_clean_deid <- table_names %>% 
 #   make_data_frame("^parent_guardian$") %>% 
 #   distinct(aamc_id, name, .keep_all = TRUE) %>% 
-#   select(-appl_person_id, -appl_year, -aamc_id, -name, -appl_year)
+#   select(-appl_person_id, -appl_year, -aamc_id, -name, -appl_year, -living_ind)
 
 
 #write data
