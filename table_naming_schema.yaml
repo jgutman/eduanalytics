@@ -1,0 +1,54 @@
+# Table naming standard for MySQL Database:
+# edu_analytics.{table_status}${feature_status}${table_name}
+
+table_status:
+    - identified
+    - hashed
+    - deidentified
+
+feature_status:
+    - raw
+    - clean
+
+table_name:
+    - 2013_all_applicants
+        app_year: 2013
+    - 2013_matriculated_report
+        app_year: 2013
+    - 2013_tracking_report
+        app_year: 2013
+    - 2014_all_applicants
+        app_year: 2014
+    - 2014_matriculated_report
+        app_year: 2014
+    - 2014_tracking_report
+        app_year: 2014
+    - 2015_all_applicants
+        app_year: 2015
+    - 2015_matriculated_report
+        app_year: 2015
+    - 2015_tracking_report
+        app_year: 2015
+    - 2016_all_applicants
+        app_year: 2016
+    - 2016_matriculated_report
+        app_year: 2016
+    - 2016_tracking_report
+        app_year: 2016
+    - ethnicity
+        app_year: 2006-2016
+    - gpa
+        app_year: 2006-2017
+    - old_mcat
+        app_year: 2006-2017
+    - new_mcat
+        app_year: 2016-2017
+    - mmi_scores
+        app_year: 2013-2017
+            # 2013 is standard 1:1 interview format only
+    - parent_guardian
+        app_year: 2013-2017
+    - race
+        app_year: 2006-2017
+    - school
+        app_year: 2006-2017
