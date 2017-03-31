@@ -39,30 +39,17 @@ opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
 
 ## Read in database credentials and open connection
 
+```{r}
+source("db_utility_functions.R")
+```
+
+
 ```{r, echo=FALSE}
 credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
 #credentials_path <- "/Volumes/IIME/IIME/EDS/data/admissions/db_credentials/"
 credentials_file <- "owner_credentials.yaml"
-credentials <- paste0(credentials_path, credentials_file) %>%
-  yaml::yaml.load_file()
 
-edu_db_con <- dbConnect(MySQL(),
-        user = credentials$user,
-        password = credentials$password,
-        dbname = credentials$dbname,
-        host = credentials$host,
-        port = credentials$port)
-
-# edu_db <- src_mysql(credentials$dbname,
-#                     host = credentials$host,
-#                     port = credentials$port,
-#                     user = credentials$user,
-#                     password = credentials$password)
-
-get_src <- . %>% src_sql("mysql", ., info = dbGetInfo(.))
-edu_db <- get_src(edu_db_con)
-
-rm(credentials)
+edu_db_con <- get_mysql_conn(credentials_path, credentials_file)
 ```
 
 # Admissions applicants datasets: 2013-2016
@@ -70,52 +57,21 @@ rm(credentials)
 ## Read in all_applicants tables from database
 
 ```{r}
-quietly_parse_time <- quietly(function(.x) 
-  parse_date_time(.x, "YmdHMS", 
-      tz = "America/New_York", truncated = 3))
-
-convert_or_retain <- function(col) {
-  col_mutated <- quietly_parse_time(col)
-  
-  no_errors <- is_empty(col_mutated$warnings)
-  
-  if (no_errors) col_mutated$result else col
-}
-```
-
-
-```{r}
 (table_names <- db_list_tables(edu_db_con))
 
-put_tbl_to_memory <- function(tbl_src, tbl_name) {
-  tbl(tbl_src, tbl_name) %>%
-  collect() %>%
-  mutate_if(is.character, convert_or_retain)
-}
-
-table_names %>%
-  str_detect(regex("hashed\\Wraw\\W\\d{4}_all_applicants$", ignore_case = TRUE)) %>%
-  which() %>%
-  extract(table_names, .) %>%
-  map(function(tbl_name) put_tbl_to_memory(edu_db, tbl_name)) %>%
+edu_db_con %>%
+  get_tbls_by_pattern("^hashed\\Wraw\\W\\d{4}_all_applicants") %>%
   set_names(2013:2016) -> applicants_data
 ```
 
 ```{r}
 # filter out irrelevant and identifying columns
-cols_to_keep <- read_lines("cols_to_keep_admissions.yaml")
 applicants_data %<>% 
-  map(function(df) select_(df, .dots = cols_to_keep))
+  drop_cols_from_list("cols_to_keep_admissions.yaml")
 ```
 
 ```{r}
 # check that all columns and coltypes are the same for all application years
-
-is_single_value <- . %>% 
-  flatten_chr() %>%
-  n_distinct() %>%
-  equals(1)
-
 applicants_data %>% 
   at_depth(2, typeof) -> coltypes
 
@@ -126,19 +82,14 @@ coltypes %>%
 coltypes %>% 
   map(names) %>% 
   as_data_frame() %>% 
-  by_row(is_single_value, .collate = "rows", .to = "col_names_match") %>% 
-  use_series(col_names_match) %>%
-  all()
+  all_equal_across_row()
 
 coltypes %>% 
   extract2(1) %>% 
   names() %>%
   mutate(coltypes_df, colname = .) %>%
-  select(colname, everything()) %>%
-  by_row(function(a) is_single_value(a[-1]), .collate = "rows", .to = "col_types_match") ->
-  coltypes_df
-
-coltypes_df %>% use_series(col_types_match) %>% all()
+  select(-colname) %>% 
+  all_equal_across_row()
 ```
 
 ```{r}
@@ -149,114 +100,107 @@ colnames(applicants_all_years)
 ```{r, eval = FALSE}
 # write deidentified data to file
 deidentified_output <- "/Volumes/IIME/EDS/data/admissions/data_for_itai/"
+write_to_file <- function(df, path, filename) {
+  full_path <- file.path(path, filename)
+  write_csv(df, full_path)
+}
 
 applicants_all_years %>%
-  write_csv(paste0(deidentified_output, "admissions_all_applicants_deidentified.csv"))
+ write_to_file(deidentified_output, "admissions_all_applicants_deidentified.csv")
 ```
 
 ```{r}
-tbl_names <- names(applicants_data) %>%
-  paste("deidentified", "raw", ., sep = "$") %>%
-  paste("all_applicants", sep = "_")
+names(applicants_data) %>%
+  add_tbl_prefix("deidentified", "raw") %>%
+  paste("all_applicants", sep = "_") ->
+  tbl_names
 
 applicants_data %<>% set_names(tbl_names)
 
-write_to_database <- function(df_list, con) {
-  df_list %>%
-    map2(., names(.), function(df, tbl_name) 
-      dbWriteTable(edu_db_con, tbl_name, df, row.names = FALSE, overwrite = TRUE))
-}
-
-applicants_data %>% write_to_database()
+applicants_data %>% write_to_database(edu_db_con)
 ```
 
 
 # Raw features from eduDW tables
 
-```{r}
-
-make_data_frame <- function(tables_list, pattern) {
-  tables_list %>%
-    str_detect(regex(pattern, ignore_case = TRUE)) %>%
-    which() %>%
-    extract(tables_list, .) %>% 
-    tbl(edu_db, .) %>% 
-    as.data.frame() %>% 
-    set_colnames(tolower(colnames(.)))
-}
-
-```
-
 ## Ethnicity
 
 ```{r, ethnicity, echo=FALSE}
 
-ethnicity_raw_deid <- table_names %>% 
-  make_data_frame("^hashed\\Wraw\\Wethnicity$") %>% 
-  select(-(appl_person_id), -(aamc_id))
+ethnicity_raw_deid <- edu_db_con %>%
+  get_tbls_by_pattern("^hashed\\Wraw\\Wethnicity$")
+  select(-appl_person_id, -aamc_id)
 
-# ethnicity_clean_deid <- table_names %>% 
-#   make_data_frame("^hashed\\Wclean\\Wethnicity$") %>% 
-#   select(-(appl_person_id), -(aamc_id))
+ethnicity_clean_deid <- edu_db_con %>%
+  get_tbls_by_pattern("^hashed\\Wclean\\Wethnicity$")
+  select(-appl_person_id, -aamc_id)
 
 # write data
-write_csv(ethnicity_raw_deid, "/Volumes/admissions/data_for_itai/ethnicity_raw_deidentified.csv")
-# write_csv(ethnicity_clean_deid, "/Volumes/admissions/data_for_itai/ethnicity_clean_deidentified.csv")
+ethnicity_raw_deid %>%
+ write_to_file(deidentified_output, "ethnicity_raw_deidentified.csv")  
+  
+ethnicity_clean_deid %>%
+ write_to_file(deidentified_output, "ethnicity_clean_deidentified.csv")  
 ```
 
 ## Race
 
 ```{r, race, echo=FALSE}
 
-race_raw_deid <- table_names %>% 
-  make_data_frame("^hashed\\Wraw\\Wrace$") %>% 
-  select(-(appl_person_id), -(aamc_id))
+race_raw_deid <- edu_db_con %>%
+  get_tbls_by_pattern("^hashed\\Wraw\\Wrace$")
+  select(-appl_person_id, -aamc_id)
 
-# race_clean_deid <- table_names %>% 
-#   make_data_frame("^hashed\\Wclean\\Wrace$") %>% 
-#   select(-(appl_person_id), -(aamc_id))
+race_clean_deid <- edu_db_con %>%
+  get_tbls_by_pattern("^hashed\\Wclean\\Wrace$")
+  select(-appl_person_id, -aamc_id)
 
 # write data
-write_csv(race_raw_deid, "/Volumes/admissions/data_for_itai/race_raw_deidentified.csv")
-# write_csv(race_clean_deid, "/Volumes/admissions/data_for_itai/race_clean_deidentified.csv")
-
+race_raw_deid %>%
+ write_to_file(deidentified_output, "race_raw_deidentified.csv")  
+  
+race_clean_deid %>%
+ write_to_file(deidentified_output, "race_clean_deidentified.csv") 
 ```
 
 ## School
 
 ```{r, schools, echo=FALSE}
 
-schools_raw_deid <- table_names %>% 
-  make_data_frame("^hashed\\Wraw\\Wschool$") %>% 
-  select(-(appl_person_id), -(aamc_id))
+schools_raw_deid <- edu_db_con %>%
+  get_tbls_by_pattern("^hashed\\Wraw\\Wschool$")
+  select(-appl_person_id, -aamc_id)
 
+schools_clean_deid <- edu_db_con %>%
+  get_tbls_by_pattern("^hashed\\Wclean\\Wschool$")
+  select(-appl_person_id, -aamc_id)
 
-# schools_clean_deid <- table_names %>% 
-#   make_data_frame("^hashed\\Wclean\\Wschool$") %>%
-#   select(-(appl_person_id), -(aamc_id))
-  
 # write data
-write_csv(schools_raw_deid, "/Volumes/admissions/data_for_itai/schools_raw_deidentified.csv")
-# write_csv(schools_clean_deid, "/Volumes/admissions/data_for_itai/schools_clean_deidentified.csv")
-
+schools_raw_deid %>%
+ write_to_file(deidentified_output, "schools_raw_deidentified.csv")  
+  
+schools_clean_deid %>%
+ write_to_file(deidentified_output, "schools_clean_deidentified.csv") 
 ```
 
 ## GPA
 
 ```{r, gpa, echo=FALSE}
 
-gpa_raw_deid <- table_names %>% 
-  make_data_frame("^hashed\\Wraw\\Wgpa$") %>% 
+gpa_raw_deid <- edu_db_con %>% 
+  get_tbls_by_pattern("^hashed\\Wraw\\Wgpa$") %>% 
   select(-appl_person_id, -aamc_id)
 
-# gpa_clean_deid <- table_names %>% 
-#   make_data_frame("^hashed\\Wclean\\Wgpa$") %>% 
-#   select(-appl_person_id, -aamc_id)
+gpa_clean_deid <- edu_db_con %>% 
+   get_tbls_by_pattern("^hashed\\Wclean\\Wgpa$") %>% 
+   select(-appl_person_id, -aamc_id)
 
 # write data
-write_csv(gpa_raw_deid, "/Volumes/admissions/data_for_itai/gpa_raw_deidentified.csv")
-# write_csv(gpa_clean_deid, "/Volumes/admissions/data_for_itai/gpa_clean_deidentified.csv")
-
+gpa_raw_deid %>%
+ write_to_file(deidentified_output, "gpa_raw_deidentified.csv")  
+  
+gpa_clean_deid %>%
+ write_to_file(deidentified_output, "gpa_clean_deidentified.csv")
 ```
 
 ## MMI
