@@ -59,3 +59,24 @@ RENAME TABLE edu_analytics.schools_orig TO edu_analytics.`identified$clean$schoo
 RENAME TABLE edu_analytics.schools TO edu_analytics.`hashed$clean$school`;
 
 ALTER TABLE `identified$raw$mmi_scores` MODIFY start_time datetime;
+ALTER TABLE `identified$raw$2013_all_applicants` MODIFY committee_date date;
+
+ALTER TABLE `identified$raw$2013_all_applicants` MODIFY ses VARCHAR(255);
+ALTER TABLE `hashed$raw$2013_all_applicants` MODIFY ses VARCHAR(255);
+
+ALTER TABLE `hashed$raw$2013_all_applicants` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$2013_matriculated_report` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$2014_all_applicants` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$2014_matriculated_report` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$2015_all_applicants` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$2015_matriculated_report` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$2016_all_applicants` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$2016_matriculated_report` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$ethnicity` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$gpa` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$mmi_scores` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$new_mcat` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$old_mcat` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$parent_guardian` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$race` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$school` DROP COLUMN row_names;
