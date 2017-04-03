@@ -45,11 +45,34 @@ source("db_utility_functions.R")
 
 
 ```{r, echo=FALSE}
-credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
-#credentials_path <- "/Volumes/IIME/IIME/EDS/data/admissions/db_credentials/"
+#credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
+credentials_path <- "/Volumes/IIME/IIME/EDS/data/admissions/db_credentials/"
 credentials_file <- "owner_credentials.yaml"
+<<<<<<< HEAD
 
 edu_db_con <- get_mysql_conn(credentials_path, credentials_file)
+=======
+credentials <- paste0(credentials_path, credentials_file) %>%
+  yaml::yaml.load_file()
+
+edu_db_con <- dbConnect(MySQL(),
+        user = credentials$user,
+        password = credentials$password,
+        dbname = credentials$dbname,
+        host = credentials$host,
+        port = credentials$port)
+
+edu_db <- src_sql("mysql", edu_db_con, info = dbGetInfo(edu_db_con))
+
+# edu_db <- src_mysql(credentials$dbname,
+#                     host = credentials$host,
+#                     port = credentials$port,
+#                     user = credentials$user,
+#                     password = credentials$password)
+
+
+rm(credentials)
+>>>>>>> master
 ```
 
 # Admissions applicants datasets: 2013-2016
@@ -57,10 +80,24 @@ edu_db_con <- get_mysql_conn(credentials_path, credentials_file)
 ## Read in all_applicants tables from database
 
 ```{r}
+<<<<<<< HEAD
 (table_names <- db_list_tables(edu_db_con))
 
 edu_db_con %>%
   get_tbls_by_pattern("^hashed\\Wraw\\W\\d{4}_all_applicants") %>%
+=======
+(table_names <- db_list_tables(edu_db$con))
+
+
+table_names %>%
+  str_detect(regex("^\\identified\\Wraw\\W\\d{4}_all_applicants$", ignore_case = TRUE)) %>%
+  which() %>%
+  extract(table_names, .) %>%
+  purrr::map(., function(tbl_name) tbl(edu_db, tbl_name)) %>%
+  purrr::map(., function(x) collect(x)) %>%
+  map(function(df) set_names(df, str_replace_all(colnames(df), " ", "_"))) %>%
+  map(function(df) set_names(df, tolower(colnames(df)))) %>%
+>>>>>>> master
   set_names(2013:2016) -> applicants_data
 ```
 
@@ -110,103 +147,274 @@ applicants_all_years %>%
 ```
 
 ```{r}
+<<<<<<< HEAD
 names(applicants_data) %>%
   add_tbl_prefix("deidentified", "raw") %>%
   paste("all_applicants", sep = "_") ->
   tbl_names
 
 applicants_data %<>% set_names(tbl_names)
+=======
+# 
+# make_data_frame <- function(tables_list, pattern) {
+#   tables_list %>%
+#     str_detect(regex(pattern, ignore_case = TRUE)) %>%
+#     which() %>%
+#     extract(tables_list, .) %>% 
+#     tbl(edu_db, .) %>% 
+#     as.data.frame() %>% 
+#     set_colnames(tolower(colnames(.)))
+# }
+>>>>>>> master
 
 applicants_data %>% write_to_database(edu_db_con)
 ```
 
 
+<<<<<<< HEAD
 # Raw features from eduDW tables
 
+=======
+>>>>>>> master
 ## Ethnicity
 
 ```{r, ethnicity, echo=FALSE}
 
+<<<<<<< HEAD
 ethnicity_raw_deid <- edu_db_con %>%
   get_tbls_by_pattern("^hashed\\Wraw\\Wethnicity$")
   select(-appl_person_id, -aamc_id)
+=======
+(table_names <- db_list_tables(edu_db_con))
+
+#write to database
+
+#deidentified_raw
+table_names %>% 
+  str_detect(regex("^hashed\\Wraw\\Wethnicity$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>%
+  select(-appl_person_id, -aamc_id) %>% 
+  collect(n=Inf) %>% 
+  dbWriteTable(edu_db_con, "deidentified$raw$ethnicity", ., overwrite = TRUE, row.names = FALSE)
+
+
+#deidentfied_clean
+table_names %>% 
+  str_detect(regex("^deidentified\\Wraw\\Wethnicity$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>% 
+  collect(n=Inf) %>% 
+  filter(appl_year == 2013 | appl_year == 2014 | appl_year == 2015 | appl_year == 2016  | appl_year == 2017) %>%
+  distinct(study_id, ethnicity, .keep_all = TRUE) %>%
+  select(-appl_year) %>%
+  dbWriteTable(edu_db_con, "deidentified$clean$ethnicity", ., overwrite = TRUE, row.names = FALSE)
+
+
+
+# ethnicity_raw_deid <- table_names %>% 
+#   make_data_frame("^hashed\\Wraw\\Wethnicity$") %>% 
+#   select(-(appl_person_id), -(aamc_id))
+>>>>>>> master
 
 ethnicity_clean_deid <- edu_db_con %>%
   get_tbls_by_pattern("^hashed\\Wclean\\Wethnicity$")
   select(-appl_person_id, -aamc_id)
 
 # write data
+<<<<<<< HEAD
 ethnicity_raw_deid %>%
  write_to_file(deidentified_output, "ethnicity_raw_deidentified.csv")  
   
 ethnicity_clean_deid %>%
  write_to_file(deidentified_output, "ethnicity_clean_deidentified.csv")  
+=======
+# write_csv(ethnicity_raw_deid, "/Volumes/admissions/data_for_itai/ethnicity_raw_deidentified.csv")
+# write_csv(ethnicity_clean_deid, "/Volumes/admissions/data_for_itai/ethnicity_clean_deidentified.csv")
+>>>>>>> master
 ```
+
+
 
 ## Race
 
 ```{r, race, echo=FALSE}
 
+<<<<<<< HEAD
 race_raw_deid <- edu_db_con %>%
   get_tbls_by_pattern("^hashed\\Wraw\\Wrace$")
   select(-appl_person_id, -aamc_id)
+=======
+(table_names <- db_list_tables(edu_db_con))
+
+#deidentfied_raw
+table_names %>% 
+  str_detect(regex("^hashed\\Wraw\\Wrace$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>%
+  select(-appl_person_id, -aamc_id) %>% 
+  collect(n=Inf) %>% 
+  dbWriteTable(edu_db_con, "deidentified$raw$race", ., overwrite = TRUE, row.names = FALSE)
+
+#deidentfied_clean
+table_names %>% 
+  str_detect(regex("^deidentified\\Wraw\\Wrace$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>% 
+  collect(n=Inf) %>% 
+  filter(appl_year == 2013 | appl_year == 2014 | appl_year == 2015 | appl_year == 2016  | appl_year == 2017) %>%
+  distinct(study_id, race, .keep_all = TRUE) %>%
+  select(-appl_year) %>%
+  dbWriteTable(edu_db_con, "deidentified$clean$race", ., overwrite = TRUE, row.names = FALSE)
+
+# race_raw_deid <- table_names %>% 
+#   make_data_frame("^hashed\\Wraw\\Wrace$") %>% 
+#   select(-(appl_person_id), -(aamc_id))
+>>>>>>> master
 
 race_clean_deid <- edu_db_con %>%
   get_tbls_by_pattern("^hashed\\Wclean\\Wrace$")
   select(-appl_person_id, -aamc_id)
 
 # write data
+<<<<<<< HEAD
 race_raw_deid %>%
  write_to_file(deidentified_output, "race_raw_deidentified.csv")  
   
 race_clean_deid %>%
  write_to_file(deidentified_output, "race_clean_deidentified.csv") 
+=======
+# write_csv(race_raw_deid, "/Volumes/admissions/data_for_itai/race_raw_deidentified.csv")
+# write_csv(race_clean_deid, "/Volumes/admissions/data_for_itai/race_clean_deidentified.csv")
+
+>>>>>>> master
 ```
+
 
 ## School
 
 ```{r, schools, echo=FALSE}
 
+<<<<<<< HEAD
 schools_raw_deid <- edu_db_con %>%
   get_tbls_by_pattern("^hashed\\Wraw\\Wschool$")
   select(-appl_person_id, -aamc_id)
+=======
+(table_names <- db_list_tables(edu_db_con))
+
+#deidentfied_raw
+table_names %>% 
+  str_detect(regex("^hashed\\Wraw\\Wschool$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>%
+  select(-appl_person_id, -aamc_id) %>% 
+  collect(n=Inf) %>% 
+  dbWriteTable(edu_db_con, "deidentified$raw$school", ., overwrite = TRUE, row.names = FALSE)
+
+
+#deidentided_clean
+table_names %>% 
+  str_detect(regex("^deidentified\\Wraw\\Wschool$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>% 
+  collect(n=Inf) %>% 
+  filter(appl_year == 2013 | appl_year == 2014 | appl_year == 2015 | appl_year == 2016  | appl_year == 2017) %>%
+  distinct(study_id, mod_school_desc, program_type_desc, .keep_all = TRUE) %>%
+  dbWriteTable(edu_db_con, "deidentified$clean$school", ., overwrite = TRUE, row.names = FALSE)
+
+
+# schools_raw_deid <- table_names %>% 
+#   make_data_frame("^hashed\\Wraw\\Wschool$") %>% 
+#   select(-(appl_person_id), -(aamc_id))
+>>>>>>> master
 
 schools_clean_deid <- edu_db_con %>%
   get_tbls_by_pattern("^hashed\\Wclean\\Wschool$")
   select(-appl_person_id, -aamc_id)
 
 # write data
+<<<<<<< HEAD
 schools_raw_deid %>%
  write_to_file(deidentified_output, "schools_raw_deidentified.csv")  
   
 schools_clean_deid %>%
  write_to_file(deidentified_output, "schools_clean_deidentified.csv") 
+=======
+# write_csv(schools_raw_deid, "/Volumes/admissions/data_for_itai/schools_raw_deidentified.csv")
+# write_csv(schools_clean_deid, "/Volumes/admissions/data_for_itai/schools_clean_deidentified.csv")
+
+>>>>>>> master
 ```
 
 ## GPA
 
 ```{r, gpa, echo=FALSE}
 
+<<<<<<< HEAD
 gpa_raw_deid <- edu_db_con %>% 
   get_tbls_by_pattern("^hashed\\Wraw\\Wgpa$") %>% 
   select(-appl_person_id, -aamc_id)
+=======
+
+(table_names <- db_list_tables(edu_db_con))
+
+
+#deidentfied_raw
+table_names %>% 
+  str_detect(regex("^hashed\\Wraw\\Wgpa$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>%
+  select(-appl_person_id, -aamc_id) %>% 
+  collect(n=Inf) %>% 
+  dbWriteTable(edu_db_con, "deidentified$raw$gpa", ., overwrite = TRUE, row.names = FALSE)
+
+
+#deidentified_clean
+table_names %>% 
+  str_detect(regex("^deidentified\\Wraw\\Wgpa$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>%
+  collect(n=Inf) %>% 
+  filter(appl_year == 2013 | appl_year == 2014 | appl_year == 2015 | appl_year == 2016  | appl_year == 2017) %>%
+  distinct(study_id, aca_status_desc, .keep_all = TRUE) %>%
+  dbWriteTable(edu_db_con, "deidentified$clean$gpa", ., overwrite = TRUE, row.names = FALSE)
+
+# gpa_raw_deid <- table_names %>% 
+#   make_data_frame("^hashed\\Wraw\\Wgpa$") %>% 
+#   select(-appl_person_id, -aamc_id)
+>>>>>>> master
 
 gpa_clean_deid <- edu_db_con %>% 
    get_tbls_by_pattern("^hashed\\Wclean\\Wgpa$") %>% 
    select(-appl_person_id, -aamc_id)
 
 # write data
+<<<<<<< HEAD
 gpa_raw_deid %>%
  write_to_file(deidentified_output, "gpa_raw_deidentified.csv")  
   
 gpa_clean_deid %>%
  write_to_file(deidentified_output, "gpa_clean_deidentified.csv")
+=======
+# write_csv(gpa_raw_deid, "/Volumes/admissions/data_for_itai/gpa_raw_deidentified.csv")
+# write_csv(gpa_clean_deid, "/Volumes/admissions/data_for_itai/gpa_clean_deidentified.csv")
+
+>>>>>>> master
 ```
 
 ## MMI
 
 ```{r, mmi, echo = FALSE}
 
+<<<<<<< HEAD
 mmi_raw_deid <- table_names %>% 
   get_tbls_by_pattern("^hashed\\Wraw\\Wmmi_scores$") %>% 
   select(-application_id, -amcas_id, -appl_person_id, -fac_last_name, -fac_first_name, 
@@ -216,54 +424,196 @@ mmi_raw_deid <- table_names %>%
 # write data
 mmi_raw_deid %>%
  write_to_file(deidentified_output, "mmi_raw_deidentified.csv")  
+=======
+(table_names <- db_list_tables(edu_db_con))
+
+
+#deidentfied_raw
+table_names %>% 
+  str_detect(regex("^hashed\\Wraw\\Wmmi_scores$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>%
+  select(-application_id, -amcas_id, -appl_person_id, -fac_last_name, -fac_first_name,
+        -comment, -avg, -stdev, -conflict, -interview_id, -scenario, -interview_type, -interview_type,
+        -faculty_id, -code, -mmi_question_id) %>% 
+  collect(n=Inf) %>% 
+  dbWriteTable(edu_db_con, "deidentified$raw$mmi_scores", ., overwrite = TRUE, row.names = FALSE)
+
+
+
+#deidentfied_clean
+table_names %>% 
+  str_detect(regex("^deidentified\\Wraw\\Wmmi_scores$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>%
+  collect(n=Inf) %>% 
+  filter(app_year != 2013) %>%
+  dbWriteTable(edu_db_con, "deidentified$clean$mmi_scores", ., overwrite = TRUE, row.names = FALSE)
+
+
+
+# mmi_deid <- table_names %>% 
+#   make_data_frame("^hashed\\Wraw\\Wmmi_scores$") %>% 
+#   select(-application_id, -amcas_id, -appl_person_id, -fac_last_name, -fac_first_name, 
+#          -comment, -avg, -stdev, -conflict, -interview_id, -scenario, -interview_type, -interview_type, 
+#          -faculty_id, -code, -mmi_question_id)
+# 
+# write_csv(mmi_deid, "/Volumes/admissions/data_for_itai/mmi_deidentified.csv")
+
+>>>>>>> master
 ```
+
 
 ## MCAT: OLD
 
 ```{r, mcat_old, echo=FALSE}
 
+<<<<<<< HEAD
 old_mcat_raw_deid <- table_names %>% 
   get_tbls_by_pattern("^hashed\\Wraw\\Wold_mcat$") %>% 
   # set_colnames(stringr::str_replace(colnames(.), "_p$", "_percentile")) %>% 
   select(-appl_person_id, -aamc_id)
+=======
+(table_names <- db_list_tables(edu_db_con))
+
+
+#deidentfied_raw
+table_names %>% 
+  str_detect(regex("^hashed\\Wraw\\Wold_mcat$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>%
+  select(-appl_person_id, -aamc_id) %>% 
+  collect(n=Inf) %>% 
+  dbWriteTable(edu_db_con, "deidentified$raw$old_mcat", ., overwrite = TRUE, row.names = FALSE)
+
+
+
+#deidentfied_clean
+table_names %>% 
+  str_detect(regex("^deidentified\\Wraw\\Wold_mcat$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>%
+  collect(n=Inf) %>% 
+  filter(appl_year == 2013 | appl_year == 2014 | appl_year == 2015 | appl_year == 2016  | appl_year == 2017) %>%
+  mutate(test_date = lubridate::ymd(test_date)) %>%
+  distinct(study_id, test_date, .keep_all = TRUE) %>% 
+  dbWriteTable(edu_db_con, "deidentified$clean$old_mcat", ., overwrite = TRUE, row.names = FALSE)
+
+# oldmcat_raw_deid <- table_names %>% 
+#   make_data_frame("^hashed\\Wraw\\Wold_mcat$") %>% 
+#   set_colnames(stringr::str_replace(colnames(.), "_p$", "_percentile")) %>% 
+#   select(-appl_person_id, -aamc_id)
+>>>>>>> master
 
 old_mcat_clean_deid <- table_names %>%
   get_tbls_by_pattern("^hashed\\Wclean\\Wold_mcat$") %>%
   select(-appl_person_id, -aamc_id)
 
 # write data
+<<<<<<< HEAD
 old_mcat_raw_deid %>%
  write_to_file(deidentified_output, "old_mcat_raw_deidentified.csv")  
   
 old_mcat_clean_deid %>%
  write_to_file(deidentified_output, "old_mcat_clean_deidentified.csv")
+=======
+# write_csv(oldmcat_raw_deid, "/Volumes/admissions/data_for_itai/oldmcat_raw_deidentified.csv")
+# write_csv(oldmcat_clean_deid, "/Volumes/admissions/data_for_itai/oldmcat_clean_deidentified.csv")
+>>>>>>> master
 ```
 
 ## MCAT: NEW
 
 ```{r, new_mcat, echo=FALSE}
 
+<<<<<<< HEAD
 new_mcat_raw_deid <- table_names %>% 
   get_tbls_by_pattern("^hashed\\Wraw\\Wnew_mcat$") %>% 
   select(-appl_person_id, -aamc_id)
+=======
+(table_names <- db_list_tables(edu_db_con))
+
+#deidentfied_raw
+table_names %>% 
+  str_detect(regex("^hashed\\Wraw\\Wnew_mcat$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>%
+  select(-appl_person_id, -aamc_id) %>% 
+  collect(n=Inf) %>% 
+  dbWriteTable(edu_db_con, "deidentified$raw$new_mcat", ., overwrite = TRUE, row.names = FALSE)
+
+
+#deidentfied_clean
+table_names %>% 
+  str_detect(regex("^deidentified\\Wraw\\Wnew_mcat$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>%
+  collect(n=Inf) %>% 
+  filter(appl_year == 2013 | appl_year == 2014 | appl_year == 2015 | appl_year == 2016  | appl_year == 2017) %>%
+  mutate(new_mcat_test_date = lubridate::ymd(new_mcat_test_date)) %>%
+  distinct(study_id, new_mcat_test_date, .keep_all = TRUE) %>% 
+  dbWriteTable(edu_db_con, "deidentified$clean$new_mcat", ., overwrite = TRUE, row.names = FALSE)
+
+
+# newmcat_raw_deid <- table_names %>% 
+#   make_data_frame("^hashed\\Wraw\\Wnew_mcat$") %>% 
+#   select(-appl_person_id, -aamc_id)
+>>>>>>> master
   
 new_mcat_clean_deid <- table_names %>%
   get_tbls_by_pattern("^hashed\\Wclean\\Wnew_mcat$") %>%
   select(-appl_person_id, -aamc_id)
 
 # write data
+<<<<<<< HEAD
 new_mcat_raw_deid %>%
  write_to_file(deidentified_output, "new_mcat_raw_deidentified.csv")  
   
 new_mcat_clean_deid %>%
  write_to_file(deidentified_output, "new_mcat_clean_deidentified.csv")
+=======
+# write_csv(newmcat_raw_deid, "/Volumes/admissions/data_for_itai/newmcat_raw_deidentified.csv")
+# write_csv(newmcat_clean_deid, "/Volumes/admissions/data_for_itai/newmcat_clean_deidentified.csv")
+>>>>>>> master
 
 ```
 
 ## Parent/Guardian
 
 ```{r, parent_guardian, echo=FALSE}
+(table_names <- db_list_tables(edu_db_con))
 
+#deidentfied_raw
+table_names %>% 
+  str_detect(regex("^hashed\\Wraw\\Wparent_guardian$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>%
+  select(-appl_person_id, -aamc_id, -name, -living_ind) %>% 
+  collect(n=Inf) %>% 
+  dbWriteTable(edu_db_con, "deidentified$raw$parent_guardian", ., overwrite = TRUE, row.names = FALSE)
+
+
+
+#deidentfied_clean
+table_names %>% 
+  str_detect(regex("^deidentified\\Wraw\\Wparent_guardian$", ignore.case = TRUE)) %>% 
+  which() %>% 
+  extract(table_names, .) %>% 
+  tbl(edu_db, .) %>%
+  collect(n=Inf) %>% 
+  filter(appl_year == 2013 | appl_year == 2014 | appl_year == 2015 | appl_year == 2016  | appl_year == 2017) %>%
+  distinct(study_id, occupation_desc, edu_level_desc, gender, .keep_all = TRUE) %>% 
+  dbWriteTable(edu_db_con, "deidentified$clean$parent_guardian", ., overwrite = TRUE, row.names = FALSE)
+  
+
+<<<<<<< HEAD
 parents_raw_deid <- table_names %>% 
   get_tbls_by_pattern("^hashed\\Wraw\\Wparent_guardian$") %>% 
   select(-appl_person_id, -appl_year, -aamc_id, -name)
@@ -279,10 +629,19 @@ parents_raw_deid %>%
   
 parents_clean_deid %>%
  write_to_file(deidentified_output, "parents_clean_deidentified.csv")
+=======
+# parents_raw_deid <- table_names %>% 
+#   make_data_frame("^hashed\\Wclean\\Wparent_guardian$") %>% 
+#   select(-appl_person_id, -appl_year, -aamc_id, -name, -living_ind)
+
+
+#write data
+# write_csv(parents_raw_deid, "/Volumes/admissions/data_for_itai/parents_raw_deidentified.csv")
+>>>>>>> master
 
 ```
 
 
 ```{r}
-map(dbListConnections(MySQL()), dbDisconnect)
+disconnect_all()
 ```

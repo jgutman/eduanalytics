@@ -24,12 +24,19 @@ library(stringr)
 library(magrittr)
 library(lubridate)
 
-sessionInfo()$otherPkgs %>%
+sessionInfo() %>%
+use_series(otherPkgs) %>%
   map_chr(function(pkg) paste(pkg$Package, pkg$Version)) %>%
   cat(sep = "\n")
+
 opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
             cache = TRUE, autodep = TRUE, cache.comments = FALSE)
 
+```
+
+```{r}
+# Replace with import package
+source("db_utility_functions.R")
 ```
 
 # Create database connection
@@ -37,23 +44,8 @@ opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
 ```{r, echo=FALSE}
 credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
 credentials_file <- "owner_credentials.yaml"
-credentials <- paste0(credentials_path, credentials_file) %>%
-  yaml::yaml.load_file()
 
-edu_db_con <- dbConnect(MySQL(),
-        user = credentials$user,
-        password = credentials$password,
-        dbname = credentials$dbname,
-        host = credentials$host,
-        port = credentials$port)
-
-# edu_db <- src_mysql(credentials$dbname,
-#                     host = credentials$host,
-#                     port = credentials$port,
-#                     user = credentials$user,
-#                     password = credentials$password)
-
-rm(credentials)
+edu_db_con <- get_mysql_conn(credentials_path, credentials_file)
 ```
 
 # Check available data directories
@@ -85,15 +77,16 @@ parent_path <- "/Volumes/IIME/EDS/data/admissions"
 - 2016_tracking_report
 
 ```{r}
-identified_raw_admissions_path <- paste(data_dirs[[1]], "Data", sep = "/")
-(identified_raw_admissions_files <- list.files(identified_raw_admissions_path, full.names = TRUE))
+identified_raw_admissions_path <- data_dirs %>% 
+  str_detect("from_.*admissions") %>% 
+  extract(data_dirs, .) %>%
+  file.path(., "Data") 
+
+(identified_raw_admissions_files <- list.files(identified_raw_admissions_path, 
+                                               full.names = TRUE))
 ```
 
 ```{r}
-fix_colnames <- . %>% 
-  map(function(df) set_names(df, str_replace_all(colnames(df), " ", "_"))) %>%
-  map(function(df) set_names(df, tolower(colnames(df))))
-
 identified_raw_admissions_files %>% 
   map(function(path) readxl::read_excel(path)) %>%
   fix_colnames() ->
@@ -102,8 +95,8 @@ identified_raw_admissions_files %>%
 
 ```{r}
 (table_names <- paste(rep(2013:2016, each = 3), 
-                      c("all_applicants", "matriculated_report", "tracking_report"), sep = "_") %>%
-  paste("identified", "raw", ., sep = "$"))
+        c("all_applicants", "matriculated_report", "tracking_report"), sep = "_") %>%
+  add_tbl_prefix(id = "identified", status = "raw"))
 
 identified_raw_admissions_list %<>% 
   set_names(table_names) %>%
@@ -112,14 +105,8 @@ identified_raw_admissions_list %<>%
 ```
 
 ```{r}
-write_to_database <- function(df_list, con) {
-  df_list %>%
-    map2(., names(.), function(df, tbl_name) 
-      dbWriteTable(edu_db_con, tbl_name, df, row.names = FALSE, overwrite = TRUE))
-}
-
-identified_raw_admissions_list %>% write_to_database(edu_db_con)
-  
+identified_raw_admissions_list %>% 
+  write_to_database(edu_db_con)
 ```
 
 ### Upload EduDW-provided datasets
@@ -133,8 +120,12 @@ identified_raw_admissions_list %>% write_to_database(edu_db_con)
 - school [`School.csv`]
 
 ```{r}
-identified_raw_edudw_path <- data_dirs[[8]]
-(identified_raw_edudw_files <- list.files(identified_raw_edudw_path, full.names = TRUE))
+identified_raw_edudw_path <- data_dirs %>% 
+  str_detect("raw.*identified.*edudw") %>% 
+  extract(data_dirs, .)
+
+(identified_raw_edudw_files <- list.files(identified_raw_edudw_path, 
+                                          full.names = TRUE))
 ```
 
 ```{r}
@@ -148,10 +139,12 @@ identified_raw_edudw_files %>%
 (table_names <- identified_raw_edudw_files %>% 
   str_replace(identified_raw_edudw_path, "") %>% 
   str_replace_all(c("/" = "", ".csv" = "")) %>%
-  paste("identified", "raw", ., sep = "$"))
+  add_tbl_prefix(id = "identified", status = "raw"))
 
 identified_raw_edudw_list %<>% 
-  set_names(table_names)
+  set_names(table_names) %>%
+  map(function(df) set_names(df, 
+        str_replace(colnames(df), "(?<=(low)|(high))_p$", "_percentile")))
 ```
 
 #### Determine date-formatted columns in each table
@@ -187,64 +180,9 @@ identified_raw_edudw_list %>%
 ```
 
 ```{r}
-get_time_cols <- . %>%
-  select_if(is.POSIXt) %>%
-  colnames()
-
-identified_raw_admissions_list %>%
-  map(get_time_cols) -> tbl_list
-
-tbl_list %>%
-  data_frame(date_time_cols = .) %>%
-  mutate(tbl_name = names(tbl_list)) %>%
-  filter(map_lgl(date_time_cols, function(a) length(a) > 0)) %>% 
-  unnest() -> date_time_columns
-
-identified_raw_edudw_list %>%
-  map(get_time_cols) -> tbl_list
-
-tbl_list %>%
-  data_frame(date_time_cols = .) %>%
-  mutate(tbl_name = names(tbl_list)) %>%
-  filter(map_lgl(date_time_cols, function(a) length(a) > 0)) %>% 
-  unnest() %>%
-  bind_rows(date_time_columns) -> date_time_columns
-
-date_time_columns %>%
-  write_csv("date_time_cols_to_convert.csv")
+disconnect_all()
 ```
 
-```{r}
-map(dbListConnections(MySQL()), dbDisconnect)
-```
-
-## Convert dates to POSIXct/dttm
-```{r}
-quietly_parse_time <- quietly(function(.x) 
-  parse_date_time(.x, "YmdHMS", 
-      tz = "America/New_York", truncated = 3))
-
-convert_or_retain <- function(col) {
-  col_mutated <- quietly_parse_time(col)
-  
-  no_errors <- is_empty(col_mutated$warnings)
-  
-  if (no_errors) col_mutated$result else col
-}
-```
-
-
-## Testing reading in a table to memory
-
-```{r}
-edu_db <- src_sql("mysql", edu_db_con, info = dbGetInfo(edu_db_con))
-
-tbl(edu_db, "identified$raw$2013_all_applicants") %>%
-  collect() %>%
-  mutate_if(is.character, convert_or_retain) ->
-  all_apps_2013
-
-```
 
 
 

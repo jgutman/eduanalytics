@@ -15,7 +15,7 @@ convert_or_retain <- function(col) {
 # takes as input path to db credentials file
 # return database connection object to mysql database
 get_mysql_conn <- function(path, credentials_file) {
-  credentials <- paste0(path, credentials_file) %>%
+  credentials <- file.path(path, credentials_file) %>%
     yaml::yaml.load_file()
   
   DBI::dbConnect(RMySQL::MySQL(),
@@ -83,7 +83,8 @@ all_equal_across_row <- function(df) {
     magrittr::equals(1)
   
   df %>% 
-    purrr::by_row(is_single_value, .collate = "rows", .to = "all_cols_match") %>% 
+    purrr::by_row(is_single_value, 
+          .collate = "rows", .to = "all_cols_match") %>% 
     magrittr::use_series(all_cols_match) %>%
     all()
 }
@@ -93,5 +94,18 @@ write_to_database <- function(df_list, conn) {
   df_list %>%
     purrr::map2(., names(.), function(df, tbl_name) 
       RMySQL::dbWriteTable(conn, tbl_name, df, 
-                row.names = FALSE, overwrite = TRUE))
+            field.types = get_timestamp_cols(df),
+            row.names = FALSE, overwrite = TRUE))
+}
+
+# internal function for write_to_database
+# get a named character vector of datetime columns
+# to be written to database as TIMESTAMP
+get_timestamp_cols <- function(df) {
+  df %>%
+    dplyr::select_if(lubridate::is.POSIXt) %>%
+    colnames() -> time_cols
+  
+  rep("TIMESTAMP", length(time_cols)) %>%
+    purrr::set_names(time_cols)
 }
