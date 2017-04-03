@@ -82,3 +82,23 @@ ALTER TABLE `hashed$raw$race` DROP COLUMN row_names;
 ALTER TABLE `hashed$raw$school` DROP COLUMN row_names;
 
 SELECT COUNT(*) FROM `deidentified$raw$gpa`;
+
+select * from `deidentified$raw$old_mcat` limit 1;
+
+ALTER TABLE `hashed$raw$old_mcat` CHANGE vr_low_p vr_low_percentile DOUBLE;
+ALTER TABLE `hashed$raw$old_mcat` CHANGE vr_high_p vr_high_percentile DOUBLE;
+ALTER TABLE `hashed$raw$old_mcat` CHANGE ps_low_p ps_low_percentile DOUBLE;
+ALTER TABLE `hashed$raw$old_mcat` CHANGE ps_high_p ps_high_percentile DOUBLE;
+ALTER TABLE `hashed$raw$old_mcat` CHANGE ws_low_p ws_low_percentile DOUBLE;
+ALTER TABLE `hashed$raw$old_mcat` CHANGE ws_high_p ws_high_percentile DOUBLE;
+ALTER TABLE `hashed$raw$old_mcat` CHANGE bs_low_p bs_low_percentile DOUBLE;
+ALTER TABLE `hashed$raw$old_mcat` CHANGE bs_high_p bs_high_percentile DOUBLE;
+
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE vr_low_p vr_low_percentile DOUBLE;
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE vr_high_p vr_high_percentile DOUBLE;
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE ps_low_p ps_low_percentile DOUBLE;
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE ps_high_p ps_high_percentile DOUBLE;
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE ws_low_p ws_low_percentile DOUBLE;
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE ws_high_p ws_high_percentile DOUBLE;
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE bs_low_p bs_low_percentile DOUBLE;
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE bs_high_p bs_high_percentile DOUBLE;
