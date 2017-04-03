@@ -208,47 +208,55 @@ gpa_clean_deid %>%
 ```{r, mmi, echo = FALSE}
 
 mmi_raw_deid <- table_names %>% 
-  make_data_frame("^hashed\\Wraw\\Wmmi_scores$") %>% 
+  get_tbls_by_pattern("^hashed\\Wraw\\Wmmi_scores$") %>% 
   select(-application_id, -amcas_id, -appl_person_id, -fac_last_name, -fac_first_name, 
          -comment, -avg, -stdev, -conflict, -interview_id, -scenario, -interview_type, -interview_type, 
          -faculty_id, -code, -mmi_question_id)
 
-write_csv(mmi_raw_deid, "/Volumes/admissions/data_for_itai/mmi_raw_deidentified.csv")
+# write data
+mmi_raw_deid %>%
+ write_to_file(deidentified_output, "mmi_raw_deidentified.csv")  
 ```
 
 ## MCAT: OLD
 
 ```{r, mcat_old, echo=FALSE}
 
-oldmcat_raw_deid <- table_names %>% 
-  make_data_frame("^hashed\\Wraw\\Wold_mcat$") %>% 
-  set_colnames(stringr::str_replace(colnames(.), "_p$", "_percentile")) %>% 
+old_mcat_raw_deid <- table_names %>% 
+  get_tbls_by_pattern("^hashed\\Wraw\\Wold_mcat$") %>% 
+  # set_colnames(stringr::str_replace(colnames(.), "_p$", "_percentile")) %>% 
   select(-appl_person_id, -aamc_id)
 
-# oldmcat_clean_deid <- table_names %>% 
-#   make_data_frame("^hashed\\Wclean\\Wmmi_scores$") %>% 
-#   select(-appl_person_id, -aamc_id)
+old_mcat_clean_deid <- table_names %>%
+  get_tbls_by_pattern("^hashed\\Wclean\\Wold_mcat$") %>%
+  select(-appl_person_id, -aamc_id)
 
 # write data
-write_csv(oldmcat_raw_deid, "/Volumes/admissions/data_for_itai/oldmcat_raw_deidentified.csv")
-# write_csv(oldmcat_clean_deid, "/Volumes/admissions/data_for_itai/oldmcat_clean_deidentified.csv")
+old_mcat_raw_deid %>%
+ write_to_file(deidentified_output, "old_mcat_raw_deidentified.csv")  
+  
+old_mcat_clean_deid %>%
+ write_to_file(deidentified_output, "old_mcat_clean_deidentified.csv")
 ```
 
 ## MCAT: NEW
 
 ```{r, new_mcat, echo=FALSE}
 
-newmcat_raw_deid <- table_names %>% 
-  make_data_frame("^hashed\\Wraw\\Wnew_mcat$") %>% 
+new_mcat_raw_deid <- table_names %>% 
+  get_tbls_by_pattern("^hashed\\Wraw\\Wnew_mcat$") %>% 
   select(-appl_person_id, -aamc_id)
   
-# newmcat_clean_deid <- table_names %>% 
-#   make_data_frame("^hashed\\Wclean\\Wnew_mcat$") %>% 
-#   select(-appl_person_id, -aamc_id)
+new_mcat_clean_deid <- table_names %>%
+  get_tbls_by_pattern("^hashed\\Wclean\\Wnew_mcat$") %>%
+  select(-appl_person_id, -aamc_id)
 
 # write data
-write_csv(newmcat_raw_deid, "/Volumes/admissions/data_for_itai/newmcat_raw_deidentified.csv")
-# write_csv(newmcat_clean_deid, "/Volumes/admissions/data_for_itai/newmcat_clean_deidentified.csv")
+new_mcat_raw_deid %>%
+ write_to_file(deidentified_output, "new_mcat_raw_deidentified.csv")  
+  
+new_mcat_clean_deid %>%
+ write_to_file(deidentified_output, "new_mcat_clean_deidentified.csv")
 
 ```
 
@@ -257,17 +265,20 @@ write_csv(newmcat_raw_deid, "/Volumes/admissions/data_for_itai/newmcat_raw_deide
 ```{r, parent_guardian, echo=FALSE}
 
 parents_raw_deid <- table_names %>% 
-  make_data_frame("^hashed\\Wraw\\Wparent_guardian$") %>% 
+  get_tbls_by_pattern("^hashed\\Wraw\\Wparent_guardian$") %>% 
   select(-appl_person_id, -appl_year, -aamc_id, -name)
 
-# parents_clean_deid <- table_names %>% 
-#   make_data_frame("^hashed\\Wclean\\Wparent_guardian$") %>% 
-#   distinct(aamc_id, name, .keep_all = TRUE) %>% 
-#   select(-appl_person_id, -appl_year, -aamc_id, -name, -appl_year)
+parents_clean_deid <- table_names %>%
+  get_tbls_by_pattern("^hashed\\Wclean\\Wparent_guardian$") %>%
+  distinct(study_id, name, .keep_all = TRUE) %>%
+  select(-appl_person_id, -appl_year, -aamc_id, -name, -appl_year)
 
-#write data
-write_csv(parents_raw_deid, "/Volumes/admissions/data_for_itai/parents_raw_deidentified.csv")
-# write_csv(parents_clean_deid, "/Volumes/admissions/data_for_itai/parents_clean_deidentified.csv")
+# write data
+parents_raw_deid %>%
+ write_to_file(deidentified_output, "parents_raw_deidentified.csv")  
+  
+parents_clean_deid %>%
+ write_to_file(deidentified_output, "parents_clean_deidentified.csv")
 
 ```
 

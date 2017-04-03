@@ -80,3 +80,5 @@ ALTER TABLE `hashed$raw$old_mcat` DROP COLUMN row_names;
 ALTER TABLE `hashed$raw$parent_guardian` DROP COLUMN row_names;
 ALTER TABLE `hashed$raw$race` DROP COLUMN row_names;
 ALTER TABLE `hashed$raw$school` DROP COLUMN row_names;
+
+SELECT COUNT(*) FROM `deidentified$raw$gpa`;
