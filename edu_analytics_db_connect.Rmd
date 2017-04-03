@@ -45,8 +45,8 @@ source("db_utility_functions.R")
 
 
 ```{r, echo=FALSE}
-#credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
-credentials_path <- "/Volumes/IIME/IIME/EDS/data/admissions/db_credentials/"
+credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
+#credentials_path <- "/Volumes/IIME/IIME/EDS/data/admissions/db_credentials/"
 credentials_file <- "owner_credentials.yaml"
 
 edu_db_con <- get_mysql_conn(credentials_path, credentials_file)
@@ -128,8 +128,7 @@ applicants_data %>% write_to_database(edu_db_con)
 
 # deidentified raw
 edu_db_con %>%
-  get_tbls_by_pattern("^hashed\\Wraw\\Wethnicity$") %>%
-  select(-appl_person_id, -aamc_id) ->
+  deidentify_hashed("ethnicity", "aamc_id", "appl_person_id") ->
   ethnicity_raw_deid
 
 ethnicity_raw_deid %>%
@@ -138,9 +137,8 @@ ethnicity_raw_deid %>%
 
 # deidentified clean
 edu_db_con %>%
-  get_tbls_by_pattern("^deidentified\\Wraw\\Wethnicity$") %>%
-  filter(appl_year >= 2013, appl_year <= 2017) %>%
-  distinct(study_id, ethnicity, .keep_all = TRUE) %>%
+  clean_deidentified("ethnicity", 
+      cols_to_distinct = c("study_id", "ethnicity")) %>%
   select(-appl_year) ->
   ethnicity_clean_deid
 

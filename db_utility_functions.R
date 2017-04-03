@@ -112,3 +112,30 @@ data_types_mysql <- function(df, conn) {
     str_replace_all("datetime", "timestamp") %>%
     str_replace_all("(?<=varchar)\\(\\d*\\)", "(255)")
 }
+
+deidentify_hashed <- function(conn, tbl_name, ...,
+      id = "hashed", status = "raw") {
+  
+  pattern <- sprintf("^%s\\W%s\\W%s$", 
+                     id, status, tbl_name)
+  cols_to_drop <- c(...)
+  
+  conn %>% 
+  get_tbls_by_pattern(pattern) %>%
+    magrittr::extract(1) %>% 
+    dplyr::select(-dplyr::one_of(cols_to_drop))
+}
+
+clean_deidentified <- function(conn, tbl_name, ...,
+      min_year = 2013, max_year = 2017,
+      id = "deidentified", status = "raw") {
+  
+  pattern <- sprintf("^%s\\W%s\\W%s$", 
+                     id, status, tbl_name)
+  cols_to_distinct <- c(...)
+  
+  conn %>%
+    get_tbls_by_pattern(pattern) %>%
+    dplyr::filter(appl_year >= min_year, appl_year <= max_year) %>%
+    dplyr::distinct_(.dots = cols_to_distinct, .keep_all = TRUE)
+}
