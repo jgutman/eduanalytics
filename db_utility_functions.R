@@ -92,20 +92,23 @@ all_equal_across_row <- function(df) {
 # write a named list of tibbles to the database
 write_to_database <- function(df_list, conn) {
   df_list %>%
-    purrr::map2(., names(.), function(df, tbl_name) 
-      RMySQL::dbWriteTable(conn, tbl_name, df, 
-            field.types = get_timestamp_cols(df),
-            row.names = FALSE, overwrite = TRUE))
+    purrr::map2(., names(.), function(df, tbl_name)
+      write_to_database_single(df, conn, tbl_name)
+      )
 }
 
-# internal function for write_to_database
-# get a named character vector of datetime columns
-# to be written to database as TIMESTAMP
-get_timestamp_cols <- function(df) {
-  df %>%
-    dplyr::select_if(lubridate::is.POSIXt) %>%
-    colnames() -> time_cols
-  
-  rep("TIMESTAMP", length(time_cols)) %>%
-    purrr::set_names(time_cols)
+# write single tibble to the database
+write_to_database_single <- function(df, conn, tbl_name) {
+    RMySQL::dbWriteTable(conn, tbl_name, df,
+      # setting types to timestamp seems to be ignored by the DB
+      field.types = data_types_mysql(conn, df),
+      row.names = FALSE, overwrite = TRUE)
+}
+
+# internal method for write_to_database
+# correctly write field types to mysql
+data_types_mysql <- function(df, conn) {
+  dplyr::db_data_type(conn, df) %>%
+    str_replace_all("datetime", "timestamp") %>%
+    str_replace_all("(?<=varchar)\\(\\d*\\)", "(255)")
 }

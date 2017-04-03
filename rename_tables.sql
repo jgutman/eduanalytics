@@ -57,3 +57,48 @@ RENAME TABLE edu_analytics.school_raw_orig TO edu_analytics.`identified$raw$scho
 RENAME TABLE edu_analytics.school_raw TO edu_analytics.`hashed$raw$school`;
 RENAME TABLE edu_analytics.schools_orig TO edu_analytics.`identified$clean$school`;
 RENAME TABLE edu_analytics.schools TO edu_analytics.`hashed$clean$school`;
+
+ALTER TABLE `identified$raw$mmi_scores` MODIFY start_time datetime;
+ALTER TABLE `identified$raw$2013_all_applicants` MODIFY committee_date date;
+
+ALTER TABLE `identified$raw$2013_all_applicants` MODIFY ses VARCHAR(255);
+ALTER TABLE `hashed$raw$2013_all_applicants` MODIFY ses VARCHAR(255);
+
+ALTER TABLE `hashed$raw$2013_all_applicants` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$2013_matriculated_report` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$2014_all_applicants` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$2014_matriculated_report` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$2015_all_applicants` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$2015_matriculated_report` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$2016_all_applicants` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$2016_matriculated_report` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$ethnicity` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$gpa` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$mmi_scores` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$new_mcat` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$old_mcat` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$parent_guardian` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$race` DROP COLUMN row_names;
+ALTER TABLE `hashed$raw$school` DROP COLUMN row_names;
+
+SELECT COUNT(*) FROM `deidentified$raw$gpa`;
+
+select * from `deidentified$raw$old_mcat` limit 1;
+
+ALTER TABLE `hashed$raw$old_mcat` CHANGE vr_low_p vr_low_percentile DOUBLE;
+ALTER TABLE `hashed$raw$old_mcat` CHANGE vr_high_p vr_high_percentile DOUBLE;
+ALTER TABLE `hashed$raw$old_mcat` CHANGE ps_low_p ps_low_percentile DOUBLE;
+ALTER TABLE `hashed$raw$old_mcat` CHANGE ps_high_p ps_high_percentile DOUBLE;
+ALTER TABLE `hashed$raw$old_mcat` CHANGE ws_low_p ws_low_percentile DOUBLE;
+ALTER TABLE `hashed$raw$old_mcat` CHANGE ws_high_p ws_high_percentile DOUBLE;
+ALTER TABLE `hashed$raw$old_mcat` CHANGE bs_low_p bs_low_percentile DOUBLE;
+ALTER TABLE `hashed$raw$old_mcat` CHANGE bs_high_p bs_high_percentile DOUBLE;
+
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE vr_low_p vr_low_percentile DOUBLE;
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE vr_high_p vr_high_percentile DOUBLE;
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE ps_low_p ps_low_percentile DOUBLE;
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE ps_high_p ps_high_percentile DOUBLE;
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE ws_low_p ws_low_percentile DOUBLE;
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE ws_high_p ws_high_percentile DOUBLE;
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE bs_low_p bs_low_percentile DOUBLE;
+ALTER TABLE `deidentified$clean$old_mcat` CHANGE bs_high_p bs_high_percentile DOUBLE;

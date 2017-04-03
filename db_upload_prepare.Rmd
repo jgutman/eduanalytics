@@ -24,13 +24,31 @@ library(stringr)
 library(magrittr)
 library(lubridate)
 
-sessionInfo()$otherPkgs %>%
+sessionInfo() %>%
+use_series(otherPkgs) %>%
   map_chr(function(pkg) paste(pkg$Package, pkg$Version)) %>%
   cat(sep = "\n")
+
 opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
             cache = TRUE, autodep = TRUE, cache.comments = FALSE)
 
 ```
+
+```{r}
+# Replace with import package
+source("db_utility_functions.R")
+```
+
+# Create database connection
+
+```{r, echo=FALSE}
+credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
+credentials_file <- "owner_credentials.yaml"
+
+edu_db_con <- get_mysql_conn(credentials_path, credentials_file)
+```
+
+# Check available data directories
 
 ```{r}
 parent_path <- "/Volumes/IIME/EDS/data/admissions"
@@ -59,22 +77,28 @@ parent_path <- "/Volumes/IIME/EDS/data/admissions"
 - 2016_tracking_report
 
 ```{r}
-identified_raw_admissions_path <- paste(data_dirs[[1]], "Data", sep = "/")
-(identified_raw_admissions_files <- list.files(identified_raw_admissions_path, full.names = TRUE))
+data_dirs %>% 
+  str_detect("from_.*admissions") %>% 
+  extract(data_dirs, .) %>%
+  file.path(., "Data") ->
+  identified_raw_admissions_path
+
+list.files(identified_raw_admissions_path, full.names = TRUE) %>%
+  print() -> identified_raw_admissions_files
 ```
 
 ```{r}
 identified_raw_admissions_files %>% 
   map(function(path) readxl::read_excel(path)) %>%
-  map(function(df) set_names(df, str_replace_all(colnames(df), " ", "_"))) %>%
-  map(function(df) set_names(df, tolower(colnames(df)))) ->
+  fix_colnames() ->
   identified_raw_admissions_list
 ```
 
 ```{r}
-(table_names <- paste(rep(2013:2016, each = 3), 
-                      c("all_applicants", "matriculated_report", "tracking_report"), sep = "_") %>%
-  paste("identified", "raw", ., sep = "$"))
+paste(rep(2013:2016, each = 3), 
+        c("all_applicants", "matriculated_report", "tracking_report"), sep = "_") %>%
+  add_tbl_prefix(id = "identified", status = "raw") %>%
+  print() -> table_names
 
 identified_raw_admissions_list %<>% 
   set_names(table_names) %>%
@@ -82,38 +106,11 @@ identified_raw_admissions_list %<>%
 
 ```
 
-```{r, echo=FALSE}
-credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
-credentials_file <- "owner_credentials.yaml"
-credentials <- paste0(credentials_path, credentials_file) %>%
-  yaml::yaml.load_file()
-
-edu_db_con <- dbConnect(MySQL(),
-        user = credentials$user,
-        password = credentials$password,
-        dbname = credentials$dbname,
-        host = credentials$host,
-        port = credentials$port)
-
-# edu_db <- src_mysql(credentials$dbname,
-#                     host = credentials$host,
-#                     port = credentials$port,
-#                     user = credentials$user,
-#                     password = credentials$password)
-
-rm(credentials)
-```
-
 ```{r}
-write_to_database <- function(df_list, con) {
-  df_list %>%
-    map2(., names(.), function(df, tbl_name) 
-    dbWriteTable(edu_db_con, tbl_name, df, overwrite = TRUE))
-}
-
-identified_raw_admissions_list %>% write_to_database(edu_db_con)
-  
+identified_raw_admissions_list %>% 
+  write_to_database(edu_db_con)
 ```
+
 
 ### Upload EduDW-provided datasets
 
@@ -125,89 +122,75 @@ identified_raw_admissions_list %>% write_to_database(edu_db_con)
 - race [`Race.csv`]
 - school [`School.csv`]
 
+
 ```{r}
-identified_raw_edudw_path <- data_dirs[[7]]
-(identified_raw_edudw_files <- list.files(identified_raw_edudw_path, full.names = TRUE))
+identified_raw_edudw_path <- data_dirs %>% 
+  str_detect("raw.*identified.*edudw") %>% 
+  extract(data_dirs, .)
+
+list.files(identified_raw_edudw_path, full.names = TRUE) %>%
+  print() -> identified_raw_edudw_files
 ```
 
 ```{r}
 identified_raw_edudw_files %>% 
   map(function(path) read_csv(path)) %>%
-  map(function(df) set_names(df, str_replace_all(colnames(df), " ", "_"))) %>%
-  map(function(df) set_names(df, tolower(colnames(df)))) ->
+  fix_colnames() ->
   identified_raw_edudw_list
 ```
 
 ```{r}
-(table_names <- identified_raw_edudw_files %>% 
+identified_raw_edudw_files %>% 
   str_replace(identified_raw_edudw_path, "") %>% 
   str_replace_all(c("/" = "", ".csv" = "")) %>%
-  paste("identified", "raw", ., sep = "$"))
+  add_tbl_prefix(id = "identified", status = "raw") %>%
+  print() -> table_names
 
 identified_raw_edudw_list %<>% 
-  set_names(table_names)
+  set_names(table_names) %>%
+  map(function(df) set_names(df, 
+        str_replace(colnames(df), "(?<=(low)|(high))_p$", "_percentile")))
 ```
 
 #### Determine date-formatted columns in each table
 
 ```{r}
 time_formats <- c("%Y-%m-%d %H:%M:%S", "%d-%b-%y")
+parse_time_mod <- purrr::partial(lubridate::parse_date_time, 
+                      tz = "America/New_York", truncated = 3)
 
 identified_raw_edudw_list$`identified$raw$mmi_scores` %<>%
-  mutate(start_time = parse_date_time(start_time, time_formats))
+  mutate(start_time = parse_time_mod(start_time, time_formats))
 
 identified_raw_edudw_list$`identified$raw$new_mcat` %<>%
-  mutate(new_mcat_test_date = parse_date_time(new_mcat_test_date, time_formats),
-         new_mcat_percentile_effe_date = parse_date_time(new_mcat_percentile_effe_date, time_formats))
+  mutate(new_mcat_test_date = parse_time_mod(new_mcat_test_date, time_formats),
+         new_mcat_percentile_effe_date = parse_time_mod(new_mcat_percentile_effe_date, time_formats))
 
 identified_raw_edudw_list$`identified$raw$old_mcat` %<>%
-  mutate(test_date = parse_date_time(test_date, time_formats))
+  mutate(test_date = parse_time_mod(test_date, time_formats))
 
 identified_raw_edudw_list$`identified$raw$school` %<>%
-  mutate(attend_start_dt = parse_date_time(attend_start_dt, time_formats),
-         attend_finish_dt = parse_date_time(attend_finish_dt, time_formats))
+  mutate(attend_start_dt = parse_time_mod(attend_start_dt, time_formats),
+         attend_finish_dt = parse_time_mod(attend_finish_dt, time_formats))
 
 no_date_cols <- . %>%
   map_lgl(is.POSIXt) %>%
   sum() %>%
   equals(0)
 
-identified_raw_edudw_list %>% map_lgl(no_date_cols)
+identified_raw_edudw_list %>% 
+  map_lgl(no_date_cols)
 ```
 
 ```{r}
-identified_raw_edudw_list %>% write_to_database(edu_db_con)
+identified_raw_edudw_list %>% 
+  write_to_database(edu_db_con)
 ```
 
 ```{r}
-get_time_cols <- . %>%
-  select_if(is.POSIXt) %>%
-  colnames()
-
-identified_raw_admissions_list %>%
-  map(get_time_cols) -> tbl_list
-
-tbl_list %>%
-  data_frame(date_time_cols = .) %>%
-  mutate(tbl_name = names(tbl_list)) %>%
-  filter(map_lgl(date_time_cols, function(a) length(a) > 0)) %>% 
-  unnest() -> date_time_columns
-
-identified_raw_edudw_list %>%
-  map(get_time_cols) -> tbl_list
-
-tbl_list %>%
-  data_frame(date_time_cols = .) %>%
-  mutate(tbl_name = names(tbl_list)) %>%
-  filter(map_lgl(date_time_cols, function(a) length(a) > 0)) %>% 
-  unnest() %>%
-  bind_rows(date_time_columns) -> date_time_columns
-
-date_time_columns %>%
-  write_csv("date_time_cols_to_convert.csv")
+disconnect_all()
 ```
 
 
-```{r}
-dbDisconnect(edu_db_con)
-```
+
+
