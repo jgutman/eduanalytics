@@ -57,7 +57,7 @@ edu_db_con <- get_mysql_conn(credentials_path, credentials_file)
 ## Read in all_applicants tables from database
 
 ```{r}
-table_names <- db_list_tables(edu_db_con) %>% print()
+table_names <- dbListTables(edu_db_con) %>% print()
 
 edu_db_con %>%
   get_tbls_by_pattern("^hashed\\Wraw\\W\\d{4}_all_applicants") %>%
@@ -128,7 +128,8 @@ applicants_data %>% write_to_database(edu_db_con)
 
 # deidentified raw
 edu_db_con %>%
-  deidentify_hashed("ethnicity", "aamc_id", "appl_person_id") ->
+  deidentify_hashed("ethnicity", 
+      "aamc_id", "appl_person_id") ->
   ethnicity_raw_deid
 
 ethnicity_raw_deid %>%
@@ -138,7 +139,7 @@ ethnicity_raw_deid %>%
 # deidentified clean
 edu_db_con %>%
   clean_deidentified("ethnicity", 
-      cols_to_distinct = c("study_id", "ethnicity")) %>%
+      "study_id", "ethnicity") %>%
   select(-appl_year) ->
   ethnicity_clean_deid
 

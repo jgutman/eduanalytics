@@ -51,7 +51,7 @@ disconnect_all <- function() {
 
 # get list of tables matching regex pattern
 get_tbls_by_pattern <- function(conn, pattern) {
-  tbl_names <- dplyr::db_list_tables(conn)
+  tbl_names <- DBI::dbListTables(conn)
   
    tbl_names %>%
     stringr::str_detect(stringr::regex(pattern, ignore_case = TRUE)) %>%
@@ -122,7 +122,7 @@ deidentify_hashed <- function(conn, tbl_name, ...,
   
   conn %>% 
   get_tbls_by_pattern(pattern) %>%
-    magrittr::extract(1) %>% 
+    purrr::flatten_df() %>% 
     dplyr::select(-dplyr::one_of(cols_to_drop))
 }
 
@@ -136,6 +136,7 @@ clean_deidentified <- function(conn, tbl_name, ...,
   
   conn %>%
     get_tbls_by_pattern(pattern) %>%
+    purrr::flatten_df() %>%
     dplyr::filter(appl_year >= min_year, appl_year <= max_year) %>%
     dplyr::distinct_(.dots = cols_to_distinct, .keep_all = TRUE)
 }
