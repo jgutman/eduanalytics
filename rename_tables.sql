@@ -103,4 +103,18 @@ ALTER TABLE `deidentified$clean$old_mcat` CHANGE ws_high_p ws_high_percentile DO
 ALTER TABLE `deidentified$clean$old_mcat` CHANGE bs_low_p bs_low_percentile DOUBLE;
 ALTER TABLE `deidentified$clean$old_mcat` CHANGE bs_high_p bs_high_percentile DOUBLE;
 
-select aamc_id from `hashed$raw$ethnicity` limit 1;
+select study_id, app_year,   from `hashed$raw$mmi_scores` where study_id = "a86d7afd4468bfc4fbbb79b8364c2175";
+
+select study_id, app_year, interview_type, interviewer_type,
+	attribute, faculty_id, rank, start_time  from `hashed$raw$mmi_scores`;
+
+select count(*) from
+(select * from `hashed$raw$parent_guardian` b where appl_year >= 2013 
+group by b.study_id, b.name) a;
+
+select count(*) from
+(select * from `hashed$raw$parent_guardian` c where appl_year >= 2013 
+group by c.study_id, c.occupation_desc, c.edu_level_desc, c.gender) d;
+
+
+
