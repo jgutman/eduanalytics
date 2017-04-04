@@ -102,3 +102,5 @@ ALTER TABLE `deidentified$clean$old_mcat` CHANGE ws_low_p ws_low_percentile DOUB
 ALTER TABLE `deidentified$clean$old_mcat` CHANGE ws_high_p ws_high_percentile DOUBLE;
 ALTER TABLE `deidentified$clean$old_mcat` CHANGE bs_low_p bs_low_percentile DOUBLE;
 ALTER TABLE `deidentified$clean$old_mcat` CHANGE bs_high_p bs_high_percentile DOUBLE;
+
+select aamc_id from `hashed$raw$ethnicity` limit 1;
