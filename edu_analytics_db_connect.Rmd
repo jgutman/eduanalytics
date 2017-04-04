@@ -101,11 +101,6 @@ colnames(applicants_all_years)
 # write deidentified data to file
 deidentified_output <- "/Volumes/IIME/EDS/data/admissions/data_for_itai/"
 
-write_to_file <- function(df, path, filename) {
-  full_path <- file.path(path, filename)
-  write_csv(df, full_path)
-}
-
 applicants_all_years %>%
  write_to_file(deidentified_output, "admissions_all_applicants_deidentified.csv")
 ```
@@ -138,9 +133,7 @@ ethnicity_raw_deid %>%
 
 # deidentified clean
 edu_db_con %>%
-  clean_deidentified(tbl_name = "ethnicity", 
-      "study_id", "ethnicity") %>%
-  select(-appl_year) ->
+  clean_deidentified(tbl_name = "ethnicity") ->
   ethnicity_clean_deid
 
 ethnicity_clean_deid %>%
@@ -172,9 +165,7 @@ race_raw_deid %>%
 
 # deidentified clean
 edu_db_con %>%
-  clean_deidentified(tbl_name = "race", 
-      "study_id", "race") %>%
-  select(-appl_year) ->
+  clean_deidentified(tbl_name = "race") ->
   race_clean_deid
 
 race_clean_deid %>%
@@ -205,8 +196,7 @@ schools_raw_deid %>%
 
 # deidentified clean
 edu_db_con %>%
-  clean_deidentified(tbl_name = "school", 
-      "study_id", "mod_school_desc", "program_type_desc") ->
+  clean_deidentified(tbl_name = "school") ->
   schools_clean_deid
 
 schools_clean_deid %>%
@@ -237,8 +227,7 @@ gpa_raw_deid %>%
 
 # deidentified clean
 edu_db_con %>%
-  clean_deidentified(tbl_name = "gpa", 
-      "study_id", "aca_status_desc") ->
+  clean_deidentified(tbl_name = "gpa") ->
   gpa_clean_deid
 
 gpa_clean_deid %>%
@@ -273,9 +262,8 @@ mmi_raw_deid %>%
 
 # deidentfied clean
 edu_db_con %>%
-  clean_deidentified(tbl_name = "mmi_scores", 
-      "study_id", "appl_year", "interviewer_type",
-      min_year = 2014) %>%
+  clean_deidentified(tbl_name = "mmi_scores",
+                     min_year = 2014) %>%
   select(-mmi_question_id, -code) %>%
   mutate(interviewer_type = str_replace(interviewer_type, "Interviewer ", "")) %>%
   mutate(interviewer_type = as.integer(interviewer_type)) ->
@@ -309,8 +297,7 @@ old_mcat_raw_deid %>%
 
 # deidentfied clean
 edu_db_con %>%
-  clean_deidentified(tbl_name = "old_mcat", 
-      "study_id", "test_date") ->
+  clean_deidentified(tbl_name = "old_mcat") ->
   old_mcat_clean_deid
 
 old_mcat_clean_deid %>%
@@ -342,7 +329,6 @@ new_mcat_raw_deid %>%
 # deidentfied clean
 edu_db_con %>%
   clean_deidentified(tbl_name = "new_mcat", 
-      "study_id", "new_mcat_test_date",
       min_year = 2016) ->
   new_mcat_clean_deid
 
@@ -374,8 +360,7 @@ parents_raw_deid %>%
 
 # deidentfied clean
 edu_db_con %>%
-  clean_deidentified(tbl_name = "parent_guardian", 
-      "study_id", "parent_id", "occupation_desc", "edu_level_desc", "gender") ->
+  clean_deidentified(tbl_name = "parent_guardian") ->
   parents_clean_deid
 
 parents_clean_deid %>%

@@ -149,3 +149,9 @@ clean_deidentified <- function(conn, tbl_name,
     group_by(study_id) %>% 
     filter(appl_year == min(appl_year))
 }
+
+# write table to text file
+write_to_file <- function(df, path, filename) {
+  full_path <- file.path(path, filename)
+  write_csv(df, full_path)
+}
