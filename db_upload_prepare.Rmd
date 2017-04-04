@@ -114,13 +114,15 @@ identified_raw_admissions_list %>%
 
 ### Upload EduDW-provided datasets
 
-- ethnicity [`Ethnicity.csv`]
-- gpa [`GPA_Scores.csv`]
-- old_mcat [`mcat.csv`]
-- mmi_scores [`MMI_Scores_Admission.csv`]
-- new_mcat [`NEW_MCAT.csv`]
-- race [`Race.csv`]
-- school [`School.csv`]
+- ethnicity
+- gpa
+- old_mcat
+- mmi_scores
+- new_mcat
+- race
+- school
+- experiences
+
 
 
 ```{r}
@@ -130,7 +132,34 @@ identified_raw_edudw_path <- data_dirs %>%
 
 list.files(identified_raw_edudw_path, full.names = TRUE) %>%
   print() -> identified_raw_edudw_files
+
+identified_raw_edudw_files %<>% 
+  str_detect("experience") %>% 
+  not() %>% 
+  extract(identified_raw_edudw_files, .)
 ```
+
+```{r}
+experiences_path <- file.path(identified_raw_edudw_path, 
+                              "experiences.csv")
+```
+
+```{r}
+exp <- read_csv(experiences_path)
+exp_old <- filter(exp, appl_year < 2013)
+exp_current <- filter(exp, appl_year >= 2013)
+rm(exp)
+```
+
+```{r}
+exp_old %<>%
+  mutate_if(is.character, function(col) if_else(col == "null", NA_character_, col))
+
+exp_current %<>%
+  mutate_if(is.character, function(col) if_else(col == "null", NA_character_, col))
+```
+
+
 
 ```{r}
 identified_raw_edudw_files %>% 
