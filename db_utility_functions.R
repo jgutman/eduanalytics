@@ -113,12 +113,16 @@ data_types_mysql <- function(df, conn) {
     str_replace_all("(?<=varchar)\\(\\d*\\)", "(255)")
 }
 
+# function to build deidentified table from a hashed table in db
+# takes a db connection and strings to find table 
+# `{id}${status}${tbl_name}`, variable length number of strings
+# giving the names of columns to be dropped in the deidentified dataset
 deidentify_hashed <- function(conn, tbl_name, ...,
       id = "hashed", status = "raw") {
   
   pattern <- sprintf("^%s\\W%s\\W%s$", 
                      id, status, tbl_name)
-  cols_to_drop <- c(...)
+  cols_to_drop <- as.character(c(...))
   
   conn %>% 
   get_tbls_by_pattern(pattern) %>%
@@ -126,13 +130,18 @@ deidentify_hashed <- function(conn, tbl_name, ...,
     dplyr::select(-dplyr::one_of(cols_to_drop))
 }
 
+# function to build clean table from a raw table in db
+# takes a db connection and strings to find table 
+# `{id}${status}${tbl_name}`, variable length number of strings
+# giving the names of columns to filter distinct on
+# and range of years to filter applications by
 clean_deidentified <- function(conn, tbl_name, ...,
       min_year = 2013, max_year = 2017,
       id = "deidentified", status = "raw") {
   
   pattern <- sprintf("^%s\\W%s\\W%s$", 
                      id, status, tbl_name)
-  cols_to_distinct <- c(...)
+  cols_to_distinct <- as.character(c(...))
   
   conn %>%
     get_tbls_by_pattern(pattern) %>%
