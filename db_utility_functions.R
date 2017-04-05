@@ -114,7 +114,7 @@ data_types_mysql <- function(df, conn) {
 }
 
 # function to build deidentified table from a hashed table in db
-# takes a db connection and strings to find table 
+# takes a db connection and strings to find table matching pattern
 # `{id}${status}${tbl_name}`, variable length number of strings
 # giving the names of columns to be dropped in the deidentified dataset
 deidentify_hashed <- function(conn, tbl_name, ...,
@@ -132,20 +132,38 @@ deidentify_hashed <- function(conn, tbl_name, ...,
 
 # function to build clean table from a raw table in db
 # takes a db connection and strings to find table 
-# `{id}${status}${tbl_name}`, variable length number of strings
-# giving the names of columns to filter distinct on
+# matching pattern `{id}${status}${tbl_name}`, 
 # and range of years to filter applications by
-clean_deidentified <- function(conn, tbl_name, ...,
+# using only first application for each applicant
+clean_deidentified <- function(conn, tbl_name, 
       min_year = 2013, max_year = 2017,
       id = "deidentified", status = "raw") {
   
   pattern <- sprintf("^%s\\W%s\\W%s$", 
                      id, status, tbl_name)
-  cols_to_distinct <- as.character(c(...))
   
   conn %>%
     get_tbls_by_pattern(pattern) %>%
     purrr::flatten_df() %>%
     dplyr::filter(appl_year >= min_year, appl_year <= max_year) %>%
-    dplyr::distinct_(.dots = cols_to_distinct, .keep_all = TRUE)
+    group_by(study_id) %>% 
+    filter(appl_year == min(appl_year))
+}
+
+# write table to text file
+write_to_file <- function(df, path, filename) {
+  full_path <- file.path(path, filename)
+  write_csv(df, full_path)
+}
+
+drop_empty_cols <- function(df) {
+  # Return true if a column is non-empty
+  # Return false if a column contains NAs
+  non_empty <- . %>%
+      is.na() %>%
+      mean() %>%
+      is_less_than(1)
+  
+  df %>% 
+    select_if(non_empty)
 }

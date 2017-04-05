@@ -114,13 +114,14 @@ identified_raw_admissions_list %>%
 
 ### Upload EduDW-provided datasets
 
-- ethnicity [`Ethnicity.csv`]
-- gpa [`GPA_Scores.csv`]
-- old_mcat [`mcat.csv`]
-- mmi_scores [`MMI_Scores_Admission.csv`]
-- new_mcat [`NEW_MCAT.csv`]
-- race [`Race.csv`]
-- school [`School.csv`]
+- ethnicity
+- gpa
+- old_mcat
+- mmi_scores
+- new_mcat
+- race
+- school
+- experiences
 
 
 ```{r}
@@ -149,30 +150,31 @@ identified_raw_edudw_files %>%
 identified_raw_edudw_list %<>% 
   set_names(table_names) %>%
   map(function(df) set_names(df, 
-        str_replace(colnames(df), "(?<=(low)|(high))_p$", "_percentile")))
+        str_replace(colnames(df), "(?<=(low)|(high))_p$", "_percentile"))) %>%
+  map(function(df) set_names(df, str_replace(colnames(df), "meaningfull", "meaningful")))
 ```
 
 #### Determine date-formatted columns in each table
 
 ```{r}
-time_formats <- c("%Y-%m-%d %H:%M:%S", "%d-%b-%y")
-parse_time_mod <- purrr::partial(lubridate::parse_date_time, 
-                      tz = "America/New_York", truncated = 3)
+parse_time_mod <- purrr::partial(lubridate::parse_date_time,
+      orders = c("%Y-%m-%d %H:%M:%S", "%d-%b-%y"),
+      tz = "America/New_York", truncated = 3)
 
 identified_raw_edudw_list$`identified$raw$mmi_scores` %<>%
-  mutate(start_time = parse_time_mod(start_time, time_formats))
+  mutate(start_time = parse_time_mod(start_time))
 
 identified_raw_edudw_list$`identified$raw$new_mcat` %<>%
-  mutate(new_mcat_test_date = parse_time_mod(new_mcat_test_date, time_formats),
-         new_mcat_percentile_effe_date = parse_time_mod(new_mcat_percentile_effe_date, time_formats))
+  mutate(new_mcat_test_date = parse_time_mod(new_mcat_test_date),
+         new_mcat_percentile_effe_date = parse_time_mod(new_mcat_percentile_effe_date))
 
 identified_raw_edudw_list$`identified$raw$old_mcat` %<>%
-  mutate(test_date = parse_time_mod(test_date, time_formats))
+  mutate(test_date = parse_time_mod(test_date))
 
 identified_raw_edudw_list$`identified$raw$school` %<>%
-  mutate(attend_start_dt = parse_time_mod(attend_start_dt, time_formats),
-         attend_finish_dt = parse_time_mod(attend_finish_dt, time_formats))
-
+  mutate(attend_start_dt = parse_time_mod(attend_start_dt),
+         attend_finish_dt = parse_time_mod(attend_finish_dt))
+  
 no_date_cols <- . %>%
   map_lgl(is.POSIXt) %>%
   sum() %>%
@@ -181,6 +183,16 @@ no_date_cols <- . %>%
 identified_raw_edudw_list %>% 
   map_lgl(no_date_cols)
 ```
+
+```{r}
+identified_raw_edudw_list$`identified$raw$experiences_2006_2012` %<>%
+  mutate(n_weeks = time_length(end_dt - start_dt, unit = "week"))
+
+identified_raw_edudw_list$`identified$raw$experiences_2013_2017` %<>%
+  mutate(avg_hrs_per_week = if_else(appl_year >= 2015, NA_integer_, avg_hrs_per_week),
+         n_weeks = time_length(end_dt - start_dt, unit = "week"))
+```
+
 
 ```{r}
 identified_raw_edudw_list %>% 

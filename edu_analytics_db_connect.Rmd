@@ -101,11 +101,6 @@ colnames(applicants_all_years)
 # write deidentified data to file
 deidentified_output <- "/Volumes/IIME/EDS/data/admissions/data_for_itai/"
 
-write_to_file <- function(df, path, filename) {
-  full_path <- file.path(path, filename)
-  write_csv(df, full_path)
-}
-
 applicants_all_years %>%
  write_to_file(deidentified_output, "admissions_all_applicants_deidentified.csv")
 ```
@@ -128,7 +123,7 @@ applicants_data %>% write_to_database(edu_db_con)
 
 # deidentified raw
 edu_db_con %>%
-  deidentify_hashed("ethnicity", 
+  deidentify_hashed(tbl_name = "ethnicity", 
       "aamc_id", "appl_person_id") ->
   ethnicity_raw_deid
 
@@ -138,9 +133,7 @@ ethnicity_raw_deid %>%
 
 # deidentified clean
 edu_db_con %>%
-  clean_deidentified("ethnicity", 
-      "study_id", "ethnicity") %>%
-  select(-appl_year) ->
+  clean_deidentified(tbl_name = "ethnicity") ->
   ethnicity_clean_deid
 
 ethnicity_clean_deid %>%
@@ -162,20 +155,17 @@ ethnicity_clean_deid %>%
 
 # deidentfied raw
 edu_db_con %>%
-  get_tbls_by_pattern("^hashed\\Wraw\\Wrace$") %>%
-  select(-appl_person_id, -aamc_id) ->
+  deidentify_hashed(tbl_name = "race",
+      "aamc_id", "appl_person_id") ->
   race_raw_deid 
 
 race_raw_deid %>%
   write_to_database_single(edu_db_con, 
         add_tbl_prefix("race", status = "raw"))
 
-# deidentfied clean
+# deidentified clean
 edu_db_con %>%
-  get_tbls_by_pattern("^deidentified\\Wraw\\Wrace$") %>%
-  filter(appl_year >= 2013, appl_year <= 2017) %>%
-  distinct(study_id, race, .keep_all = TRUE) %>%
-  select(-appl_year) ->
+  clean_deidentified(tbl_name = "race") ->
   race_clean_deid
 
 race_clean_deid %>%
@@ -196,9 +186,9 @@ race_clean_deid %>%
 
 # deidentfied raw
 edu_db_con %>%
-  get_tbls_by_pattern("^hashed\\Wraw\\Wschool$")
-  select(-appl_person_id, -aamc_id) ->
-  schools_raw_deid
+  deidentify_hashed(tbl_name = "school",
+      "aamc_id", "appl_person_id") ->
+  schools_raw_deid 
   
 schools_raw_deid %>%
   write_to_database_single(edu_db_con, 
@@ -206,9 +196,7 @@ schools_raw_deid %>%
 
 # deidentified clean
 edu_db_con %>%
-  get_tbls_by_pattern("^deidentified\\Wraw\\Wschool$") %>%
-  filter(appl_year >= 2013, appl_year <= 2017) %>%
-  distinct(study_id, mod_school_desc, program_type_desc, .keep_all = TRUE) ->
+  clean_deidentified(tbl_name = "school") ->
   schools_clean_deid
 
 schools_clean_deid %>%
@@ -228,10 +216,10 @@ schools_clean_deid %>%
 ```{r, gpa, echo=FALSE}
 
 # deidentfied raw
-edu_db_con %>% 
-  get_tbls_by_pattern("^hashed\\Wraw\\Wgpa$") %>% 
-  select(-appl_person_id, -aamc_id) ->
-  gpa_raw_deid
+edu_db_con %>%
+  deidentify_hashed(tbl_name = "gpa",
+      "aamc_id", "appl_person_id") ->
+  gpa_raw_deid 
 
 gpa_raw_deid %>%
   write_to_database_single(edu_db_con, 
@@ -239,9 +227,7 @@ gpa_raw_deid %>%
 
 # deidentified clean
 edu_db_con %>%
-  get_tbls_by_pattern("^deidentified\\Wraw\\Wgpa$") %>%
-  filter(appl_year >= 2013, appl_year <= 2017) %>%
-  distinct(study_id, aca_status_desc, .keep_all = TRUE) ->
+  clean_deidentified(tbl_name = "gpa") ->
   gpa_clean_deid
 
 gpa_clean_deid %>%
@@ -260,13 +246,15 @@ gpa_clean_deid %>%
 
 ```{r, mmi, echo = FALSE}
 
-# deidentified raw
+# deidentfied raw
 edu_db_con %>%
-  get_tbls_by_pattern("^hashed\\Wraw\\Wmmi_scores$") %>% 
-  select(-application_id, -amcas_id, -appl_person_id, -fac_last_name, -fac_first_name, 
-         -comment, -avg, -stdev, -conflict, -interview_id, -scenario, -interview_type, 
-         -interview_type, -faculty_id, -code, -mmi_question_id) ->
-  mmi_raw_deid
+  deidentify_hashed(tbl_name = "mmi_scores",
+      "amcas_id", "appl_person_id", "application_id",
+      "fac_last_name", "fac_first_name", "comment", 
+      "avg", "stdev", "conflict", "interview_id", 
+      "scenario") %>%
+  rename(appl_year = app_year) ->
+  mmi_raw_deid 
 
 mmi_raw_deid %>%
   write_to_database_single(edu_db_con, 
@@ -274,8 +262,11 @@ mmi_raw_deid %>%
 
 # deidentfied clean
 edu_db_con %>%
-  get_tbls_by_pattern("^deidentified\\Wraw\\Wmmi_scores$") %>%
-  filter(app_year > 2013) ->
+  clean_deidentified(tbl_name = "mmi_scores",
+                     min_year = 2014) %>%
+  select(-mmi_question_id, -code) %>%
+  mutate(interviewer_type = str_replace(interviewer_type, "Interviewer ", "")) %>%
+  mutate(interviewer_type = as.integer(interviewer_type)) ->
   mmi_clean_deid
 
 mmi_clean_deid %>%
@@ -294,12 +285,11 @@ mmi_clean_deid %>%
 
 ```{r, mcat_old, echo=FALSE}
 
-# deidentified raw
+# deidentfied raw
 edu_db_con %>%
-  get_tbls_by_pattern("^hashed\\Wraw\\Wold_mcat$") %>% 
-  # set_colnames(stringr::str_replace(colnames(.), "_p$", "_percentile")) %>% 
-  select(-appl_person_id, -aamc_id) ->
-  old_mcat_raw_deid
+  deidentify_hashed(tbl_name = "old_mcat",
+      "aamc_id", "appl_person_id") ->
+  old_mcat_raw_deid 
 
 old_mcat_raw_deid %>%
   write_to_database_single(edu_db_con, 
@@ -307,11 +297,8 @@ old_mcat_raw_deid %>%
 
 # deidentfied clean
 edu_db_con %>%
-  get_tbls_by_pattern("^deidentified\\Wraw\\Wold_mcat$") %>%
-  filter(appl_year >= 2013, appl_year <= 2017) %>%
-  # mutate(test_date = lubridate::ymd(test_date)) %>%
-  distinct(study_id, test_date, .keep_all = TRUE) -> 
-  old_mcat_clean_deid 
+  clean_deidentified(tbl_name = "old_mcat") ->
+  old_mcat_clean_deid
 
 old_mcat_clean_deid %>%
   write_to_database_single(edu_db_con, 
@@ -329,11 +316,11 @@ old_mcat_clean_deid %>%
 
 ```{r, new_mcat, echo=FALSE}
 
-# deidentified raw
+# deidentfied raw
 edu_db_con %>%
-  get_tbls_by_pattern("^hashed\\Wraw\\Wnew_mcat$") %>% 
-  select(-appl_person_id, -aamc_id) ->
-  new_mcat_raw_deid
+  deidentify_hashed(tbl_name = "new_mcat",
+      "aamc_id", "appl_person_id") ->
+  new_mcat_raw_deid 
 
 new_mcat_raw_deid %>%
   write_to_database_single(edu_db_con, 
@@ -341,10 +328,8 @@ new_mcat_raw_deid %>%
 
 # deidentfied clean
 edu_db_con %>%
-  get_tbls_by_pattern("^deidentified\\Wraw\\Wnew_mcat$") %>%
-  filter(appl_year >= 2016, appl_year <= 2017) %>%
-  # mutate(test_date = lubridate::ymd(new_mcat_test_date)) %>%
-  distinct(study_id, new_mcat_test_date, .keep_all = TRUE) ->
+  clean_deidentified(tbl_name = "new_mcat", 
+      min_year = 2016) ->
   new_mcat_clean_deid
 
 new_mcat_clean_deid %>%
@@ -365,9 +350,9 @@ new_mcat_clean_deid %>%
 
 # deidentfied raw
 edu_db_con %>%
-  get_tbls_by_pattern("^hashed\\Wraw\\Wparent_guardian$") %>% 
-  select(-appl_person_id, -aamc_id, -name, -living_ind) ->
-  parents_raw_deid
+  deidentify_hashed(tbl_name = "parent_guardian",
+      "aamc_id", "appl_person_id", "living_ind", "name") ->
+  parents_raw_deid 
 
 parents_raw_deid %>%
   write_to_database_single(edu_db_con, 
@@ -375,10 +360,7 @@ parents_raw_deid %>%
 
 # deidentfied clean
 edu_db_con %>%
-  get_tbls_by_pattern("^deidentified\\Wraw\\Wparent_guardian$") %>%
-  filter(appl_year >= 2013, appl_year <= 2017) %>%
-  distinct(study_id, occupation_desc, edu_level_desc, gender, .keep_all = TRUE) %>%
-  select(-appl_year) ->
+  clean_deidentified(tbl_name = "parent_guardian") ->
   parents_clean_deid
 
 parents_clean_deid %>%
