@@ -155,3 +155,15 @@ write_to_file <- function(df, path, filename) {
   full_path <- file.path(path, filename)
   write_csv(df, full_path)
 }
+
+drop_empty_cols <- function(df) {
+  # Return true if a column is non-empty
+  # Return false if a column contains NAs
+  non_empty <- . %>%
+      is.na() %>%
+      mean() %>%
+      is_less_than(1)
+  
+  df %>% 
+    select_if(non_empty)
+}

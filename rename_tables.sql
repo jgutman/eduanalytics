@@ -116,5 +116,12 @@ select count(*) from
 (select * from `hashed$raw$parent_guardian` c where appl_year >= 2013 
 group by c.study_id, c.occupation_desc, c.edu_level_desc, c.gender) d;
 
+select * from
+(select study_id, name, count(distinct(occupation_desc)) as n_occ
+from `hashed$raw$parent_guardian` 
+group by study_id, name) a
+where a.n_occ > 1;
 
-
+select * 
+from `hashed$raw$parent_guardian`
+group by study_id, name;
