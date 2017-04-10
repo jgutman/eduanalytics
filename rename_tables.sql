@@ -122,6 +122,6 @@ from `hashed$raw$parent_guardian`
 group by study_id, name) a
 where a.n_occ > 1;
 
-select * 
-from `hashed$raw$parent_guardian`
-group by study_id, name;
+describe `identified$raw$experiences_2006_2012`;
+describe `identified$raw$experiences_2013_2017`;
+
