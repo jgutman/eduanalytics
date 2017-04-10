@@ -1,5 +1,6 @@
 context("column conversition to date")
 
+#test column conversation to date where possible
 a <- tibble::data_frame(a = c("this is", "this's also"),
                 b = c("not a", "also not a"),
                 c = c("2017-07-24" , "2016-08-28"),
@@ -15,4 +16,10 @@ vec <- a2 %>%
 
 test_that("check columns matched expected type for more complicated data frame", {
   expect_equal(vec, c(FALSE, FALSE, TRUE, TRUE, TRUE))
+})
+
+
+#test DBI connection work
+test_that("check if DBI connections work", {
+  expect_s4_class(get_mysql_conn(), "DBIConnection")
 })
