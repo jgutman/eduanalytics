@@ -14,16 +14,13 @@ convert_or_retain <- function(col) {
 
 # takes as input path to db credentials file
 # return database connection object to mysql database
-get_mysql_conn <- function(path, credentials_file) {
-  credentials <- file.path(path, credentials_file) %>%
-    yaml::yaml.load_file()
+get_mysql_conn <- function(path = "~", 
+        credentials_file = ".my.cnf", 
+        group = "rs-dbi") {
+  credentials <- file.path(path, credentials_file)
   
   DBI::dbConnect(RMySQL::MySQL(),
-    user = credentials$user,
-    password = credentials$password,
-    dbname = credentials$dbname,
-    host = credentials$host,
-    port = credentials$port)
+    group = group, default.file = credentials)
 }
 
 # pull down a table from the database into memory 
@@ -99,7 +96,7 @@ write_to_database <- function(df_list, conn) {
 
 # write single tibble to the database
 write_to_database_single <- function(df, conn, tbl_name) {
-    RMySQL::dbWriteTable(conn, tbl_name, df,
+    DBI::dbWriteTable(conn, tbl_name, df,
       # setting types to timestamp seems to be ignored by the DB
       types = data_types_mysql(conn, df),
       row.names = FALSE, overwrite = TRUE)
@@ -109,8 +106,8 @@ write_to_database_single <- function(df, conn, tbl_name) {
 # correctly write field types to mysql
 data_types_mysql <- function(df, conn) {
   dplyr::db_data_type(conn, df) %>%
-    str_replace_all("datetime", "timestamp") %>%
-    str_replace_all("(?<=varchar)\\(\\d*\\)", "(255)")
+    stringr::str_replace_all("datetime", "timestamp") %>%
+    stringr::str_replace_all("(?<=varchar)\\(\\d*\\)", "(255)")
 }
 
 # function to build deidentified table from a hashed table in db
@@ -146,15 +143,16 @@ clean_deidentified <- function(conn, tbl_name,
     get_tbls_by_pattern(pattern) %>%
     purrr::flatten_df() %>%
     dplyr::filter(appl_year >= min_year, appl_year <= max_year) %>%
-    group_by(study_id) %>% 
-    filter(appl_year == min(appl_year))
+    dplyr::group_by(study_id) %>% 
+    dplyr::filter(appl_year == min(appl_year))
 }
 
 # write table to text file
 write_to_file <- function(df, path, filename) {
   full_path <- file.path(path, filename)
-  write_csv(df, full_path)
+  readr::write_csv(df, full_path, na = "")
 }
+
 
 drop_empty_cols <- function(df) {
   # Return true if a column is non-empty
@@ -162,8 +160,8 @@ drop_empty_cols <- function(df) {
   non_empty <- . %>%
       is.na() %>%
       mean() %>%
-      is_less_than(1)
+      magrittr::is_less_than(1)
   
   df %>% 
-    select_if(non_empty)
+    dplyr::select_if(non_empty)
 }
