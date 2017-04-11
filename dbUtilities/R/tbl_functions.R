@@ -83,8 +83,8 @@ add_tbl_prefix <- function(tbl_names,
 #' @export
 #'
 write_to_database_single <- function(df, conn, tbl_name) {
-  RMySQL::dbWriteTable(conn, tbl_name, df,
-                       row.names = FALSE, overwrite = TRUE)
+  DBI::dbWriteTable(conn, tbl_name, df,
+                    row.names = FALSE, overwrite = TRUE)
 }
 
 
@@ -203,7 +203,7 @@ all_equal_across_row <- function(df) {
 
 
 
-#Drop functions for tibbles
+#Drop column functions for tibbles
 
 #' Read in from a textfile with names for columns to keep in tibbles
 #'
@@ -213,7 +213,7 @@ all_equal_across_row <- function(df) {
 #' @return a list of tibbles with formatted column names
 #' @export
 #'
-drop_cols_from_list <- function(df_list, col_keep_path) {
+keep_cols_from_list <- function(df_list, col_keep_path) {
   cols_to_keep <- readr::read_lines(col_keep_path)
   purrr::map(df_list, function(df)
     dplyr::select_(df, .dots = cols_to_keep))
@@ -250,6 +250,6 @@ drop_empty_cols <- function(df) {
 #' @export
 write_to_file <- function(df, path, filename) {
   full_path <- file.path(path, filename)
-  write_csv(df, full_path)
+  readr::write_csv(df, full_path)
 }
 
