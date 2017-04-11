@@ -34,9 +34,9 @@ opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
 
 ```
 
-```{r}
-# Replace with import package
-source("db_utility_functions.R")
+```{r import_utilities}
+devtools::install("dbUtilities", dependencies = FALSE, quiet = TRUE)
+library(dbUtilities)
 ```
 
 # Create database connection
@@ -88,14 +88,16 @@ list.files(identified_raw_admissions_path, full.names = TRUE) %>%
 ```{r}
 identified_raw_admissions_files %>% 
   map(function(path) readxl::read_excel(path)) %>%
-  fix_colnames() ->
+  fix_colnames() %>%
+  map(drop_empty_cols) ->
   identified_raw_admissions_list
 ```
 
 ```{r}
-paste(rep(2013:2016, each = 3), 
+paste(rep(2013:2017, each = 3), 
         c("all_applicants", "matriculated_report", "tracking_report"), sep = "_") %>%
   add_tbl_prefix(id = "identified", status = "raw") %>%
+  extract(1:length(identified_raw_admissions_list)) %>%
   print() -> table_names
 
 identified_raw_admissions_list %<>% 
@@ -109,17 +111,17 @@ identified_raw_admissions_list %>%
   write_to_database(edu_db_con)
 ```
 
-
 ### Upload EduDW-provided datasets
 
 - ethnicity
 - gpa
 - old_mcat
-- mmi_scores
+- mmi_scores [2013, 2014-2017]
 - new_mcat
 - race
 - school
-- experiences
+- parent_guardian
+- experiences [2006-2013, 2014-2017]
 
 
 ```{r}
@@ -134,7 +136,8 @@ list.files(identified_raw_edudw_path, full.names = TRUE) %>%
 ```{r}
 identified_raw_edudw_files %>% 
   map(function(path) read_csv(path)) %>%
-  fix_colnames() ->
+  fix_colnames() %>%
+  map(drop_empty_cols) ->
   identified_raw_edudw_list
 ```
 
@@ -183,12 +186,12 @@ identified_raw_edudw_list %>%
 ```
 
 ```{r}
-identified_raw_edudw_list$`identified$raw$experiences_2006_2012` %<>%
-  mutate(n_weeks = time_length(end_dt - start_dt, unit = "week"))
+identified_raw_edudw_list$`identified$raw$experiences` %<>%
+  mutate(avg_hrs_per_week = if_else(appl_year >= 2015, NA_integer_, avg_hrs_per_week))
 
-identified_raw_edudw_list$`identified$raw$experiences_2013_2017` %<>%
-  mutate(avg_hrs_per_week = if_else(appl_year >= 2015, NA_integer_, avg_hrs_per_week),
-         n_weeks = time_length(end_dt - start_dt, unit = "week"))
+identified_raw_edudw_list$`identified$raw$experiences` %>% 
+  group_by(appl_year) %>% 
+  summarize_all(funs(pct_missing = mean(is.na(.))))
 ```
 
 
