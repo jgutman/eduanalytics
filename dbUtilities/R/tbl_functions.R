@@ -148,7 +148,7 @@ deidentify_hashed <- function(conn, tbl_name, ...,
 #' @export
 #'
 clean_deidentified <- function(conn, tbl_name,
-                               min_year = 2013, max_year = 2017,
+                               min_year = 2014, max_year = 2017,
                                id = "deidentified", status = "raw") {
 
   pattern <- sprintf("^%s\\W%s\\W%s$",

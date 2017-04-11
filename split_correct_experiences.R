@@ -45,11 +45,11 @@ clean_experiences <- . %>%
   arrange(desc(appl_year))
 
 exp_old <- exp %>%
-  filter(appl_year < 2013) %>%
+  filter(appl_year <= 2013) %>%
   clean_experiences()
 
 exp_current <- exp %>%
-  filter(appl_year >= 2013) %>%
+  filter(appl_year > 2013) %>%
   clean_experiences()
 
 rm(exp)
