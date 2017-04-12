@@ -72,11 +72,7 @@ edu_db_con %>%
 
 ```{r}
 # filter out irrelevant and identifying columns
-applicants_2013 <- applicants_data %>% 
-  extract2(1)
-
 applicants_data %<>% 
-  extract(-1) %>%
   parse_yaml_cols("cols_to_keep_or_drop.yaml")
 ```
 
@@ -94,6 +90,7 @@ applicants_data %>%
 ```{r}
 if (write_deidentified_to_file) {
   applicants_data %>%
+    map(collect, n = Inf) %>%
     bind_rows() %>%
     write_to_file(deidentified_output, 
                   "admissions_all_applicants_deidentified.csv")
@@ -125,8 +122,8 @@ edudw_df_list %>%
 ```{r}
 if (write_deidentified_to_file) {
   edudw_df_list %>%
-    write_to_file(deidentified_output, 
-                  "admissions_all_applicants_deidentified.csv")
+    map(collect, n = Inf) %>%
+    map2(filenames, function(df, name) write_to_file(df, deidentified_output, name)
 }
 ```
 
