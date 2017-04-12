@@ -251,7 +251,7 @@ parse_yaml_cols <- function(df_list, col_list_path) {
 #'
 keep_cols_from_list <- function(df_list, cols_to_keep) {
   map2(df_list, cols_to_keep, function(df, cols)
-     select_(df, .dots = cols))
+     select(df, one_of(cols)))
 }
 
 #' Drop only columns listed as drop for each data table mentioned in yaml
@@ -297,4 +297,3 @@ write_to_file <- function(df, path, filename) {
   full_path <- file.path(path, filename)
   write_csv(df, full_path)
 }
-

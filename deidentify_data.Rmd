@@ -65,24 +65,29 @@ deidentified_output <- "/Volumes/IIME/EDS/data/admissions/data_for_itai/"
 all_table_names <- dbListTables(edu_db_con) %>% print()
 
 edu_db_con %>%
-  get_tbls_by_pattern("^hashed\\Wraw\\W\\d{4}_all_applicants") %>%
+  get_tbls_by_pattern("^hashed\\Wraw\\W\\d{4}_all_applicants", in_memory = FALSE) %>%
   set_names(paste(2013:2017, "all_applicants", sep = "_")) -> 
   applicants_data
 ```
 
 ```{r}
 # filter out irrelevant and identifying columns
+applicants_2013 <- applicants_data %>% 
+  extract2(1)
+
 applicants_data %<>% 
+  extract(-1) %>%
   parse_yaml_cols("cols_to_keep_or_drop.yaml")
 ```
 
 ```{r}
-names(applicants_data)
+names(applicants_data) %>%
   add_tbl_prefix(status = "raw") ->
   tbl_names
 
 applicants_data %>% 
   set_names(tbl_names) %>%
+  map(collect, n = Inf) %>%
   write_to_database(edu_db_con)
 ```
 
@@ -101,7 +106,8 @@ if (write_deidentified_to_file) {
 pattern <- "^hashed\\Wraw\\W[[:alpha:]]"
 all_table_names %>%
   str_detect(pattern) %>%
-  extract(all_table_names, .) ->
+  extract(all_table_names, .) %>%
+  str_replace_all("hashed", "deidentified") ->
   tbl_names
 
 edu_db_con %>%
@@ -114,6 +120,14 @@ edu_db_con %>%
 edudw_df_list %>%
   map(collect, n = Inf) %>%
   write_to_database(edu_db_con)
+```
+
+```{r}
+if (write_deidentified_to_file) {
+  edudw_df_list %>%
+    write_to_file(deidentified_output, 
+                  "admissions_all_applicants_deidentified.csv")
+}
 ```
 
 

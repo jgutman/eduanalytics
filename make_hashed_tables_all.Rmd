@@ -1,0 +1,107 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Setup
+
+## Load packages
+
+```{r setup, message=FALSE}
+library(tidyverse)
+library(RMySQL)
+library(yaml)
+library(knitr)
+library(stringr)
+library(magrittr)
+library(lubridate)
+
+sessionInfo() %>%
+  use_series(otherPkgs) %>%
+  map_chr(function(pkg) paste(pkg$Package, pkg$Version)) %>%
+  cat(sep = "\n")
+
+opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
+            cache = TRUE, autodep = TRUE, cache.comments = FALSE)
+
+```
+
+## Read in database credentials and open connection
+
+```{r}
+#devtools::install("dbUtilities", dependencies = FALSE, quiet = TRUE)
+library(dbUtilities)
+```
+
+```{r, echo=FALSE}
+credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
+edu_db_con <- get_mysql_conn(credentials_path, group = "edu_db_owner")
+```
+
+```{r}
+all_table_names <- dbListTables(edu_db_con)
+
+all_table_names %>% 
+  str_detect("^identified") %>% 
+  extract(all_table_names, .) -> raw_identified_tbls
+```
+
+```{r}
+find_tbls_with_col <- function(tbl_list, col_name, conn) {
+  tbl_list %>%
+    map(function(tbl_name) dbListFields(conn, tbl_name)) %>%
+    set_names(tbl_list) %>% 
+    map_lgl(function(tbl) is_in(col_name, tbl)) %>% 
+    extract(tbl_list, .)
+}
+
+raw_identified_tbls %>%
+  find_tbls_with_col("amcas_id", edu_db_con) %>%
+  str_split("\\$", n=3) %>% 
+  map_chr(tail, n=1L) -> amcas_id_tbls
+
+raw_identified_tbls %>%
+  find_tbls_with_col("aamc_id", edu_db_con) %>%
+  str_split("\\$", n=3) %>% 
+  map_chr(tail, n=1L) -> aamc_id_tbls
+```
+
+```{r, results='hide'}
+query_drop_format <- "drop table if exists `${hashed_tbl_name}`;"
+query_create_format <- "create table `${hashed_tbl_name}` as (select md5(${col_name}) as study_id, a.* from `${identified_tbl_name}` a);"
+
+interpolate_and_execute <- function(tbl_name, col_name, query_drop, query_create, conn) {
+  hashed_tbl_name = add_tbl_prefix(tbl_name, 
+                        id = "hashed", status = "raw")
+  identified_tbl_name = add_tbl_prefix(tbl_name, 
+                        id = "identified", status = "raw")
+  query_drop %>%
+    stringr::str_interp() %>%
+    RMySQL::dbEscapeStrings(conn, .) %>%
+    DBI::dbExecute(conn, .)
+  
+  query_create %>%
+    stringr::str_interp() %>%
+    RMySQL::dbEscapeStrings(conn, .) %>%
+    DBI::dbExecute(conn, .)
+}
+
+map(amcas_id_tbls, interpolate_and_execute, 
+    col_name = "amcas_id", query_drop = query_drop_format,
+    query_create = query_create_format, conn = edu_db_con)
+
+dbCommit(edu_db_con)
+```
+
+```{r, results='hide'}
+map(aamc_id_tbls, interpolate_and_execute, 
+    col_name = "aamc_id", query_drop = query_drop_format,
+    query_create = query_create_format, conn = edu_db_con)
+
+dbCommit(edu_db_con)
+```
+
+```{r}
+disconnect_all()
+```
+
