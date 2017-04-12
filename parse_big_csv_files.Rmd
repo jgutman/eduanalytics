@@ -53,7 +53,7 @@ edudw_pull_path <- data_dirs %>%
 ```
 
 ```{r}
-devtools::install("dbUtilities", dependencies = FALSE, quiet = TRUE)
+#devtools::install("dbUtilities", dependencies = FALSE, quiet = TRUE)
 library(dbUtilities)
 ```
 

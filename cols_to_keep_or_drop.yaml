@@ -40,7 +40,7 @@ race:
     drop:
         - aamc_id
         - appl_person_id
-schools:
+school:
     drop:
         - aamc_id
         - appl_person_id
@@ -77,6 +77,10 @@ parent_guardian:
         - name
 experiences:
     drop:
-        - appl_year
         - appl_person_id
         - aamc_id
+        - contact_title
+        - contact_fname
+        - contact_lname
+        - contact_phone
+        - contact_email

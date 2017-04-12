@@ -35,7 +35,7 @@ opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
 ```
 
 ```{r import_utilities}
-devtools::install("dbUtilities", dependencies = FALSE, quiet = TRUE)
+#devtools::install("dbUtilities", dependencies = FALSE, quiet = TRUE)
 library(dbUtilities)
 ```
 
