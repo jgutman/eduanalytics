@@ -1,6 +1,6 @@
 #FUNCTIONS FOR GETTING DATA FROM DATABASE
 
-#helper function
+# Helper function to parse dates
 
 #' convert_or_retain converts column variables to dates where possible
 #' otherwise retain original column type
@@ -40,21 +40,23 @@ put_tbl_to_memory <- function(conn, tbl_name) {
 #'
 #' @param conn database connection object
 #' @param pattern regular expression pattern for matching with tables names
+#' @param in_memory if true, put tbl_df in memory, if false, lazy evaluation
 #'
-#' @return a list of tibbles
+#' @return a list of tibbles, either in memory or lazily evaluated
 #' @export
 #'
-get_tbls_by_pattern <- function(conn, pattern) {
+get_tbls_by_pattern <- function(conn, pattern, in_memory = TRUE) {
   tbl_names <- dbListTables(conn)
+  f <- ifelse(in_memory, put_tbl_to_memory, dplyr::tbl)
 
   tbl_names %>%
     str_detect(regex(pattern, ignore_case = TRUE)) %>%
     extract(tbl_names, .) %>%
-    map(function(tbl_name) put_tbl_to_memory(conn, tbl_name))
+    map(function(tbl_name) f(conn, tbl_name))
 }
 
 
-#FUNCTIONS FOR WRITING DATA TO DATABASE
+### FUNCTIONS FOR WRITING DATA TO DATABASE
 
 #' Add database storing schema to table names
 #'
@@ -162,7 +164,7 @@ clean_deidentified <- function(conn, tbl_name,
 
 
 
-#FUNCTIONS FOR MANAGING DATA AFTER GETTING FROM DATABASE
+### FUNCTIONS FOR MANAGING DATA AFTER GETTING FROM DATABASE
 
 #' Fix all column names to standard format across tibbles
 #'
@@ -203,23 +205,66 @@ all_equal_across_row <- function(df) {
 
 
 
-#Drop column functions for tibbles
+### Drop column functions for tibbles
 
-#' Read in from a textfile with names for columns to keep in tibbles
+#' Parse a yaml dictionary with columns to keep or drop in tibbles
 #'
 #' @param df_list list of tibbles
-#' @param col_keep_path name of file with columns to keep
+#' @param col_list_path path to file with columns to keep or drop
 #'
-#' @return a list of tibbles with formatted column names
+#' @return a list of tibbles with the appropriate columns removed/kept
 #' @export
 #'
-keep_cols_from_list <- function(df_list, col_keep_path) {
-  cols_to_keep <- readr::read_lines(col_keep_path)
+parse_yaml_cols <- function(df_list, col_list_path) {
+  cols_dict <- yaml::yaml.load_file(col_list_path)
+  df_list %>%
+    names() %>%
+    stringr::str_split("\\$", n=3) %>%
+    purrr::map_chr(tail, n = 1L) %>%
+    stringr::str_extract("[[:alpha:]]+(.?[[:alpha:]])*") %>%
+    extract(cols_dict, .) -> cols_dict
 
-  map(df_list, function(df)
-     select_(df, .dots = cols_to_keep))
+  cols_dict %>%
+    map(function(x) extract(x$drop)) %>%
+    extract(map_lgl(., function(.) not(is_empty(.)))) ->
+    drop_dict
+
+  cols_dict %>%
+    map(function(x) extract(x$keep)) %>%
+    extract(map_lgl(., function(.) not(is_empty(.)))) ->
+    keep_dict
+
+  if(not(is_empty(drop_dict))) {
+    drop_cols_from_list(df_list, drop_dict)
+  } else {
+    keep_cols_from_list(df_list, keep_dict)
+  }
 }
 
+
+#' Keep only columns listed as keep for each data table mentioned in yaml
+#'
+#' @param df_list list of tibbles
+#' @param cols_to_keep list of cols to drop for each dataframe
+#'
+#' @return a list of tibbles with formatted column names
+#'
+keep_cols_from_list <- function(df_list, cols_to_keep) {
+  map2(df_list, cols_to_keep, function(df, cols)
+     select_(df, .dots = cols))
+}
+
+#' Drop only columns listed as drop for each data table mentioned in yaml
+#'
+#' @param df_list list of tibbles
+#' @param cols_to_drop list of cols to drop for each dataframe
+#'
+#' @return a list of tibbles with formatted column names
+#'
+drop_cols_from_list <- function(df_list, cols_to_drop) {
+  map2(df_list, cols_to_drop, function(df, cols)
+    select(df, -one_of(cols)))
+}
 
 #' Drop columns in tibbles that have only NA values
 #'
@@ -240,8 +285,7 @@ drop_empty_cols <- function(df) {
 }
 
 
-
-#misc functions
+### Output data functions
 
 #' Write data to local machine or share drive
 #'

@@ -1,0 +1,86 @@
+all_applicants:
+    keep:
+        - study_id
+        - app_year
+        - status
+        - status_date
+        - appl_type_desc
+        - gender
+        - scr_dec
+        - screener_sd
+        - interview_day
+        - disadvantaged_ind
+        - urm
+        - prev_app_ind
+        - mstp
+        - appl_submit_date
+        - appl_complete_date
+        - screening_complete_date
+        - interview_invite_date
+        - interview_schedule_date
+        - interview_complete_date
+        - offer_date
+        - accept_date
+        - fee_received_date
+        - deposit_date
+        - dual_degree_applicant
+        - dual_degree_field_descr
+        - committee_name
+        - committee_date
+        - committee_score
+        - committee_sd
+        - mstp_to_md
+        - rural
+        - ses
+ethnicity:
+    drop:
+        - aamc_id
+        - appl_person_id
+race:
+    drop:
+        - aamc_id
+        - appl_person_id
+school:
+    drop:
+        - aamc_id
+        - appl_person_id
+gpa:
+    drop:
+        - aamc_id
+        - appl_person_id
+mmi_scores:
+    drop:
+        - amcas_id
+        - appl_person_id
+        - application_id
+        - fac_last_name
+        - fac_first_name
+        - comment
+        - avg
+        - stdev
+        - conflict
+        - interview_id
+        - scenario
+old_mcat:
+    drop:
+        - aamc_id
+        - appl_person_id
+new_mcat:
+    drop:
+        - aamc_id
+        - appl_person_id
+parent_guardian:
+    drop:
+        - aamc_id
+        - appl_person_id
+        - living_ind
+        - name
+experiences:
+    drop:
+        - appl_person_id
+        - aamc_id
+        - contact_title
+        - contact_fname
+        - contact_lname
+        - contact_phone
+        - contact_email

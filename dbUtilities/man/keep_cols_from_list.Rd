@@ -2,18 +2,18 @@
 % Please edit documentation in R/tbl_functions.R
 \name{keep_cols_from_list}
 \alias{keep_cols_from_list}
-\title{Read in from a textfile with names for columns to keep in tibbles}
+\title{Keep only columns listed as keep for each data table mentioned in yaml}
 \usage{
-keep_cols_from_list(df_list, col_keep_path)
+keep_cols_from_list(df_list, cols_to_keep)
 }
 \arguments{
 \item{df_list}{list of tibbles}
 
-\item{col_keep_path}{name of file with columns to keep}
+\item{cols_to_keep}{list of cols to drop for each dataframe}
 }
 \value{
 a list of tibbles with formatted column names
 }
 \description{
-Read in from a textfile with names for columns to keep in tibbles
+Keep only columns listed as keep for each data table mentioned in yaml
 }
