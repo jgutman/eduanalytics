@@ -1,6 +1,6 @@
 #FUNCTIONS FOR GETTING DATA FROM DATABASE
 
-#helper function
+# Helper function to parse dates
 
 #' convert_or_retain converts column variables to dates where possible
 #' otherwise retain original column type
@@ -54,7 +54,7 @@ get_tbls_by_pattern <- function(conn, pattern) {
 }
 
 
-#FUNCTIONS FOR WRITING DATA TO DATABASE
+### FUNCTIONS FOR WRITING DATA TO DATABASE
 
 #' Add database storing schema to table names
 #'
@@ -162,7 +162,7 @@ clean_deidentified <- function(conn, tbl_name,
 
 
 
-#FUNCTIONS FOR MANAGING DATA AFTER GETTING FROM DATABASE
+### FUNCTIONS FOR MANAGING DATA AFTER GETTING FROM DATABASE
 
 #' Fix all column names to standard format across tibbles
 #'
@@ -203,9 +203,25 @@ all_equal_across_row <- function(df) {
 
 
 
-#Drop column functions for tibbles
+### Drop column functions for tibbles
 
-#' Read in from a textfile with names for columns to keep in tibbles
+#' Parse a yaml dictionary with columns to keep or drop in tibbles
+#'
+#' @param df_list list of tibbles
+#' @param col_list_path path to file with columns to keep or drop
+#'
+#' @return a list with sublists named $keep or $drop for each df in df_list 
+#'
+parse_yaml_cols <- function(df_list, col_list_path) {
+  cols_dict <- yaml::yaml.load_file(col_list_path)
+  df_list %>%
+    names() %>%
+    str_extract("[[:alpha:]]+(.?[[:alpha:]])*") %>%
+    extract(cols_to_keep_dict, .)
+}
+
+
+#' Keep only columns listed as keep for each data table mentioned in yaml
 #'
 #' @param df_list list of tibbles
 #' @param col_keep_path name of file with columns to keep
@@ -214,10 +230,12 @@ all_equal_across_row <- function(df) {
 #' @export
 #'
 keep_cols_from_list <- function(df_list, col_keep_path) {
-  cols_to_keep <- readr::read_lines(col_keep_path)
+  parse_yaml_cols(df_list, col_keep_path) %>%
+    map(function(x) extract(x$keep)) -> 
+    cols_to_keep
 
-  map(df_list, function(df)
-     select_(df, .dots = cols_to_keep))
+  map2(df_list, cols_to_keep, function(df, cols)
+     select_(df, .dots = cols))
 }
 
 
@@ -240,8 +258,7 @@ drop_empty_cols <- function(df) {
 }
 
 
-
-#misc functions
+### Output data functions
 
 #' Write data to local machine or share drive
 #'
