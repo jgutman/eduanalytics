@@ -125,3 +125,5 @@ where a.n_occ > 1;
 describe `identified$raw$experiences_2006_2012`;
 describe `identified$raw$experiences_2013_2017`;
 
+SELECT DISTINCT (appl_year) from `identified$raw$experiences`;
+

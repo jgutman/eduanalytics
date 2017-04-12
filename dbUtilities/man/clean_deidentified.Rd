@@ -6,7 +6,7 @@
 strings to find matching pattern `{id}${status}${tbl_name}`, range of years to filter applicantions by,
 and using the first application for each applicant.}
 \usage{
-clean_deidentified(conn, tbl_name, min_year = 2013, max_year = 2017,
+clean_deidentified(conn, tbl_name, min_year = 2014, max_year = 2017,
   id = "deidentified", status = "raw")
 }
 \arguments{

@@ -1,4 +1,4 @@
-context("column conversition to date")
+context("column conversion to date")
 
 #test column conversation to date where possible
 a <- tibble::data_frame(a = c("this is", "this's also"),
