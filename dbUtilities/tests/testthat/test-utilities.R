@@ -18,12 +18,14 @@ test_that("check columns matched expected type for more complicated data frame",
   expect_equal(vec, c(FALSE, FALSE, TRUE, TRUE, TRUE))
 })
 
+system("mysql.server restart", ignore.stdout = TRUE, ignore.stderr = TRUE)
 
 #test DBI connection work
 test_that("check if DBI connections work", {
   expect_s4_class(get_mysql_conn(), "DBIConnection")
 })
 
+system("mysql.server stop", ignore.stdout = TRUE, ignore.stderr = TRUE)
 
 
 #test that drop_nonempty_columns drops columns that only incude NA
@@ -33,7 +35,7 @@ b <- tibble::data_frame(a = c("this is", "this's also", NA_character_, NA_charac
                         d = c(1, NA_integer_, NA_integer_, NA_integer_, NA_integer_),
                         e = c(NA_integer_, NA_integer_, NA_integer_, NA_integer_, NA_integer_))
 
-b2  <- b %>% dbUtilities::drop_empty_cols()
+b2  <- b %>% drop_empty_cols()
 
 test <- tibble::data_frame(a = c("this is", "this's also", NA_character_, NA_character_, "this also"),
                            b = c("not a", "also not a", NA_character_, "hello", "coworker"),
@@ -66,13 +68,13 @@ list_tib <- list( first_ele = tibble::data_frame(a = c("this is", "this's also")
 
 
 list_tib %>% purrr::at_depth(2, typeof) -> coltypes
-coltypes %>% tibble::as_data_frame() %>% dplyr::mutate_all(purrr::flatten_chr) -> coltypes_df
+coltypes %>% tibble::as_data_frame() %>% mutate_all(purrr::flatten_chr) -> coltypes_df
 
 test_that("function returns true when column names are consistent across tibbles", {
   expect_true(coltypes %>%
-                 purrr::map(names) %>%
-                 tibble::as_data_frame() %>%
-                 all_equal_across_row())
+              purrr::map(names) %>%
+              tibble::as_data_frame() %>%
+              all_equal_across_row())
 })
 
 
@@ -80,8 +82,8 @@ test_that("function returns true when column types are consistent across tibbles
   expect_true(coltypes %>%
                  magrittr::extract2(1) %>%
                  names() %>%
-                 dplyr::mutate(coltypes_df, colnames = .) %>%
-                 dplyr::select(-colnames) %>%
+                 mutate(coltypes_df, colnames = .) %>%
+                 select(-colnames) %>%
                  all_equal_across_row())
 })
 
@@ -107,7 +109,7 @@ list_tib <- list( first_ele = tibble::data_frame(a = c("this is", "this's also")
 
 
 list_tib %>% purrr::at_depth(2, typeof) -> coltypes2
-coltypes2 %>% tibble::as_data_frame() %>% dplyr::mutate_all(purrr::flatten_chr) -> coltypes_df2
+coltypes2 %>% tibble::as_data_frame() %>% mutate_all(purrr::flatten_chr) -> coltypes_df2
 
 test_that("function returns true when column names are consistent across tibbles", {
   expect_false(coltypes2 %>%
@@ -121,8 +123,8 @@ test_that("function returns true when column types are consistent across tibbles
   expect_false(coltypes2 %>%
                 magrittr::extract2(1) %>%
                 names() %>%
-                dplyr::mutate(coltypes_df2, colnames = .) %>%
-                dplyr::select(-colnames) %>%
+                mutate(coltypes_df2, colnames = .) %>%
+                select(-colnames) %>%
                 all_equal_across_row())
 })
 
