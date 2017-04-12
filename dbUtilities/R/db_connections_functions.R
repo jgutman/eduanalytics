@@ -12,7 +12,7 @@ get_mysql_conn <- function(path = "~", credentials_file = ".my.cnf",
                            group = "rs-dbi") {
   credentials <- file.path(path, credentials_file)
 
-  DBI::dbConnect(RMySQL::MySQL(),
+  dbConnect(MySQL(),
                  group = group, default.file = credentials)
 }
 
@@ -22,6 +22,6 @@ get_mysql_conn <- function(path = "~", credentials_file = ".my.cnf",
 #' @return a logical list for each database connection that's severed
 #' @export
 disconnect_all <- function() {
-  purrr::map(DBI::dbListConnections(
-    RMySQL::MySQL()), DBI::dbDisconnect)
+  map(dbListConnections(
+    MySQL()), dbDisconnect)
 }

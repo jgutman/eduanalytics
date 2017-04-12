@@ -10,12 +10,11 @@
 #' @return a date-time variable where possible, otherwise original column type
 #'
 convert_or_retain <- function(col) {
-  quietly_parse_time <- purrr::quietly(function(.x)
-    lubridate::parse_date_time(.x, "YmdHMS",
-                               tz = "America/New_York", truncated = 3))
-
+  quietly_parse_time <- quietly(function(.x)
+    parse_date_time(.x, "YmdHMS",
+              tz = "America/New_York", truncated = 3))
   col_mutated <- quietly_parse_time(col)
-  no_errors <- purrr::is_empty(col_mutated$warnings)
+  no_errors <- is_empty(col_mutated$warnings)
   if (no_errors) col_mutated$result else col
 }
 
@@ -29,9 +28,9 @@ convert_or_retain <- function(col) {
 #' @return a tibble
 #'
 put_tbl_to_memory <- function(conn, tbl_name) {
-  dplyr::tbl(conn, tbl_name) %>%
-    dplyr::collect(n = Inf) %>%
-    dplyr::mutate_if(is.character, convert_or_retain)
+  tbl(conn, tbl_name) %>%
+    collect(n = Inf) %>%
+    mutate_if(is.character, convert_or_retain)
 }
 
 
@@ -46,12 +45,12 @@ put_tbl_to_memory <- function(conn, tbl_name) {
 #' @export
 #'
 get_tbls_by_pattern <- function(conn, pattern) {
-  tbl_names <- DBI::dbListTables(conn)
+  tbl_names <- dbListTables(conn)
 
   tbl_names %>%
-    stringr::str_detect(stringr::regex(pattern, ignore_case = TRUE)) %>%
-    magrittr::extract(tbl_names, .) %>%
-    purrr::map(function(tbl_name) put_tbl_to_memory(conn, tbl_name))
+    str_detect(regex(pattern, ignore_case = TRUE)) %>%
+    extract(tbl_names, .) %>%
+    map(function(tbl_name) put_tbl_to_memory(conn, tbl_name))
 }
 
 
@@ -83,7 +82,7 @@ add_tbl_prefix <- function(tbl_names,
 #' @export
 #'
 write_to_database_single <- function(df, conn, tbl_name) {
-  DBI::dbWriteTable(conn, tbl_name, df,
+  dbWriteTable(conn, tbl_name, df,
                     row.names = FALSE, overwrite = TRUE)
 }
 
@@ -99,7 +98,7 @@ write_to_database_single <- function(df, conn, tbl_name) {
 #'
 write_to_database <- function(df_list, conn) {
   df_list %>%
-    purrr::map2(., names(.), function(df, tbl_name)
+    map2(., names(.), function(df, tbl_name)
       write_to_database_single(df, conn, tbl_name)
     )
 }
@@ -127,8 +126,8 @@ deidentify_hashed <- function(conn, tbl_name, ...,
 
   conn %>%
     get_tbls_by_pattern(pattern) %>%
-    purrr::flatten_df() %>%
-    dplyr::select(-dplyr::one_of(cols_to_drop))
+    flatten_df() %>%
+    select(-one_of(cols_to_drop))
 }
 
 
@@ -151,13 +150,12 @@ clean_deidentified <- function(conn, tbl_name,
                                min_year = 2014, max_year = 2017,
                                id = "deidentified", status = "raw") {
 
-  pattern <- sprintf("^%s\\W%s\\W%s$",
-                     id, status, tbl_name)
+  pattern <- sprintf("^%s\\W%s\\W%s$", id, status, tbl_name)
 
   conn %>%
     get_tbls_by_pattern(pattern) %>%
-    purrr::flatten_df() %>%
-    dplyr::filter(appl_year >= min_year, appl_year <= max_year) %>%
+    flatten_df() %>%
+    filter(appl_year >= min_year, appl_year <= max_year) %>%
     group_by(study_id) %>%
     filter(appl_year == min(appl_year))
 }
@@ -175,8 +173,10 @@ clean_deidentified <- function(conn, tbl_name,
 #'
 fix_colnames <- function(df_list) {
   df_list %>%
-    purrr::map(function(df) purrr::set_names(df,stringr::str_replace_all(colnames(df), " ", "_"))) %>%
-    purrr::map(function(df) purrr::set_names(df,tolower(colnames(df))))
+    map(function(df) set_names(df,
+                      str_replace_all(colnames(df), " ", "_"))) %>%
+    map(function(df) set_names(df,
+                      tolower(colnames(df))))
 }
 
 
@@ -190,14 +190,14 @@ fix_colnames <- function(df_list) {
 #' @export
 all_equal_across_row <- function(df) {
   is_single_value <- . %>%
-    purrr::flatten_chr() %>%
-    dplyr::n_distinct() %>%
-    magrittr::equals(1)
+    flatten_chr() %>%
+    n_distinct() %>%
+    equals(1)
 
   df %>%
-    purrr::by_row(is_single_value,
+    by_row(is_single_value,
                   .collate = "rows", .to = "all_cols_match") %>%
-    magrittr::use_series(all_cols_match) %>%
+    use_series(all_cols_match) %>%
     all()
 }
 
@@ -215,8 +215,9 @@ all_equal_across_row <- function(df) {
 #'
 keep_cols_from_list <- function(df_list, col_keep_path) {
   cols_to_keep <- readr::read_lines(col_keep_path)
-  purrr::map(df_list, function(df)
-    dplyr::select_(df, .dots = cols_to_keep))
+
+  map(df_list, function(df)
+     select_(df, .dots = cols_to_keep))
 }
 
 
@@ -230,12 +231,12 @@ drop_empty_cols <- function(df) {
   # Return true if a column is non-empty
   # Return false if a column contains NAs
   non_empty <- . %>%
-    base::is.na() %>%
-    base::mean() %>%
-    magrittr::is_less_than(1)
+    is.na() %>%
+    mean() %>%
+    is_less_than(1)
 
   df %>%
-    dplyr::select_if(non_empty)
+    select_if(non_empty)
 }
 
 
@@ -250,6 +251,6 @@ drop_empty_cols <- function(df) {
 #' @export
 write_to_file <- function(df, path, filename) {
   full_path <- file.path(path, filename)
-  readr::write_csv(df, full_path)
+  write_csv(df, full_path)
 }
 
