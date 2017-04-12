@@ -19,6 +19,8 @@ test_that("check columns matched expected type for more complicated data frame",
 })
 
 
+system("mysql.server restart", ignore.stdout = TRUE, ignore.stderr = TRUE)
+
 #test DBI connection work
 test_that("check if DBI connections work", {
   expect_s4_class(get_mysql_conn(), "DBIConnection")
