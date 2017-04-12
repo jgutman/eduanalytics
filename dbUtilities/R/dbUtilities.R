@@ -11,5 +11,4 @@
 #'
 #' @importFrom magrittr %>%
 #' @import dplyr
-#' @importFrom dplyr filter
 NULL

@@ -18,7 +18,7 @@ test_that("check columns matched expected type for more complicated data frame",
   expect_equal(vec, c(FALSE, FALSE, TRUE, TRUE, TRUE))
 })
 
-system("mysql.server restart", ignore.stdout = TRUE, ignore.stderr = TRUE)
+system("mysql.server start", ignore.stdout = TRUE, ignore.stderr = TRUE)
 
 #test DBI connection work
 test_that("check if DBI connections work", {
