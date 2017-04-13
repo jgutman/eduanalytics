@@ -109,16 +109,16 @@ select study_id, app_year, interview_type, interviewer_type,
 	attribute, faculty_id, rank, start_time  from `hashed$raw$mmi_scores`;
 
 select count(*) from
-(select * from `hashed$raw$parent_guardian` b where appl_year >= 2013 
+(select * from `hashed$raw$parent_guardian` b where appl_year >= 2013
 group by b.study_id, b.name) a;
 
 select count(*) from
-(select * from `hashed$raw$parent_guardian` c where appl_year >= 2013 
+(select * from `hashed$raw$parent_guardian` c where appl_year >= 2013
 group by c.study_id, c.occupation_desc, c.edu_level_desc, c.gender) d;
 
 select * from
 (select study_id, name, count(distinct(occupation_desc)) as n_occ
-from `hashed$raw$parent_guardian` 
+from `hashed$raw$parent_guardian`
 group by study_id, name) a
 where a.n_occ > 1;
 
@@ -129,7 +129,7 @@ drop table if exists `hashed$raw$experiences_2006_2013`;
 
 select disadvantaged_ind, ses from `hashed$raw$2014_all_applicants`;
 
-create table `hashed$raw$experiences_2006_2013` as (select md5(aamc_id) as study_id, a.* 
+create table `hashed$raw$experiences_2006_2013` as (select md5(aamc_id) as study_id, a.*
 from `identified$raw$experiences_2006_2013` a);
 
 select distinct(appl_year) from `deidentified$clean$ethnicity`;

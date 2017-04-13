@@ -1,0 +1,165 @@
+---
+title: "Create clean version of GPA dataset"
+author: "Suvam Paul"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_document:
+    toc: yes
+    toc_depth: '4'
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+---
+
+
+```{r setup, message=FALSE}
+rm(list = ls())
+
+library(tidyverse)
+library(RMySQL)
+library(yaml)
+library(knitr)
+library(stringr)
+library(magrittr)
+library(lubridate)
+library(dbUtilities)
+
+
+sessionInfo() %>%
+use_series(otherPkgs) %>%
+  map_chr(function(pkg) paste(pkg$Package, pkg$Version)) %>%
+  cat(sep = "\n")
+
+opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
+            cache = TRUE, autodep = TRUE, cache.comments = FALSE)
+
+
+
+```
+
+
+```{r create_database_connection}
+credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
+edu_db_con <- dbUtilities::get_mysql_conn(credentials_path, group = "edu_db_owner")
+```
+
+
+```{r check_tables_in_database}
+
+table_names <- dbListTables(edu_db_con) %>% print()
+
+```
+
+
+```{r get_gpa_dataset}
+
+gpa <- dbUtilities::put_tbl_to_memory(edu_db_con, "deidentified$clean$gpa")
+
+as_tibble(gpa)
+
+#check has 14-17 application years 
+table(gpa$appl_year)
+
+#remove once code for creating clean verison has changed
+gpa <- gpa %>% filter(appl_year != 2013)
+table(gpa$appl_year)
+```
+
+
+
+```{r}
+
+#education levels
+table(gpa$aca_status_desc)
+
+#drop high school grades
+gpa %>% filter(aca_status_desc != "High School") -> gpa
+
+```
+
+
+
+
+
+
+```{r}
+
+#Anyone missing science gpa 
+
+#functions
+is_science_gpa_missing <- . %>% 
+  use_series(bcpm_gpa) %>% 
+  is.na() %>% 
+  sum()
+
+
+missing_science_gpa_year <- . %>% 
+  group_by(appl_year) %>% 
+  summarise(count = sum(is.na(bcpm_gpa)))
+
+
+
+#total missing
+gpa %>% is_science_gpa_missing()
+#6958
+
+#missing breakdown by application year
+gpa %>% missing_science_gpa_year()
+
+
+
+#postbacs
+
+#any postback missing science gpa
+gpa %>% filter(is.na(bcpm_gpa) & aca_status_desc == "Postbaccalaureate Undergraduate") 
+
+
+#if postback then science gpa is also total gpa
+gpa %>% 
+  mutate(bcpm_gpa = ifelse((is.na(bcpm_gpa) & aca_status_desc == "Postbaccalaureate Undergraduate"), total_gpa, bcpm_gpa)) -> gpa
+  
+
+#Are there people still missing science gpa if postbac -yes
+gpa %>%  
+  filter(is.na(bcpm_gpa) & aca_status_desc == "Postbaccalaureate Undergraduate") %>% dim()
+
+#are they all missing total_gpa, meaning they never did postbac - yes  
+gpa %>%  
+  filter(is.na(bcpm_gpa) & aca_status_desc == "Postbaccalaureate Undergraduate") %>% 
+  use_series(bcpm_gpa) %>% 
+  is.na() %>% 
+  sum()
+
+#can remove postbac for these people
+
+
+
+#if post back then their science gpa is postbac gpa??!!
+#did postback and has at least one science gpa?
+
+gpa %>% 
+  filter(is.na(bcpm_gpa) & aca_status_desc == "Postbaccalaureate Undergraduate" | aca_status_desc == "Junior") %>% 
+  group_by(study_id) %>% 
+  summarise(is.na())
+
+
+
+#missing status
+gpa %>% is_science_gpa_missing()  
+#6700
+
+gpa %>% missing_science_gpa_year()
+
+
+#explore missing
+missing_science_gpa <- gpa %>% group_by(study_id) %>% summarise(missing = sum(is.na(bcpm_gpa))) %>% filter(missing > 0)
+gpa %>% filter(study_id == "002b99176d360c9275696b20a193b186")
+
+
+
+```
+
+
+
