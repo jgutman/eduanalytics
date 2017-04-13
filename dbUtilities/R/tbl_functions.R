@@ -20,7 +20,7 @@ convert_or_retain <- function(col) {
 
 
 #' put_tbl_to_memory pulls down a table into memory from database and where applies,
-#' covert dates to the approprite date format
+#' covert dates to the appropriate date format
 #'
 #' @param conn database connection object
 #' @param tbl_name name of table in MySQL database
@@ -131,7 +131,6 @@ deidentify_hashed <- function(conn, tbl_name, ...,
     flatten_df() %>%
     select(-one_of(cols_to_drop))
 }
-
 
 
 #' Function to create a clean table from raw table in database. It takes a database connection,

@@ -1,16 +1,230 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Prepare clean tables with basic cleaning and filtering"
+subtitle: "Clean schema in preparation for ready-for-analysis stage"
+author: "Jacqueline Gutman, Suvam Paul"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_document:
+    toc: yes
+    toc_depth: '4'
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+# Setup
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+## Load packages
 
-```{r}
-plot(cars)
+```{r setup, message=FALSE}
+library(tidyverse)
+library(RMySQL)
+library(yaml)
+library(knitr)
+library(stringr)
+library(magrittr)
+library(lubridate)
+
+sessionInfo() %>%
+  use_series(otherPkgs) %>%
+  map_chr(function(pkg) paste(pkg$Package, pkg$Version)) %>%
+  cat(sep = "\n")
+
+opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
+            cache = TRUE, autodep = TRUE, cache.comments = FALSE)
+
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+## Read in database credentials and open connection
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
+```{r}
+#devtools::install("dbUtilities", dependencies = FALSE, quiet = TRUE)
+library(dbUtilities)
+```
+
+```{r, echo=FALSE}
+credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
+edu_db_con <- get_mysql_conn(credentials_path, group = "edu_db_owner")
+```
+
+Optionally write all deidentified data to text files
+
+```{r}
+write_deidentified_to_file = FALSE
+deidentified_output <- "/Volumes/IIME/EDS/data/admissions/data_for_itai/"
+```
+
+```{r}
+all_table_names <- dbListTables(edu_db_con) %>% print()
+pattern <- "^deidentified\\Wraw\\W[[:alpha:]].*[[:alpha:]]$"
+all_table_names %>%
+  str_detect(pattern) %>%
+  extract(all_table_names, .) %>%
+  str_replace_all("deidentified", "clean") %>%
+  print() ->
+  tbl_names
+
+edu_db_con %>%
+  get_tbls_by_pattern(pattern, in_memory = FALSE) %>%
+  set_names(tbl_names) -> edudw_deidentified
+```
+
+
+```{r}
+min_year <- 2014
+max_year <- 2017
+
+edudw_deidentified %>% 
+  map(function(df) filter(appl_year))
+```
+
+
+## Ethnicity
+
+```{r ethnicity, eval=FALSE}
+
+# deidentified clean
+edu_db_con %>%
+  clean_deidentified(tbl_name = "ethnicity") ->
+  ethnicity_clean_deid
+
+ethnicity_clean_deid %>%
+  write_to_database_single(edu_db_con, 
+        add_tbl_prefix("ethnicity", status = "clean"))
+  
+ethnicity_clean_deid %>%
+ write_to_file(deidentified_output, "ethnicity_clean_deidentified.csv")  
+
+```
+
+## Race
+
+```{r race, eval=FALSE}
+
+# deidentified clean
+edu_db_con %>%
+  clean_deidentified(tbl_name = "race") ->
+  race_clean_deid
+
+race_clean_deid %>%
+  write_to_database_single(edu_db_con, 
+        add_tbl_prefix("race", status = "clean"))
+
+race_clean_deid %>%
+ write_to_file(deidentified_output, "race_clean_deidentified.csv") 
+```
+
+## Schools
+
+```{r schools, eval=FALSE}
+
+# deidentified clean
+edu_db_con %>%
+  clean_deidentified(tbl_name = "school") ->
+  schools_clean_deid
+
+schools_clean_deid %>%
+  write_to_database_single(edu_db_con, 
+        add_tbl_prefix("school", status = "clean"))
+
+schools_clean_deid %>%
+ write_to_file(deidentified_output, "schools_clean_deidentified.csv") 
+```
+
+## GPA
+
+```{r gpa, eval=FALSE}
+
+# deidentified clean
+edu_db_con %>%
+  clean_deidentified(tbl_name = "gpa") ->
+  gpa_clean_deid
+
+gpa_clean_deid %>%
+  write_to_database_single(edu_db_con, 
+        add_tbl_prefix("gpa", status = "clean"))
+  
+gpa_clean_deid %>%
+ write_to_file(deidentified_output, "gpa_clean_deidentified.csv")
+```
+
+## MMI
+
+```{r mmi, eval=FALSE}
+
+# deidentfied clean
+edu_db_con %>%
+  clean_deidentified(tbl_name = "mmi_scores",
+                     min_year = 2014) %>%
+  select(-mmi_question_id, -code) %>%
+  mutate(interviewer_type = str_replace(interviewer_type, "Interviewer ", "")) %>%
+  mutate(interviewer_type = as.integer(interviewer_type)) ->
+  mmi_clean_deid
+
+mmi_clean_deid %>%
+  write_to_database_single(edu_db_con, 
+        add_tbl_prefix("mmi_scores", status = "clean"))
+
+mmi_clean_deid %>%
+ write_to_file(deidentified_output, "mmi_clean_deidentified.csv")
+```
+
+## MCAT: OLD
+
+```{r mcat_old, eval=FALSE}
+
+# deidentfied clean
+edu_db_con %>%
+  clean_deidentified(tbl_name = "old_mcat") ->
+  old_mcat_clean_deid
+
+old_mcat_clean_deid %>%
+  write_to_database_single(edu_db_con, 
+        add_tbl_prefix("old_mcat", status = "clean"))
+  
+old_mcat_clean_deid %>%
+ write_to_file(deidentified_output, "old_mcat_clean_deidentified.csv")
+```
+
+## MCAT: NEW
+
+```{r new_mcat, eval=FALSE}
+
+# deidentfied clean
+edu_db_con %>%
+  clean_deidentified(tbl_name = "new_mcat", 
+      min_year = 2016) ->
+  new_mcat_clean_deid
+
+new_mcat_clean_deid %>%
+  write_to_database_single(edu_db_con, 
+        add_tbl_prefix("new_mcat", status = "clean"))
+  
+new_mcat_clean_deid %>%
+ write_to_file(deidentified_output, "new_mcat_clean_deidentified.csv")
+```
+
+## Parent/Guardian
+
+```{r parent_guardian, eval=FALSE}
+
+# deidentfied clean
+edu_db_con %>%
+  clean_deidentified(tbl_name = "parent_guardian") ->
+  parents_clean_deid
+
+parents_clean_deid %>%
+  write_to_database_single(edu_db_con, 
+        add_tbl_prefix("parents", status = "clean"))
+  
+parents_clean_deid %>%
+ write_to_file(deidentified_output, "parents_clean_deidentified.csv")
+```
+
+
+
+```{r}
+disconnect_all()
+```

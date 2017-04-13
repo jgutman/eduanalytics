@@ -47,6 +47,7 @@ all_table_names %>%
 ```
 
 ```{r}
+# add function to package and remove from notebook
 find_tbls_with_col <- function(tbl_list, col_name, conn) {
   tbl_list %>%
     map(function(tbl_name) dbListFields(conn, tbl_name)) %>%
@@ -67,36 +68,48 @@ raw_identified_tbls %>%
 ```
 
 ```{r, results='hide'}
-query_drop_format <- "drop table if exists `${hashed_tbl_name}`;"
-query_create_format <- "create table `${hashed_tbl_name}` as (select md5(${col_name}) as study_id, a.* from `${identified_tbl_name}` a);"
-
-interpolate_and_execute <- function(tbl_name, col_name, query_drop, query_create, conn) {
+interpolate_hash <- function(tbl_name, col_name, conn) {
+  query_drop <- "drop table if exists `${hashed_tbl_name}`;"
+  
+  query_create <- "create table `${hashed_tbl_name}` as (
+  select md5(${col_name}) as study_id, a.* 
+  from `${identified_tbl_name}` a);"
+  
   hashed_tbl_name = add_tbl_prefix(tbl_name, 
-                        id = "hashed", status = "raw")
+                id = "hashed", status = "raw")
   identified_tbl_name = add_tbl_prefix(tbl_name, 
-                        id = "identified", status = "raw")
+                id = "identified", status = "raw")
+  
   query_drop %>%
-    stringr::str_interp() %>%
-    RMySQL::dbEscapeStrings(conn, .) %>%
-    DBI::dbExecute(conn, .)
+    interpolate_and_execute(., conn, hashed_tbl_name = hashed_tbl_name)
   
   query_create %>%
+    interpolate_and_execute(., conn, hashed_tbl_name = hashed_tbl_name,
+        col_name = col_name, identified_tbl_name = identified_tbl_name)
+}
+
+# add function to package and remove from notebook
+interpolate_and_execute <- function(query, conn, ...) {
+  args <- list(...)
+  purrr::map2(names(args), args, assign, envir=environment())
+  query %>%
+    stringr::str_replace_all("[[:cntrl:]]", "") %>%
     stringr::str_interp() %>%
     RMySQL::dbEscapeStrings(conn, .) %>%
     DBI::dbExecute(conn, .)
 }
 
-map(amcas_id_tbls, interpolate_and_execute, 
-    col_name = "amcas_id", query_drop = query_drop_format,
-    query_create = query_create_format, conn = edu_db_con)
+map(amcas_id_tbls, interpolate_hash, 
+    col_name = "amcas_id", conn = edu_db_con) %>%
+  length()
 
 dbCommit(edu_db_con)
 ```
 
 ```{r, results='hide'}
-map(aamc_id_tbls, interpolate_and_execute, 
-    col_name = "aamc_id", query_drop = query_drop_format,
-    query_create = query_create_format, conn = edu_db_con)
+map(aamc_id_tbls, interpolate_hash, 
+    col_name = "aamc_id", conn = edu_db_con) %>%
+  length()
 
 dbCommit(edu_db_con)
 ```

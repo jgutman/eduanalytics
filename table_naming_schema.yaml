@@ -14,6 +14,11 @@ feature_status:
 
 table_name:
     - 2013_all_applicants
+        - stages:
+            -
+            -
+        - app_years:
+            - 2013
     - 2014_all_applicants
     - 2015_all_applicants
     - 2016_all_applicants

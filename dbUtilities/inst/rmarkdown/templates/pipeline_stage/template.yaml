@@ -1,0 +1,5 @@
+name: Pipeline Stage
+description:
+  Template for notebooks specifying each stage of ETL, cleaning, and
+  analysis in the pipeline.
+create_dir: false

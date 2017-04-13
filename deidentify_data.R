@@ -1,24 +1,3 @@
----
-title: "Deidentify raw tables in database"
-subtitle: "Upload deidentified files to db"
-author: "Jacqueline Gutman, Suvam Paul"
-date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
-output:
-  html_document:
-    toc: yes
-    toc_depth: '4'
-  html_notebook:
-    highlight: tango
-    theme: cosmo
-    toc: yes
-    toc_depth: 4
----
-
-# Setup
-
-## Load packages
-
-```{r setup, message=FALSE}
 library(tidyverse)
 library(RMySQL)
 library(yaml)
@@ -35,47 +14,21 @@ sessionInfo() %>%
 opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
             cache = TRUE, autodep = TRUE, cache.comments = FALSE)
 
-```
-
-## Read in database credentials and open connection
-
-```{r}
 #devtools::install("dbUtilities", dependencies = FALSE, quiet = TRUE)
 library(dbUtilities)
-```
-
-```{r, echo=FALSE}
 credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
 edu_db_con <- get_mysql_conn(credentials_path, group = "edu_db_owner")
-```
-
-Optionally write all deidentified data to text files
-
-```{r}
 write_deidentified_to_file = FALSE
 deidentified_output <- "/Volumes/IIME/EDS/data/admissions/data_for_itai/"
-```
-
-# Admissions applicants datasets: 2013-2017
-
-## Read in all_applicants tables from database
-
-```{r}
 all_table_names <- dbListTables(edu_db_con) %>% print()
 
 edu_db_con %>%
   get_tbls_by_pattern("^hashed\\Wraw\\W\\d{4}_all_applicants", in_memory = FALSE) %>%
   set_names(paste(2013:2017, "all_applicants", sep = "_")) -> 
   applicants_data
-```
-
-```{r}
 # filter out irrelevant and identifying columns
 applicants_data %<>% 
   parse_yaml_cols("cols_to_keep_or_drop.yaml")
-```
-
-```{r}
 names(applicants_data) %>%
   add_tbl_prefix(status = "raw") ->
   tbl_names
@@ -84,9 +37,6 @@ applicants_data %>%
   set_names(tbl_names) %>%
   map(collect, n = Inf) %>%
   write_to_database(edu_db_con)
-```
-
-```{r}
 if (write_deidentified_to_file) {
   applicants_data %>%
     map(collect, n = Inf) %>%
@@ -94,11 +44,6 @@ if (write_deidentified_to_file) {
     write_to_file(deidentified_output, 
                   "admissions_all_applicants_deidentified.csv")
 }
-```
-
-# Raw features from eduDW tables
-
-```{r}
 pattern <- "^hashed\\Wraw\\W[[:alpha:]]"
 all_table_names %>%
   str_detect(pattern) %>%
@@ -116,9 +61,6 @@ edu_db_con %>%
 edudw_df_list %>%
   map(collect, n = Inf) %>%
   write_to_database(edu_db_con)
-```
-
-```{r}
 if (write_deidentified_to_file) {
   names(edudw_df_list) %>%
     str_split("\\$", n=3) %>%
@@ -130,8 +72,4 @@ if (write_deidentified_to_file) {
     map(collect, n = Inf) %>%
     map2(filenames, function(df, name) write_to_file(df, deidentified_output, name))
 }
-```
-
-```{r}
 disconnect_all()
-```

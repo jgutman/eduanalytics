@@ -129,4 +129,7 @@ drop table if exists `hashed$raw$experiences_2006_2013`;
 
 select disadvantaged_ind, ses from `hashed$raw$2014_all_applicants`;
 
-create table `hashed$raw$experiences_2006_2013` as (select md5(aamc_id) as study_id, a.* from `identified$raw$experiences_2006_2013` a);
+create table `hashed$raw$experiences_2006_2013` as (select md5(aamc_id) as study_id, a.* 
+from `identified$raw$experiences_2006_2013` a);
+
+select distinct(appl_year) from `deidentified$clean$ethnicity`;
