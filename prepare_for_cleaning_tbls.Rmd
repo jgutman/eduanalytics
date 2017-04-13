@@ -57,12 +57,28 @@ deidentified_output <- "/Volumes/IIME/EDS/data/admissions/data_for_itai/"
 ```
 
 ```{r}
-all_table_names <- dbListTables(edu_db_con) %>% print()
+# add function to package and remove from notebook
+get_tbl_names_by_stage <- function(conn, id, status) {
+  tbl_names <- dbListTables(conn)
+  
+  str_interp("^${id}\\W${status}\\W[[:alnum:]]") %>%
+    str_detect(tbl_names, .) %>%
+    extract(tbl_names, .)
+}
+
+query_rename_col <- "alter table ${tbl_name} change ${old_name} ${new_name} DOUBLE;"
+
+get_tbl_names_by_stage(edu_db_con, "deidentified", "raw") %>%
+  find_tbls_with_col("app_year", edu_db_con) %>%
+  map(function(tbl_name) interpolate_and_execute(query_rename_col, edu_db_con, 
+          tbl_name = tbl_name, old_name = "app_year", new_name = "appl_year"))
+  
+  
+
 pattern <- "^deidentified\\Wraw\\W[[:alpha:]].*[[:alpha:]]$"
 all_table_names %>%
   str_detect(pattern) %>%
   extract(all_table_names, .) %>%
-  str_replace_all("deidentified", "clean") %>%
   print() ->
   tbl_names
 
@@ -71,13 +87,26 @@ edu_db_con %>%
   set_names(tbl_names) -> edudw_deidentified
 ```
 
+```{r}
+edudw_deidentified %>% 
+  names() %>%
+  find_tbls_with_col("app_year", edu_db_con) -> 
+  app_year_tables
+
+query_rename_col <- "alter table ${tbl_name} change ${old_name} ${new_name} DOUBLE;"
+
+app_year_tables %>%
+  map(function(tbl_name) interpolate_and_execute(query_rename_col, edu_db_con, 
+          tbl_name = tbl_name, old_name = "app_year", new_name = "appl_year"))
+```
+
 
 ```{r}
 min_year <- 2014
 max_year <- 2017
 
 edudw_deidentified %>% 
-  map(function(df) filter(appl_year))
+  map(function(df) filter(appl_year >=))
 ```
 
 
