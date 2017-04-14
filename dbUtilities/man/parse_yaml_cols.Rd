@@ -2,18 +2,18 @@
 % Please edit documentation in R/tbl_functions.R
 \name{parse_yaml_cols}
 \alias{parse_yaml_cols}
-\title{Parse a yaml dictionary with columns to keep or drop in tibbles}
+\title{For a list of tibbles, either keep or drop columns based on input from a yaml file}
 \usage{
 parse_yaml_cols(df_list, col_list_path)
 }
 \arguments{
-\item{df_list}{list of tibbles}
+\item{df_list}{a list of tibbles}
 
-\item{col_list_path}{path to file with columns to keep or drop}
+\item{col_list_path}{path to yaml file}
 }
 \value{
-a list of tibbles with the appropriate columns removed/kept
+a list of tibbles only with selected columns based on imput from yaml files
 }
 \description{
-Parse a yaml dictionary with columns to keep or drop in tibbles
+For a list of tibbles, either keep or drop columns based on input from a yaml file
 }

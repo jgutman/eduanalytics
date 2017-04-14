@@ -1,0 +1,153 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+# Setup 
+
+```{r setup, message = FALSE}
+library(tidyverse)
+library(RMySQL)
+library(yaml)
+library(knitr)
+library(stringr)
+library(magrittr)
+library(lubridate)
+
+sessionInfo() %>%
+use_series(otherPkgs) %>%
+  map_chr(function(pkg) paste(pkg$Package, pkg$Version)) %>%
+  cat(sep = "\n")
+
+opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
+            cache = TRUE, autodep = TRUE, cache.comments = FALSE)
+
+```
+
+```{r}
+devtools::install("dbUtilities", dependencies = FALSE)
+library(dbUtilities)
+```
+
+# Create database connection
+
+```{r, echo=FALSE}
+credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
+edu_db_con <- get_mysql_conn(credentials_path, group = "edu_db_owner")
+```
+
+
+
+```{r}
+
+list <- edu_db_con %>% 
+  dbListTables()
+
+eth <- edu_db_con %>% put_tbl_to_memory("hashed$raw$ethnicity")
+ra <- edu_db_con %>% put_tbl_to_memory("hashed$raw$race")  
+
+df_list2 <- list("hashed$raw$ethnicity" = eth, "hashed$raw$race" = ra)
+
+path2 <- "/Users/suvampaul/Desktop/admissions/cols_to_keep_or_drop.yaml"
+
+cols_dict <- yaml::yaml.load_file(path2)
+
+df_list2 %>%
+  names() %>%
+  stringr::str_split("\\$", n=3) %>%
+  purrr::map_chr(tail, n = 1L) %>%
+  stringr::str_extract("[[:alpha:]]+(.?[[:alpha:]])*") %>%
+  extract(cols_dict, .) -> cols_dict
+ 
+
+select_by_keyword <- function(df, cols_list) {
+  
+  drop <- function(df, cols) {select(df, -one_of(cols))}
+  keep <- function(df, cols) {select(df, one_of(cols))}
+
+  stopifnot(length(cols_list) == 1)
+  
+  f <- if (names(cols_list ) == "keep") {keep} 
+      else if (names(cols_list) == "drop") {drop} 
+      else {function(...) NULL}
+  
+  f(df, flatten_chr(cols_list))
+
+}
+
+parse_yaml_cols <- function(df_list, col_list_path) {
+
+  cols_dict <- yaml::yaml.load_file(col_list_path)
+
+  df_list %>%
+    names() %>%
+    stringr::str_split("\\$", n=3) %>%
+    purrr::map_chr(tail, n = 1L) %>%
+    stringr::str_extract("[[:alpha:]]+(.?[[:alpha:]])*") %>%
+    extract(cols_dict, .) -> cols_dict
+
+  map2(df_list, cols_dict, select_by_keyword)
+}
+
+parse_yaml_cols(df_list2, path2)
+
+
+
+flatten_chr(cols_dict)
+
+
+
+
+
+
+
+
+
+
+query_drop_format <- "drop table if exists `${hashed_tbl_name}`;"
+query_create_format <- "create table `${hashed_tbl_name}` as (select md5(${col_name}) as study_id, a.* from `${identified_tbl_name}` a);"
+
+interpolate_and_execute <- function(tbl_name, col_name, 
+                                    query_drop, query_create, conn) {
+  hashed_tbl_name = add_tbl_prefix(tbl_name, 
+                        id = "hashed", status = "raw")
+  identified_tbl_name = add_tbl_prefix(tbl_name, 
+                        id = "identified", status = "raw")
+  query_drop %>%
+    stringr::str_interp() %>%
+    RMySQL::dbEscapeStrings(conn, .) %>%
+    DBI::dbExecute(conn, .)
+  
+  query_create %>%
+    stringr::str_interp() %>%
+    RMySQL::dbEscapeStrings(conn, .) %>%
+    DBI::dbExecute(conn, .)
+}
+
+
+
+find_tbls_with_col <- function(tbl_list, col_name, conn) {
+  tbl_list %>%
+    map(function(tbl_name) dbListFields(conn, tbl_name)) %>%
+    set_names(tbl_list) %>% 
+    map_lgl(function(tbl) is_in(col_name, tbl)) %>% 
+    extract(tbl_list, .)
+}
+
+
+
+# add function to package and remove from notebook
+interpolate_and_execute <- function(query, conn, ...) {
+  args <- list(...)
+  purrr::map2(names(args), args, assign, envir= environment())
+  query %>%
+    stringr::str_replace_all("[[:cntrl:]]", "") %>%
+    stringr::str_interp() %>%
+    RMySQL::dbEscapeStrings(conn, .) %>%
+    DBI::dbExecute(conn, .)
+}
+
+```
+
+

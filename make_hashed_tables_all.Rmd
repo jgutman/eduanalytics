@@ -4,38 +4,22 @@ output: html_notebook
 ---
 
 # Setup
-
 ## Load packages
-
-```{r setup, message=FALSE}
-library(tidyverse)
-library(RMySQL)
-library(yaml)
-library(knitr)
-library(stringr)
-library(magrittr)
-library(lubridate)
-
-sessionInfo() %>%
-  use_series(otherPkgs) %>%
-  map_chr(function(pkg) paste(pkg$Package, pkg$Version)) %>%
-  cat(sep = "\n")
-
-opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
-            cache = TRUE, autodep = TRUE, cache.comments = FALSE)
-
-```
-
 ## Read in database credentials and open connection
 
-```{r}
-#devtools::install("dbUtilities", dependencies = FALSE, quiet = TRUE)
-library(dbUtilities)
+```{r setup, message=FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook.R")
 ```
 
-```{r, echo=FALSE}
-credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
-edu_db_con <- get_mysql_conn(credentials_path, group = "edu_db_owner")
+```{r setup_notebook}
+```
+
+```{r echo = FALSE}
+print_loaded_pkgs()
+```
+
+```{r}
+source("functions_to_add.R")
 ```
 
 ```{r}
@@ -47,24 +31,13 @@ all_table_names %>%
 ```
 
 ```{r}
-# add function to package and remove from notebook
-find_tbls_with_col <- function(tbl_list, col_name, conn) {
-  tbl_list %>%
-    map(function(tbl_name) dbListFields(conn, tbl_name)) %>%
-    set_names(tbl_list) %>% 
-    map_lgl(function(tbl) is_in(col_name, tbl)) %>% 
-    extract(tbl_list, .)
-}
-
 raw_identified_tbls %>%
   find_tbls_with_col("amcas_id", edu_db_con) %>%
-  str_split("\\$", n=3) %>% 
-  map_chr(tail, n=1L) -> amcas_id_tbls
+  get_tbl_suffix() -> amcas_id_tbls
 
 raw_identified_tbls %>%
   find_tbls_with_col("aamc_id", edu_db_con) %>%
-  str_split("\\$", n=3) %>% 
-  map_chr(tail, n=1L) -> aamc_id_tbls
+  get_tbl_suffix() -> aamc_id_tbls
 ```
 
 ```{r, results='hide'}
@@ -81,37 +54,25 @@ interpolate_hash <- function(tbl_name, col_name, conn) {
                 id = "identified", status = "raw")
   
   query_drop %>%
-    interpolate_and_execute(., conn, hashed_tbl_name = hashed_tbl_name)
+    interpolate_and_execute(., conn, commit = TRUE, 
+                            hashed_tbl_name = hashed_tbl_name)
   
   query_create %>%
-    interpolate_and_execute(., conn, hashed_tbl_name = hashed_tbl_name,
-        col_name = col_name, identified_tbl_name = identified_tbl_name)
-}
-
-# add function to package and remove from notebook
-interpolate_and_execute <- function(query, conn, ...) {
-  args <- list(...)
-  purrr::map2(names(args), args, assign, envir=environment())
-  query %>%
-    stringr::str_replace_all("[[:cntrl:]]", "") %>%
-    stringr::str_interp() %>%
-    RMySQL::dbEscapeStrings(conn, .) %>%
-    DBI::dbExecute(conn, .)
+    interpolate_and_execute(., conn, commit = TRUE, 
+          hashed_tbl_name = hashed_tbl_name,
+          col_name = col_name, 
+          identified_tbl_name = identified_tbl_name)
 }
 
 map(amcas_id_tbls, interpolate_hash, 
     col_name = "amcas_id", conn = edu_db_con) %>%
-  length()
-
-dbCommit(edu_db_con)
+  flatten_lgl()
 ```
 
 ```{r, results='hide'}
 map(aamc_id_tbls, interpolate_hash, 
     col_name = "aamc_id", conn = edu_db_con) %>%
-  length()
-
-dbCommit(edu_db_con)
+  flatten_lgl()
 ```
 
 ```{r}

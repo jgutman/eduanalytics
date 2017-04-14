@@ -13,7 +13,10 @@
 #' @importFrom DBI dbListConnections
 #' @importFrom DBI dbDisconnect
 #' @importFrom DBI dbListTables
+#' @importFrom DBI dbListFields
 #' @importFrom DBI dbWriteTable
+#' @importFrom DBI dbExecute
+#' @importFrom DBI dbCommit
 #' @importFrom purrr map
 #' @importFrom purrr quietly
 #' @importFrom purrr is_empty
@@ -25,6 +28,7 @@
 #' @importFrom purrr map_lgl
 #' @importFrom lubridate parse_date_time
 #' @importFrom RMySQL MySQL
+#' @importFrom RMySQL dbEscapeStrings
 #' @importFrom magrittr %>%
 #' @importFrom magrittr extract
 #' @importFrom magrittr equals
@@ -36,6 +40,7 @@
 #' @importFrom stringr str_extract
 #' @importFrom stringr regex
 #' @importFrom stringr str_replace_all
+#' @importFrom stringr str_interp
 #' @importFrom readr write_csv
 #'
 NULL

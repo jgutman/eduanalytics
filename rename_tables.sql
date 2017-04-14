@@ -133,3 +133,5 @@ create table `hashed$raw$experiences_2006_2013` as (select md5(aamc_id) as study
 from `identified$raw$experiences_2006_2013` a);
 
 select distinct(appl_year) from `deidentified$clean$ethnicity`;
+
+describe `deidentified$raw$ethnicity`;
