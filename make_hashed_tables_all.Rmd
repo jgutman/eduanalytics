@@ -19,10 +19,6 @@ print_loaded_pkgs()
 ```
 
 ```{r}
-source("functions_to_add.R")
-```
-
-```{r}
 all_table_names <- dbListTables(edu_db_con)
 
 all_table_names %>% 

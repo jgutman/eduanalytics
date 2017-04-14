@@ -29,9 +29,6 @@ knitr::read_chunk("setup_notebook.R")
 print_loaded_pkgs()
 ```
 
-```{r}
-source("functions_to_add.R")
-```
 
 ## Optionally write all deidentified data to text files
 
