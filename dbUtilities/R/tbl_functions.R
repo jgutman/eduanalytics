@@ -241,30 +241,6 @@ parse_yaml_cols <- function(df_list, col_list_path) {
 }
 
 
-#' Keep only columns listed as keep for each data table mentioned in yaml
-#'
-#' @param df_list list of tibbles
-#' @param cols_to_keep list of cols to drop for each dataframe
-#'
-#' @return a list of tibbles with formatted column names
-#'
-keep_cols_from_list <- function(df_list, cols_to_keep) {
-  map2(df_list, cols_to_keep, function(df, cols)
-     select(df, one_of(cols)))
-}
-
-#' Drop only columns listed as drop for each data table mentioned in yaml
-#'
-#' @param df_list list of tibbles
-#' @param cols_to_drop list of cols to drop for each dataframe
-#'
-#' @return a list of tibbles with formatted column names
-#'
-drop_cols_from_list <- function(df_list, cols_to_drop) {
-  map2(df_list, cols_to_drop, function(df, cols)
-    select(df, -one_of(cols)))
-}
-
 #' Drop columns in tibbles that have only NA values
 #'
 #' @param df a tibble to check of NA in columns

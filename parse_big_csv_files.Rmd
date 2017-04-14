@@ -14,26 +14,22 @@ output:
     toc_depth: 4
 ---
 
-# Setup 
+# Setup
+## Load packages
+## Read in database credentials and open connection
 
-```{r setup, message = FALSE}
-library(tidyverse)
-library(RMySQL)
-library(yaml)
-library(knitr)
-library(stringr)
-library(magrittr)
-library(lubridate)
-
-sessionInfo() %>%
-use_series(otherPkgs) %>%
-  map_chr(function(pkg) paste(pkg$Package, pkg$Version)) %>%
-  cat(sep = "\n")
-
-opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
-            cache = TRUE, autodep = TRUE, cache.comments = FALSE)
-
+```{r setup, message=FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook.R")
 ```
+
+```{r setup_notebook}
+```
+
+```{r echo = FALSE}
+print_loaded_pkgs()
+```
+
+## Load data from shared drive
 
 ```{r}
 # Path containing all data directories
@@ -50,11 +46,6 @@ identified_raw_edudw_path <- data_dirs %>%
 edudw_pull_path <- data_dirs %>%
   str_detect("edudw.*pull") %>% 
   extract(data_dirs, .)
-```
-
-```{r}
-#devtools::install("dbUtilities", dependencies = FALSE, quiet = TRUE)
-library(dbUtilities)
 ```
 
 ```{r}

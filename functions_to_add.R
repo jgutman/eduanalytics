@@ -41,3 +41,27 @@ print_loaded_pkgs <- function() {
   purrr::map_chr(function(pkg) paste(pkg$Package, pkg$Version)) %>%
   cat(sep = "\n")
 }
+
+parse_yaml_cols <- function(df_list, col_list_path) {
+  cols_dict <- yaml::yaml.load_file(col_list_path)
+
+  df_list %>%
+    names() %>%
+    get_tbl_suffix() %>%
+    stringr::str_extract("[[:alpha:]]+(.?[[:alpha:]])*") %>%
+    extract(cols_dict, .) -> cols_dict
+
+  drop <- function(df, cols) {select(df, -one_of(cols))}
+  keep <- function(df, cols) {select(df, one_of(cols))}
+
+  select_by_keyword <- function(df, cols_list) {
+    stopifnot(length(cols_list) == 1)
+    f <- if (names( cols_list ) == "keep") {keep
+        } else if (names( cols_list ) == "drop") {drop
+        } else {function(...) NULL}
+
+    f(df, flatten_chr(cols_list))
+    }
+
+  map2(df_list, cols_dict, select_by_keyword)
+}

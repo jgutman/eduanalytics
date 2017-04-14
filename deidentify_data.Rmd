@@ -15,16 +15,25 @@ output:
 ---
 
 # Setup
-
 ## Load packages
+## Read in database credentials and open connection
 
-```{r setup, message=FALSE}
+```{r setup, message=FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook.R")
+```
+
+```{r setup_notebook}
+```
+
+```{r echo = FALSE}
 print_loaded_pkgs()
 ```
 
-## Read in database credentials and open connection
+```{r}
+source("functions_to_add.R")
+```
 
-Optionally write all deidentified data to text files
+## Optionally write all deidentified data to text files
 
 ```{r}
 write_deidentified_to_file = FALSE
