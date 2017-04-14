@@ -1,3 +1,33 @@
+#BUILDING AND EXECUTING SQL QUERIES
+
+#' Build and execute SQL query
+#'
+#' @param query SQL query
+#' @param conn database connection object
+#' @param commit Boolean value, TRUE to explicitly write to database FALSE to not
+#' @param ... Additional paramaters, for passing in skeleton query for SQL query above
+#'
+#' @return Executed SQL query on the datbase, changes the databse in commit is TRUE
+#' @export
+#'
+interpolate_and_execute <- function(query, conn, commit = FALSE, ...) {
+
+  args <- list(...)
+
+  map2(names(args), args, assign, envir=environment())
+
+  query %>%
+    str_replace_all("[[:cntrl:]]", "") %>%
+    str_interp() %>%
+    dbEscapeStrings(conn, .) %>%
+    dbExecute(conn, .)
+
+  if (commit) dbCommit(conn) else FALSE
+}
+
+
+
+
 #FUNCTIONS FOR GETTING DATA FROM DATABASE
 
 # Helper function to parse dates
@@ -27,6 +57,8 @@ convert_or_retain <- function(col) {
 #'
 #' @return a tibble
 #'
+#'@export
+#'
 put_tbl_to_memory <- function(conn, tbl_name) {
   tbl(conn, tbl_name) %>%
     collect(n = Inf) %>%
@@ -47,13 +79,55 @@ put_tbl_to_memory <- function(conn, tbl_name) {
 #'
 get_tbls_by_pattern <- function(conn, pattern, in_memory = TRUE) {
   tbl_names <- dbListTables(conn)
-  f <- ifelse(in_memory, put_tbl_to_memory, dplyr::tbl)
+  f <- if(in_memory) put_tbl_to_memory else dplyr::tbl
 
   tbl_names %>%
     str_detect(regex(pattern, ignore_case = TRUE)) %>%
     extract(tbl_names, .) %>%
     map(function(tbl_name) f(conn, tbl_name))
 }
+
+
+
+#'Find tibble with specified column name
+#'
+#' @param tbl_list a list of table names
+#' @param col_name column name in tibble
+#' @param conn database connection object
+#'
+#' @return return table that contain the specified table name
+#' @export
+#'
+find_tbls_with_col <- function(tbl_list, col_name, conn) {
+  tbl_list %>%
+    map(function(tbl_name) dbListFields(conn, tbl_name)) %>%
+    set_names(tbl_list) %>%
+    map_lgl(function(tbl) is_in(col_name, tbl)) %>%
+    extract(tbl_list, .)
+}
+
+
+
+
+#' Get tibble name by stage and status
+#'
+#' @param conn database connection object
+#' @param id id from database naming schema
+#' @param status status from database naming schema
+#'
+#' @return a list of tibble that matches id and staus
+#' @export
+#'
+get_tbl_names_by_stage <- function(conn, id, status) {
+  tbl_names <- dbListTables(conn)
+
+  str_interp("^${id}\\W${status}\\W[[:alnum:]]") %>%
+    str_detect(tbl_names, .) %>%
+    extract(tbl_names, .)
+}
+
+
+
 
 
 ### FUNCTIONS FOR WRITING DATA TO DATABASE
@@ -165,6 +239,66 @@ clean_deidentified <- function(conn, tbl_name,
 
 ### FUNCTIONS FOR MANAGING DATA AFTER GETTING FROM DATABASE
 
+#' Helper function to prase_yaml_cols, either drops for keeps columns based on input from a yaml file
+#'
+#' @param df_list a list of tibbles
+#' @param cols_list a list of length one containing many column names
+#'
+#' @return
+#'
+select_by_keyword <- function(df_list, cols_list) {
+
+  drop <- function(df, cols) {select(df, -one_of(cols))}
+  keep <- function(df, cols) {select(df, one_of(cols))}
+
+  stopifnot(length(cols_list) == 1)
+
+  f <- if (names(cols_list ) == "keep") {keep
+  } else if (names(cols_list) == "drop") {drop
+      } else {function(...) NULL}
+
+  f(df, flatten_chr(cols_list))
+
+}
+
+
+#' Get the suffix of tibble names
+#'
+#' @param tbl_names names of tiblles
+#'
+#' @return return suffix of tibble names
+#' @export
+#'
+get_tbl_suffix <- function(tbl_names) {
+  tbl_names %>%
+    str_split("\\$", n=3) %>%
+    map_chr(tail, n=1L)
+}
+
+
+#' For a list of tibbles, either keep or drop columns based on input from a yaml file
+#'
+#' @param df_list a list of tibbles
+#' @param col_list_path path to yaml file
+#'
+#' @return a list of tibbles only with selected columns based on imput from yaml files
+#' @export
+#'
+parse_yaml_cols <- function(df_list, col_list_path) {
+
+  cols_dict <- yaml::yaml.load_file(col_list_path)
+
+  df_list %>%
+    names() %>%
+    get_tbl_suffix() %>%
+    stringr::str_extract("[[:alpha:]]+(.?[[:alpha:]])*") %>%
+    extract(cols_dict, .) -> cols_dict
+
+  map2(df_list, cols_dict, select_by_keyword)
+}
+
+
+
 #' Fix all column names to standard format across tibbles
 #'
 #' @param df_list list of tibbles
@@ -179,7 +313,6 @@ fix_colnames <- function(df_list) {
     map(function(df) set_names(df,
                       tolower(colnames(df))))
 }
-
 
 
 #' When the same data is stored in multiple tables/tibbles and you want to merge them together
@@ -202,43 +335,6 @@ all_equal_across_row <- function(df) {
     all()
 }
 
-
-
-### Drop column functions for tibbles
-
-#' Parse a yaml dictionary with columns to keep or drop in tibbles
-#'
-#' @param df_list list of tibbles
-#' @param col_list_path path to file with columns to keep or drop
-#'
-#' @return a list of tibbles with the appropriate columns removed/kept
-#' @export
-#'
-parse_yaml_cols <- function(df_list, col_list_path) {
-  cols_dict <- yaml::yaml.load_file(col_list_path)
-  df_list %>%
-    names() %>%
-    stringr::str_split("\\$", n=3) %>%
-    purrr::map_chr(tail, n = 1L) %>%
-    stringr::str_extract("[[:alpha:]]+(.?[[:alpha:]])*") %>%
-    extract(cols_dict, .) -> cols_dict
-
-  cols_dict %>%
-    map(function(x) extract(x$drop)) %>%
-    extract(map_lgl(., function(.) not(is_empty(.)))) ->
-    drop_dict
-
-  cols_dict %>%
-    map(function(x) extract(x$keep)) %>%
-    extract(map_lgl(., function(.) not(is_empty(.)))) ->
-    keep_dict
-
-  if(not(is_empty(drop_dict))) {
-    drop_cols_from_list(df_list, drop_dict)
-  } else {
-    keep_cols_from_list(df_list, keep_dict)
-  }
-}
 
 
 #' Drop columns in tibbles that have only NA values

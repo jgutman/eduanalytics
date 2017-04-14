@@ -3,7 +3,7 @@
 \name{put_tbl_to_memory}
 \alias{put_tbl_to_memory}
 \title{put_tbl_to_memory pulls down a table into memory from database and where applies,
-covert dates to the approprite date format}
+covert dates to the appropriate date format}
 \usage{
 put_tbl_to_memory(conn, tbl_name)
 }
@@ -17,5 +17,5 @@ a tibble
 }
 \description{
 put_tbl_to_memory pulls down a table into memory from database and where applies,
-covert dates to the approprite date format
+covert dates to the appropriate date format
 }
