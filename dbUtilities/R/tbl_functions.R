@@ -291,7 +291,6 @@ parse_yaml_cols <- function(df_list, col_list_path) {
   df_list %>%
     names() %>%
     get_tbl_suffix() %>%
-    purrr::map_chr(tail, n = 1L) %>%
     stringr::str_extract("[[:alpha:]]+(.?[[:alpha:]])*") %>%
     extract(cols_dict, .) -> cols_dict
 
