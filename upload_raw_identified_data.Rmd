@@ -17,14 +17,14 @@ output:
 ## Load packages
 ## Read in database credentials and open connection
 
-```{r setup, message=FALSE, echo = FALSE}
+```{r setup, message=FALSE, echo = FALSE, purl = FALSE}
 knitr::read_chunk("setup_notebook.R")
 ```
 
-```{r setup_notebook}
+```{r setup_notebook, purl = FALSE}
 ```
 
-```{r echo = FALSE}
+```{r echo = FALSE, purl = FALSE}
 source("functions_to_add.R")
 print_loaded_pkgs()
 ```

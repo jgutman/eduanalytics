@@ -8,8 +8,8 @@ library(stringr)
 library(magrittr)
 library(lubridate)
 
-devtools::install("dbUtilities",
-    dependencies = FALSE, quiet = TRUE)
+##  devtools::install("dbUtilities",
+#    dependencies = FALSE, quiet = TRUE)
 library(dbUtilities)
 
 knitr::opts_chunk$set(

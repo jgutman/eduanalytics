@@ -18,14 +18,14 @@ output:
 ## Load packages
 ## Read in database credentials and open connection
 
-```{r setup, message=FALSE, echo = FALSE}
+```{r setup, message=FALSE, echo = FALSE, purl = FALSE}
 knitr::read_chunk("setup_notebook.R")
 ```
 
-```{r setup_notebook}
+```{r setup_notebook, purl = FALSE}
 ```
 
-```{r echo = FALSE}
+```{r echo = FALSE, purl = FALSE}
 source("functions_to_add.R")
 print_loaded_pkgs()
 ```
@@ -119,6 +119,17 @@ if (write_deidentified_to_file) {
 ```
 
 ## Add clean for admissions pile of data
+
+```{r}
+tbl_names <- get_tbl_names_by_stage(edu_db_con, "deidentified", "raw")
+pattern <- "^deidentified\\Wraw\\W\\d{4}.*[[:alpha:]]$"
+
+tbl_names %<>%
+  str_detect(pattern) %>%
+  extract(tbl_names, .) %>%
+  print()
+```
+
 
 
 ```{r}
