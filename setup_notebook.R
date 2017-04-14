@@ -1,9 +1,9 @@
 ## ---- setup_notebook
 
-library(tidyverse)
 library(RMySQL)
 library(yaml)
 library(knitr)
+library(tidyverse)
 library(stringr)
 library(magrittr)
 library(lubridate)
@@ -20,5 +20,5 @@ knitr::opts_chunk$set(
     autodep = TRUE,
     cache.comments = FALSE)
 
-credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
+credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials"
 edu_db_con <- get_mysql_conn(credentials_path, group = "edu_db_owner")

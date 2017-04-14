@@ -25,11 +25,8 @@ knitr::read_chunk("setup_notebook.R")
 ```
 
 ```{r echo = FALSE}
-print_loaded_pkgs()
-```
-
-```{r}
 source("functions_to_add.R")
+print_loaded_pkgs()
 ```
 
 # Check available data directories
@@ -61,8 +58,8 @@ parent_path <- "/Volumes/IIME/EDS/data/admissions"
 - 2016_tracking_report
 
 ```{r}
-data_dirs %>% 
-  str_detect("from_.*admissions") %>% 
+data_dirs %>%
+  str_detect("from_.*admissions") %>%
   extract(data_dirs, .) %>%
   file.path(., "Data") ->
   identified_raw_admissions_path
@@ -72,7 +69,7 @@ list.files(identified_raw_admissions_path, full.names = TRUE) %>%
 ```
 
 ```{r}
-identified_raw_admissions_files %>% 
+identified_raw_admissions_files %>%
   map(function(path) readxl::read_excel(path)) %>%
   fix_colnames() %>%
   map(drop_empty_cols) ->
@@ -80,20 +77,20 @@ identified_raw_admissions_files %>%
 ```
 
 ```{r}
-paste(rep(2013:2017, each = 3), 
+paste(rep(2013:2017, each = 3),
         c("all_applicants", "matriculated_report", "tracking_report"), sep = "_") %>%
   add_tbl_prefix(id = "identified", status = "raw") %>%
   extract(1:length(identified_raw_admissions_list)) %>%
   print() -> table_names
 
-identified_raw_admissions_list %<>% 
+identified_raw_admissions_list %<>%
   set_names(table_names) %>%
   map(function(df) set_names(df, str_replace(colnames(df), "recevied", "received")))
 
 ```
 
 ```{r}
-identified_raw_admissions_list %>% 
+identified_raw_admissions_list %>%
   write_to_database(edu_db_con)
 ```
 
@@ -111,8 +108,8 @@ identified_raw_admissions_list %>%
 
 
 ```{r}
-identified_raw_edudw_path <- data_dirs %>% 
-  str_detect("raw.*identified.*edudw") %>% 
+identified_raw_edudw_path <- data_dirs %>%
+  str_detect("raw.*identified.*edudw") %>%
   extract(data_dirs, .)
 
 list.files(identified_raw_edudw_path, full.names = TRUE) %>%
@@ -120,7 +117,7 @@ list.files(identified_raw_edudw_path, full.names = TRUE) %>%
 ```
 
 ```{r}
-identified_raw_edudw_files %>% 
+identified_raw_edudw_files %>%
   map(function(path) read_csv(path)) %>%
   fix_colnames() %>%
   map(drop_empty_cols) ->
@@ -128,15 +125,15 @@ identified_raw_edudw_files %>%
 ```
 
 ```{r}
-identified_raw_edudw_files %>% 
-  str_replace(identified_raw_edudw_path, "") %>% 
+identified_raw_edudw_files %>%
+  str_replace(identified_raw_edudw_path, "") %>%
   str_replace_all(c("/" = "", ".csv" = "")) %>%
   add_tbl_prefix(id = "identified", status = "raw") %>%
   print() -> table_names
 
-identified_raw_edudw_list %<>% 
+identified_raw_edudw_list %<>%
   set_names(table_names) %>%
-  map(function(df) set_names(df, 
+  map(function(df) set_names(df,
         str_replace(colnames(df), "(?<=(low)|(high))_p$", "_percentile"))) %>%
   map(function(df) set_names(df, str_replace(colnames(df), "meaningfull", "meaningful")))
 ```
@@ -161,13 +158,13 @@ identified_raw_edudw_list$`identified$raw$old_mcat` %<>%
 identified_raw_edudw_list$`identified$raw$school` %<>%
   mutate(attend_start_dt = parse_time_mod(attend_start_dt),
          attend_finish_dt = parse_time_mod(attend_finish_dt))
-  
+
 no_date_cols <- . %>%
   map_lgl(is.POSIXt) %>%
   sum() %>%
   equals(0)
 
-identified_raw_edudw_list %>% 
+identified_raw_edudw_list %>%
   map_lgl(no_date_cols)
 ```
 
@@ -175,21 +172,17 @@ identified_raw_edudw_list %>%
 identified_raw_edudw_list$`identified$raw$experiences` %<>%
   mutate(avg_hrs_per_week = if_else(appl_year >= 2015, NA_integer_, avg_hrs_per_week))
 
-identified_raw_edudw_list$`identified$raw$experiences` %>% 
-  group_by(appl_year) %>% 
+identified_raw_edudw_list$`identified$raw$experiences` %>%
+  group_by(appl_year) %>%
   summarize_all(funs(pct_missing = mean(is.na(.))))
 ```
 
 
 ```{r}
-identified_raw_edudw_list %>% 
+identified_raw_edudw_list %>%
   write_to_database(edu_db_con)
 ```
 
 ```{r}
 disconnect_all()
 ```
-
-
-
-
