@@ -25,11 +25,8 @@ knitr::read_chunk("setup_notebook.R")
 ```
 
 ```{r echo = FALSE}
-print_loaded_pkgs()
-```
-
-```{r}
 source("functions_to_add.R")
+print_loaded_pkgs()
 ```
 
 # Check available data directories
