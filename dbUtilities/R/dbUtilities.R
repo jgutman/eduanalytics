@@ -26,6 +26,7 @@
 #' @importFrom purrr flatten_chr
 #' @importFrom purrr by_row
 #' @importFrom purrr map_lgl
+#' @importFrom purrr map_chr
 #' @importFrom lubridate parse_date_time
 #' @importFrom RMySQL MySQL
 #' @importFrom RMySQL dbEscapeStrings
@@ -35,6 +36,7 @@
 #' @importFrom magrittr use_series
 #' @importFrom magrittr is_less_than
 #' @importFrom magrittr not
+#' @importFrom magrittr use_series
 #' @import dplyr
 #' @importFrom stringr str_detect
 #' @importFrom stringr str_extract
