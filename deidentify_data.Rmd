@@ -26,6 +26,7 @@ knitr::read_chunk("setup_notebook.R")
 ```
 
 ```{r echo = FALSE}
+source("functions_to_add.R")
 print_loaded_pkgs()
 ```
 
@@ -58,7 +59,7 @@ applicants_data %<>%
 
 ```{r}
 names(applicants_data) %>%
-  add_tbl_prefix(status = "raw") ->
+  add_tbl_prefix(id = "deidentified", status = "raw") ->
   tbl_names
 
 applicants_data %>% 

@@ -15,14 +15,15 @@ knitr::read_chunk("setup_notebook.R")
 ```
 
 ```{r echo = FALSE}
+source("functions_to_add.R")
 print_loaded_pkgs()
 ```
 
 ```{r}
 all_table_names <- dbListTables(edu_db_con)
 
-all_table_names %>% 
-  str_detect("^identified") %>% 
+all_table_names %>%
+  str_detect("^identified") %>%
   extract(all_table_names, .) -> raw_identified_tbls
 ```
 
@@ -39,34 +40,34 @@ raw_identified_tbls %>%
 ```{r, results='hide'}
 interpolate_hash <- function(tbl_name, col_name, conn) {
   query_drop <- "drop table if exists `${hashed_tbl_name}`;"
-  
+
   query_create <- "create table `${hashed_tbl_name}` as (
-  select md5(${col_name}) as study_id, a.* 
+  select md5(${col_name}) as study_id, a.*
   from `${identified_tbl_name}` a);"
-  
-  hashed_tbl_name = add_tbl_prefix(tbl_name, 
+
+  hashed_tbl_name = add_tbl_prefix(tbl_name,
                 id = "hashed", status = "raw")
-  identified_tbl_name = add_tbl_prefix(tbl_name, 
+  identified_tbl_name = add_tbl_prefix(tbl_name,
                 id = "identified", status = "raw")
-  
+
   query_drop %>%
-    interpolate_and_execute(., conn, commit = TRUE, 
+    interpolate_and_execute(., conn, commit = TRUE,
                             hashed_tbl_name = hashed_tbl_name)
-  
+
   query_create %>%
-    interpolate_and_execute(., conn, commit = TRUE, 
+    interpolate_and_execute(., conn, commit = TRUE,
           hashed_tbl_name = hashed_tbl_name,
-          col_name = col_name, 
+          col_name = col_name,
           identified_tbl_name = identified_tbl_name)
 }
 
-map(amcas_id_tbls, interpolate_hash, 
+map(amcas_id_tbls, interpolate_hash,
     col_name = "amcas_id", conn = edu_db_con) %>%
   flatten_lgl()
 ```
 
 ```{r, results='hide'}
-map(aamc_id_tbls, interpolate_hash, 
+map(aamc_id_tbls, interpolate_hash,
     col_name = "aamc_id", conn = edu_db_con) %>%
   flatten_lgl()
 ```
@@ -74,4 +75,3 @@ map(aamc_id_tbls, interpolate_hash,
 ```{r}
 disconnect_all()
 ```
-

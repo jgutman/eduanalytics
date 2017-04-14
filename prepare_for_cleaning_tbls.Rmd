@@ -26,6 +26,7 @@ knitr::read_chunk("setup_notebook.R")
 ```
 
 ```{r echo = FALSE}
+source("functions_to_add.R")
 print_loaded_pkgs()
 ```
 
@@ -38,18 +39,22 @@ deidentified_output <- "/Volumes/IIME/EDS/data/admissions/data_for_itai/"
 
 ```{r}
 query_rename_col <- "alter table ${tbl_name} change ${old_name} ${new_name} DOUBLE;"
+tbl_names <- get_tbl_names_by_stage(edu_db_con, "deidentified", "raw")
 
-get_tbl_names_by_stage(edu_db_con, "deidentified", "raw") %>%
+tbl_names %>%
   find_tbls_with_col("app_year", edu_db_con) %>%
-  map(function(tbl_name) interpolate_and_execute(query_rename_col, edu_db_con, 
-          tbl_name = tbl_name, old_name = "app_year", new_name = "appl_year"))
+  map(function(tbl_name) interpolate_and_execute(query_rename_col, edu_db_con,
+          commit = TRUE, tbl_name = tbl_name,                               
+           old_name = "app_year", new_name = "appl_year"))
+```
 
+```{r}
 pattern <- "^deidentified\\Wraw\\W[[:alpha:]].*[[:alpha:]]$"
-all_table_names %>%
+
+tbl_names %<>%
   str_detect(pattern) %>%
-  extract(all_table_names, .) %>%
-  print() ->
-  tbl_names
+  extract(tbl_names, .) %>%
+  print()
 
 edu_db_con %>%
   get_tbls_by_pattern(pattern, in_memory = FALSE) %>%
@@ -57,170 +62,63 @@ edu_db_con %>%
 ```
 
 ```{r}
-edudw_deidentified %>% 
-  names() %>%
-  find_tbls_with_col("app_year", edu_db_con) -> 
-  app_year_tables
-
-query_rename_col <- "alter table ${tbl_name} change ${old_name} ${new_name} DOUBLE;"
-
-app_year_tables %>%
-  map(function(tbl_name) interpolate_and_execute(query_rename_col, edu_db_con, 
-          tbl_name = tbl_name, old_name = "app_year", new_name = "appl_year"))
-```
-
-
-```{r}
 min_year <- 2014
 max_year <- 2017
 
-edudw_deidentified %>% 
-  map(function(df) filter(appl_year >=))
+edudw_deidentified %<>%
+  map(function(df) filter(df,
+        appl_year >= min_year, appl_year <= max_year)) %>%
+  map(collect, n = Inf) %>%
+  map(function(df) group_by(df, study_id)) %>%
+  map(function(df) filter(df, appl_year == min(appl_year)))
 ```
 
-
-## Ethnicity
-
-```{r ethnicity, eval=FALSE}
-
-# deidentified clean
-edu_db_con %>%
-  clean_deidentified(tbl_name = "ethnicity") ->
-  ethnicity_clean_deid
-
-ethnicity_clean_deid %>%
-  write_to_database_single(edu_db_con, 
-        add_tbl_prefix("ethnicity", status = "clean"))
-  
-ethnicity_clean_deid %>%
- write_to_file(deidentified_output, "ethnicity_clean_deidentified.csv")  
-
-```
-
-## Race
-
-```{r race, eval=FALSE}
-
-# deidentified clean
-edu_db_con %>%
-  clean_deidentified(tbl_name = "race") ->
-  race_clean_deid
-
-race_clean_deid %>%
-  write_to_database_single(edu_db_con, 
-        add_tbl_prefix("race", status = "clean"))
-
-race_clean_deid %>%
- write_to_file(deidentified_output, "race_clean_deidentified.csv") 
-```
-
-## Schools
-
-```{r schools, eval=FALSE}
-
-# deidentified clean
-edu_db_con %>%
-  clean_deidentified(tbl_name = "school") ->
-  schools_clean_deid
-
-schools_clean_deid %>%
-  write_to_database_single(edu_db_con, 
-        add_tbl_prefix("school", status = "clean"))
-
-schools_clean_deid %>%
- write_to_file(deidentified_output, "schools_clean_deidentified.csv") 
-```
-
-## GPA
-
-```{r gpa, eval=FALSE}
-
-# deidentified clean
-edu_db_con %>%
-  clean_deidentified(tbl_name = "gpa") ->
-  gpa_clean_deid
-
-gpa_clean_deid %>%
-  write_to_database_single(edu_db_con, 
-        add_tbl_prefix("gpa", status = "clean"))
-  
-gpa_clean_deid %>%
- write_to_file(deidentified_output, "gpa_clean_deidentified.csv")
-```
-
-## MMI
-
-```{r mmi, eval=FALSE}
-
-# deidentfied clean
-edu_db_con %>%
-  clean_deidentified(tbl_name = "mmi_scores",
-                     min_year = 2014) %>%
+```{r}
+edudw_deidentified$`deidentified$raw$mmi_scores` %<>%
   select(-mmi_question_id, -code) %>%
   mutate(interviewer_type = str_replace(interviewer_type, "Interviewer ", "")) %>%
-  mutate(interviewer_type = as.integer(interviewer_type)) ->
-  mmi_clean_deid
-
-mmi_clean_deid %>%
-  write_to_database_single(edu_db_con, 
-        add_tbl_prefix("mmi_scores", status = "clean"))
-
-mmi_clean_deid %>%
- write_to_file(deidentified_output, "mmi_clean_deidentified.csv")
+  mutate(interviewer_type = as.integer(interviewer_type))
 ```
 
-## MCAT: OLD
-
-```{r mcat_old, eval=FALSE}
-
-# deidentfied clean
-edu_db_con %>%
-  clean_deidentified(tbl_name = "old_mcat") ->
-  old_mcat_clean_deid
-
-old_mcat_clean_deid %>%
-  write_to_database_single(edu_db_con, 
-        add_tbl_prefix("old_mcat", status = "clean"))
-  
-old_mcat_clean_deid %>%
- write_to_file(deidentified_output, "old_mcat_clean_deidentified.csv")
+```{r}
+edudw_deidentified$`deidentified$raw$experiences` %<>%
+  replace_na(list(first_total_hrs = 0,
+                  second_total_hrs = 0,
+                  third_total_hrs = 0,
+                  fourth_total_hrs = 0)) %>%
+  mutate(total_hrs = first_total_hrs + second_total_hrs +
+                     third_total_hrs + fourth_total_hrs)
 ```
 
-## MCAT: NEW
+```{r}
+names(edudw_deidentified) %>%
+  get_tbl_suffix() %>%
+  add_tbl_prefix(status = "clean") ->
+  tbl_names
 
-```{r new_mcat, eval=FALSE}
-
-# deidentfied clean
-edu_db_con %>%
-  clean_deidentified(tbl_name = "new_mcat", 
-      min_year = 2016) ->
-  new_mcat_clean_deid
-
-new_mcat_clean_deid %>%
-  write_to_database_single(edu_db_con, 
-        add_tbl_prefix("new_mcat", status = "clean"))
-  
-new_mcat_clean_deid %>%
- write_to_file(deidentified_output, "new_mcat_clean_deidentified.csv")
+edudw_deidentified %<>%
+  map(drop_empty_cols) %>%
+  set_names(tbl_names)
 ```
 
-## Parent/Guardian
-
-```{r parent_guardian, eval=FALSE}
-
-# deidentfied clean
-edu_db_con %>%
-  clean_deidentified(tbl_name = "parent_guardian") ->
-  parents_clean_deid
-
-parents_clean_deid %>%
-  write_to_database_single(edu_db_con, 
-        add_tbl_prefix("parents", status = "clean"))
-  
-parents_clean_deid %>%
- write_to_file(deidentified_output, "parents_clean_deidentified.csv")
+```{r}
+edudw_deidentified %>%
+  write_to_database(edu_db_con)
 ```
 
+```{r}
+if (write_deidentified_to_file) {
+  names(edudw_deidentified) %>%
+    get_tbl_suffix() %>%
+    paste("clean", "deidentified.csv", sep = "_") ->
+    filenames
+
+  edudw_deidentified %>%
+    map2(filenames, function(df, name) write_to_file(df, deidentified_output, name))
+}
+```
+
+## Add clean for admissions pile of data
 
 
 ```{r}
