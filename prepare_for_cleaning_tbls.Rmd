@@ -15,41 +15,25 @@ output:
 ---
 
 # Setup
-
 ## Load packages
-
-```{r setup, message=FALSE}
-library(tidyverse)
-library(RMySQL)
-library(yaml)
-library(knitr)
-library(stringr)
-library(magrittr)
-library(lubridate)
-
-sessionInfo() %>%
-  use_series(otherPkgs) %>%
-  map_chr(function(pkg) paste(pkg$Package, pkg$Version)) %>%
-  cat(sep = "\n")
-
-opts_chunk$set(message = FALSE, warning = FALSE, comment = "   ",
-            cache = TRUE, autodep = TRUE, cache.comments = FALSE)
-
-```
-
 ## Read in database credentials and open connection
 
+```{r setup, message=FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook.R")
+```
+
+```{r setup_notebook}
+```
+
+```{r echo = FALSE}
+print_loaded_pkgs()
+```
+
 ```{r}
-#devtools::install("dbUtilities", dependencies = FALSE, quiet = TRUE)
-library(dbUtilities)
+source("functions_to_add.R")
 ```
 
-```{r, echo=FALSE}
-credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials/"
-edu_db_con <- get_mysql_conn(credentials_path, group = "edu_db_owner")
-```
-
-Optionally write all deidentified data to text files
+## Optionally write all deidentified data to text files
 
 ```{r}
 write_deidentified_to_file = FALSE
@@ -57,12 +41,17 @@ deidentified_output <- "/Volumes/IIME/EDS/data/admissions/data_for_itai/"
 ```
 
 ```{r}
-all_table_names <- dbListTables(edu_db_con) %>% print()
+query_rename_col <- "alter table ${tbl_name} change ${old_name} ${new_name} DOUBLE;"
+
+get_tbl_names_by_stage(edu_db_con, "deidentified", "raw") %>%
+  find_tbls_with_col("app_year", edu_db_con) %>%
+  map(function(tbl_name) interpolate_and_execute(query_rename_col, edu_db_con, 
+          tbl_name = tbl_name, old_name = "app_year", new_name = "appl_year"))
+
 pattern <- "^deidentified\\Wraw\\W[[:alpha:]].*[[:alpha:]]$"
 all_table_names %>%
   str_detect(pattern) %>%
   extract(all_table_names, .) %>%
-  str_replace_all("deidentified", "clean") %>%
   print() ->
   tbl_names
 
@@ -71,13 +60,26 @@ edu_db_con %>%
   set_names(tbl_names) -> edudw_deidentified
 ```
 
+```{r}
+edudw_deidentified %>% 
+  names() %>%
+  find_tbls_with_col("app_year", edu_db_con) -> 
+  app_year_tables
+
+query_rename_col <- "alter table ${tbl_name} change ${old_name} ${new_name} DOUBLE;"
+
+app_year_tables %>%
+  map(function(tbl_name) interpolate_and_execute(query_rename_col, edu_db_con, 
+          tbl_name = tbl_name, old_name = "app_year", new_name = "appl_year"))
+```
+
 
 ```{r}
 min_year <- 2014
 max_year <- 2017
 
 edudw_deidentified %>% 
-  map(function(df) filter(appl_year))
+  map(function(df) filter(appl_year >=))
 ```
 
 

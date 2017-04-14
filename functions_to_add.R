@@ -1,4 +1,6 @@
 #
+# add function to package and remove from notebook
+
 interpolate_and_execute <- function(query, conn, commit = FALSE, ...) {
   args <- list(...)
   purrr::map2(names(args), args, assign, envir=environment())
@@ -9,6 +11,7 @@ interpolate_and_execute <- function(query, conn, commit = FALSE, ...) {
     DBI::dbExecute(conn, .)
 
   if (commit) DBI::dbCommit(conn) else FALSE
+    if (commit) DBI::dbCommit(conn) else FALSE
 }
 
 
@@ -22,8 +25,7 @@ find_tbls_with_col <- function(tbl_list, col_name, conn) {
     extract(tbl_list, .)
 }
 
-
-#
+# add function to package and remove from notebook
 get_tbl_names_by_stage <- function(conn, id, status) {
   tbl_names <- dbListTables(conn)
 
@@ -32,9 +34,6 @@ get_tbl_names_by_stage <- function(conn, id, status) {
     extract(tbl_names, .)
 }
 
-
-
-#
 get_tbl_suffix <- function(tbl_names) {
   tbl_names %>%
     str_split("\\$", n=3) %>%
@@ -79,3 +78,34 @@ select_by_keyword <- function(df, cols_list) {
 }
 
 map2(df_list, cols_dict, select_by_keyword)
+
+print_loaded_pkgs <- function() {
+  sessionInfo() %>%
+  magrittr::use_series(otherPkgs) %>%
+  purrr::map_chr(function(pkg) paste(pkg$Package, pkg$Version)) %>%
+  cat(sep = "\n")
+}
+
+parse_yaml_cols <- function(df_list, col_list_path) {
+  cols_dict <- yaml::yaml.load_file(col_list_path)
+
+  df_list %>%
+    names() %>%
+    get_tbl_suffix() %>%
+    stringr::str_extract("[[:alpha:]]+(.?[[:alpha:]])*") %>%
+    extract(cols_dict, .) -> cols_dict
+
+  drop <- function(df, cols) {select(df, -one_of(cols))}
+  keep <- function(df, cols) {select(df, one_of(cols))}
+
+  select_by_keyword <- function(df, cols_list) {
+    stopifnot(length(cols_list) == 1)
+    f <- if (names( cols_list ) == "keep") {keep
+        } else if (names( cols_list ) == "drop") {drop
+        } else {function(...) NULL}
+
+    f(df, flatten_chr(cols_list))
+    }
+
+  map2(df_list, cols_dict, select_by_keyword)
+}
