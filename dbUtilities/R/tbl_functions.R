@@ -74,7 +74,7 @@ put_tbl_to_memory <- function(conn, tbl_name) {
 #' @param pattern regular expression pattern for matching with tables names
 #' @param in_memory if true, put table into memory, if false, do lazy evaluation
 #'
-#' @return a list of tibbles, either in memory or lazily evaluated
+#' @return a list of tibbles or tables
 #' @export
 #'
 get_tbls_by_pattern <- function(conn, pattern, in_memory = TRUE) {
@@ -85,20 +85,18 @@ get_tbls_by_pattern <- function(conn, pattern, in_memory = TRUE) {
     str_detect(regex(pattern, ignore_case = TRUE)) %>%
     extract(tbl_names, .) %>%
     map(function(tbl_name) f(conn, tbl_name))
-
-  # set tbl names here, or at least the suffix
 }
 
 
 
 
-#' Just like get tbl_by_pattern expect returns a named list of tibbles when reading into memory
+#' Just like get tbl_by_pattern expect returns a named list of tibbles
 #'
 #' @param conn database connection object
 #' @param pattern regular expression patterm for matching with table names
 #' @param in_memory if true, put table into memory, if false, do lazy evaluation
 #'
-#' @return a list of named tibbles when in memory or lazily evaluated
+#' @return a list of named tibbles or tables
 #' @export
 #'
 get_tbls_by_pattern_named <- function(conn, pattern, in_memory = TRUE) {
@@ -112,22 +110,10 @@ get_tbls_by_pattern_named <- function(conn, pattern, in_memory = TRUE) {
     extract(tbl_names, .)
 
   list_tib <- names %>%
-    map(function(tbl_name) f(conn, tbl_name))
+    map(function(tbl_name) f(conn, tbl_name)) %>%
+    set_names(get_tbl_suffix(names))
 
-  if(in_memory) {
-    list_tib %>%
-      set_names(get_tbl_suffix(names))
-
-  } else {
-    list_tib
-  }
 }
-
-
-
-
-
-
 
 
 #'Find tibble with specified column name

@@ -15,7 +15,7 @@ get_tbls_by_pattern(conn, pattern, in_memory = TRUE)
 \item{in_memory}{if true, put table into memory, if false, do lazy evaluation}
 }
 \value{
-a list of tibbles, either in memory or lazily evaluated
+a list of tibbles or tables
 }
 \description{
 get tbl_by_pattern returns a list of tibbles into memory from database and where applies,

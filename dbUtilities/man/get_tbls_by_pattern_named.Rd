@@ -2,7 +2,7 @@
 % Please edit documentation in R/tbl_functions.R
 \name{get_tbls_by_pattern_named}
 \alias{get_tbls_by_pattern_named}
-\title{Just like get tbl_by_pattern expect returns a named list of tibbles when reading into memory}
+\title{Just like get tbl_by_pattern expect returns a named list of tibbles}
 \usage{
 get_tbls_by_pattern_named(conn, pattern, in_memory = TRUE)
 }
@@ -14,8 +14,8 @@ get_tbls_by_pattern_named(conn, pattern, in_memory = TRUE)
 \item{in_memory}{if true, put table into memory, if false, do lazy evaluation}
 }
 \value{
-a list of named tibbles when in memory or lazily evaluated
+a list of named tibbles or tables
 }
 \description{
-Just like get tbl_by_pattern expect returns a named list of tibbles when reading into memory
+Just like get tbl_by_pattern expect returns a named list of tibbles
 }
