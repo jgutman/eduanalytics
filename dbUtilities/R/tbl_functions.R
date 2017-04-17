@@ -67,29 +67,6 @@ put_tbl_to_memory <- function(conn, tbl_name) {
 
 
 
-#' get tbl_by_pattern returns a list of tibbles into memory from database and where applies,
-#' converts dates to the approprite date functions
-#'
-#' @param conn database connection object
-#' @param pattern regular expression pattern for matching with tables names
-#' @param in_memory if true, put table into memory, if false, do lazy evaluation
-#'
-#' @return a list of tibbles or tables
-#' @export
-#'
-get_tbls_by_pattern <- function(conn, pattern, in_memory = TRUE) {
-  tbl_names <- dbListTables(conn)
-  f <- if(in_memory) put_tbl_to_memory else dplyr::tbl
-
-  tbl_names %>%
-    str_detect(regex(pattern, ignore_case = TRUE)) %>%
-    extract(tbl_names, .) %>%
-    map(function(tbl_name) f(conn, tbl_name))
-}
-
-
-
-
 #' Just like get tbl_by_pattern expect returns a named list of tibbles
 #'
 #' @param conn database connection object
@@ -99,7 +76,7 @@ get_tbls_by_pattern <- function(conn, pattern, in_memory = TRUE) {
 #' @return a list of named tibbles or tables
 #' @export
 #'
-get_tbls_by_pattern_named <- function(conn, pattern, in_memory = TRUE) {
+get_tbls_by_pattern <- function(conn, pattern, in_memory = TRUE) {
 
   tbl_names <- dbListTables(conn)
 
