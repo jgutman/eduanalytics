@@ -61,10 +61,6 @@ as_tibble(gpa)
 
 #check has 14-17 application years 
 table(gpa$appl_year)
-
-#remove once code for creating clean verison has changed
-gpa <- gpa %>% filter(appl_year != 2013)
-table(gpa$appl_year)
 ```
 
 
@@ -77,6 +73,7 @@ table(gpa$aca_status_desc)
 #drop high school grades
 gpa %>% filter(aca_status_desc != "High School") -> gpa
 
+dim(gpa)
 ```
 
 
@@ -103,11 +100,11 @@ missing_science_gpa_year <- . %>%
 
 #total missing
 gpa %>% is_science_gpa_missing()
-#6958
+#7187
+
 
 #missing breakdown by application year
 gpa %>% missing_science_gpa_year()
-
 
 
 #postbacs
@@ -123,9 +120,9 @@ gpa %>%
 
 #Are there people still missing science gpa if postbac -yes
 gpa %>%  
-  filter(is.na(bcpm_gpa) & aca_status_desc == "Postbaccalaureate Undergraduate") %>% dim()
+  filter(is.na(bcpm_gpa) | is.na(ao_gpa) | is.na(total_gpa) & aca_status_desc == "Postbaccalaureate Undergraduate")
 
-#are they all missing total_gpa, meaning they never did postbac - yes  
+#are they all missing total_gpa, meaning they never did postbac? - yes  
 gpa %>%  
   filter(is.na(bcpm_gpa) & aca_status_desc == "Postbaccalaureate Undergraduate") %>% 
   use_series(bcpm_gpa) %>% 
