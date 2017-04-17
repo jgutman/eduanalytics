@@ -1,4 +1,5 @@
 ## ---- setup_notebook
+packrat::restore(overwrite.dirty = TRUE)
 library(RMySQL)
 library(yaml)
 library(data.table)
@@ -10,8 +11,6 @@ library(lubridate)
 
 ##  devtools::install("dbUtilities",
 #    dependencies = FALSE, quiet = TRUE)
-
-packrat::restore()
 library(dbUtilities)
 
 knitr::opts_chunk$set(

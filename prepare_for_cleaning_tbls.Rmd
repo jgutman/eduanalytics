@@ -135,8 +135,6 @@ tracking_columns <- c("appl_submit_date",
                       "committee_date",
                       "offer_date",
                       "accept_date")
-
-
 ```
 
 
