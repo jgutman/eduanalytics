@@ -12,7 +12,7 @@ get_tbls_by_pattern(conn, pattern, in_memory = TRUE)
 
 \item{pattern}{regular expression pattern for matching with tables names}
 
-\item{in_memory}{if true, put tbl_df in memory, if false, lazy evaluation}
+\item{in_memory}{if true, put table into memory, if false, do lazy evaluation}
 }
 \value{
 a list of tibbles, either in memory or lazily evaluated
