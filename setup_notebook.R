@@ -22,4 +22,8 @@ knitr::opts_chunk$set(
     cache.comments = FALSE)
 
 credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials"
-edu_db_con <- get_mysql_conn(credentials_path, group = "edu_db_owner")
+reconnect <- function() {
+    get_mysql_conn(path = credentials_path,
+                   group = "edu_db_owner")
+}
+edu_db_con <- reconnect()

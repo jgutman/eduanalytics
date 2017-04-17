@@ -157,23 +157,12 @@ identified_raw_edudw_list$`identified$raw$old_mcat` %<>%
 identified_raw_edudw_list$`identified$raw$school` %<>%
   mutate(attend_start_dt = parse_time_mod(attend_start_dt),
          attend_finish_dt = parse_time_mod(attend_finish_dt))
-
-no_date_cols <- . %>%
-  map_lgl(is.POSIXt) %>%
-  sum() %>%
-  equals(0)
-
-identified_raw_edudw_list %>%
-  map_lgl(no_date_cols)
 ```
 
 ```{r}
 identified_raw_edudw_list$`identified$raw$experiences` %<>%
-  mutate(avg_hrs_per_week = if_else(appl_year >= 2015, NA_integer_, avg_hrs_per_week))
-
-identified_raw_edudw_list$`identified$raw$experiences` %>%
-  group_by(appl_year) %>%
-  summarize_all(funs(pct_missing = mean(is.na(.))))
+  mutate(avg_hrs_per_week = if_else(appl_year >= 2015, 
+                                    NA_integer_, avg_hrs_per_week))
 ```
 
 
