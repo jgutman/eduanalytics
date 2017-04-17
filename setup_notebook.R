@@ -2,6 +2,7 @@
 
 library(RMySQL)
 library(yaml)
+library(data.table)
 library(knitr)
 library(tidyverse)
 library(stringr)

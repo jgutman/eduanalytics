@@ -14,31 +14,164 @@ feature_status:
 
 table_name:
     - 2013_all_applicants
-        - stages:
-            -
-            -
-        - app_years:
-            - 2013
+        - identified raw:
+            [2013]
+        - hashed raw:
+            [2013]
+        - deidentified raw:
+            [2013]
     - 2014_all_applicants
+        - identified raw:
+            [2014]
+        - hashed raw:
+            [2014]
+        - deidentified raw:
+            [2014]
     - 2015_all_applicants
+        - identified raw:
+            [2015]
+        - hashed raw:
+            [2015]
+        - deidentified raw:
+            [2015]
     - 2016_all_applicants
+        - identified raw:
+            [2016]
+        - hashed raw:
+            [2016]
+        - deidentified raw:
+            [2016]
     - 2017_all_applicants
+        - identified raw:
+            [2017]
+        - hashed raw:
+            [2017]
+        - deidentified raw:
+            [2017]
     - 2013_matriculated_report
+        - identified raw:
+            [2013]
+        - hashed raw:
+            [2013]
     - 2014_matriculated_report
+        - identified raw:
+            [2014]
+        - hashed raw:
+            [2014]
     - 2015_matriculated_report
+        - identified raw:
+            [2015]
+        - hashed raw:
+            [2015]
     - 2016_matriculated_report
+        - identified raw:
+            [2016]
+        - hashed raw:
+            [2016]
     - 2013_tracking_report
+        - identified raw:
+            [2013]
     - 2014_tracking_report
+        - identified raw:
+            [2014]
     - 2015_tracking_report
+        - identified raw:
+            [2015]
     - 2016_tracking_report
+        - identified raw:
+            [2016]
     - ethnicity
+        - identified raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+        - hashed raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+        - deidentified raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+        - deidentified clean:
+            [2014, 2015, 2016, 2017]
     - gpa
+        - identified raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+        - hashed raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+        - deidentified raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+        - deidentified clean:
+            [2014, 2015, 2016, 2017]
     - old_mcat
+        - identified raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+        - hashed raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+        - deidentified raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+        - deidentified clean:
+            [2014, 2015, 2016, 2017]
     - new_mcat
+        - identified raw:
+            [2016, 2017]
+        - hashed raw:
+            [2016, 2017]
+        - deidentified raw:
+            [2016, 2017]
+        - deidentified clean:
+            [2016, 2017]
     - mmi_scores
+        - identified raw:
+            [2014, 2015, 2016, 2017]
+        - hashed raw:
+            [2014, 2015, 2016, 2017]
+        - deidentified raw:
+            [2014, 2015, 2016, 2017]
+        - deidentified clean:
+            [2014, 2015, 2016, 2017]
     - mmi_scores_2013
+        - identified raw:
+            [2013]
+        - hashed raw:
+            [2013]
+        - deidentified raw:
+            [2013]
     - parent_guardian
+        - identified raw:
+            [2013, 2014, 2015, 2016, 2017]
+        - hashed raw:
+            [2013, 2014, 2015, 2016, 2017]
+        - deidentified raw:
+            [2013, 2014, 2015, 2016, 2017]
+        - deidentified clean:
+            [2014, 2015, 2016, 2017]
     - race
+        - identified raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+        - hashed raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+        - deidentified raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+        - deidentified clean:
+            [2014, 2015, 2016, 2017]
     - school
+        - identified raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+        - hashed raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+        - deidentified raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017]
+        - deidentified clean:
+            [2014, 2015, 2016, 2017]
     - experiences
+        - identified raw:
+            [2014, 2015, 2016, 2017]
+        - hashed raw:
+            [2014, 2015, 2016, 2017]
+        - deidentified raw:
+            [2014, 2015, 2016, 2017]
+        - deidentified clean:
+            [2014, 2015, 2016, 2017]
     - experiences_2006_2013
+        - identified raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013]
+        - hashed raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013]
+        - deidentified raw:
+            [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013]

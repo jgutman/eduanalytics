@@ -135,3 +135,9 @@ from `identified$raw$experiences_2006_2013` a);
 select distinct(appl_year) from `deidentified$clean$ethnicity`;
 
 describe `deidentified$raw$ethnicity`;
+
+select count(*) from `deidentified$clean$parent_guardian`;
+
+select distinct(appl_year) from `identified$raw$experiences_2006_2013` ORDER by appl_year;
+select distinct(appl_year) from `hashed$raw$experiences_2006_2013` ORDER by appl_year;
+select distinct(appl_year) from `deidentified$raw$experiences_2006_2013` ORDER by appl_year;

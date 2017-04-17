@@ -81,10 +81,19 @@ get_tbls_by_pattern <- function(conn, pattern, in_memory = TRUE) {
   tbl_names <- dbListTables(conn)
   f <- if(in_memory) put_tbl_to_memory else dplyr::tbl
 
-  tbl_names %>%
-    str_detect(regex(pattern, ignore_case = TRUE)) %>%
-    extract(tbl_names, .) %>%
-    map(function(tbl_name) f(conn, tbl_name))
+  get_tbls_by_pattern <- function(conn, pattern, in_memory = TRUE) {
+
+  tbl_names <- dbListTables(conn)
+
+  f <- if(in_memory) put_tbl_to_memory else dplyr::tbl
+
+  names <- tbl_names %>%
+    str_detect(regex(pattern, ignore.case = TRUE)) %>%
+    extract(tbl_names, .)
+
+  names %>%
+    map(function(tbl_name) f(conn, tbl_name)) %>%
+    set_names(get_tbl_suffix(names))
 }
 
 

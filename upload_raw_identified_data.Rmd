@@ -25,7 +25,6 @@ knitr::read_chunk("setup_notebook.R")
 ```
 
 ```{r echo = FALSE, purl = FALSE}
-source("functions_to_add.R")
 print_loaded_pkgs()
 ```
 
@@ -97,15 +96,15 @@ identified_raw_admissions_list %>%
 ### Upload EduDW-provided datasets
 
 - ethnicity
+- experiences [2006-2013, 2014-2017]
 - gpa
+- grades [2006_2009, 2010-2013, 2014-2017]
 - old_mcat
 - mmi_scores [2013, 2014-2017]
 - new_mcat
 - race
 - school
 - parent_guardian
-- experiences [2006-2013, 2014-2017]
-
 
 ```{r}
 identified_raw_edudw_path <- data_dirs %>%
@@ -118,7 +117,7 @@ list.files(identified_raw_edudw_path, full.names = TRUE) %>%
 
 ```{r}
 identified_raw_edudw_files %>%
-  map(function(path) read_csv(path)) %>%
+  map(function(path) fread(path)) %>%
   fix_colnames() %>%
   map(drop_empty_cols) ->
   identified_raw_edudw_list
