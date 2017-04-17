@@ -26,7 +26,6 @@ knitr::read_chunk("setup_notebook.R")
 ```
 
 ```{r echo = FALSE, purl = FALSE}
-source("functions_to_add.R")
 print_loaded_pkgs()
 ```
 
@@ -51,10 +50,10 @@ tbl_names %>%
 ```{r}
 pattern <- "^deidentified\\Wraw\\W[[:alpha:]].*[[:alpha:]]$"
 
-tbl_names %<>%
+db_list_tables(edu_db_con) %<>%
   str_detect(pattern) %>%
   extract(tbl_names, .) %>%
-  print()
+  print() -> tbl_names
 
 edu_db_con %>%
   get_tbls_by_pattern(pattern, in_memory = FALSE) %>%
@@ -121,15 +120,24 @@ if (write_deidentified_to_file) {
 ## Add clean for admissions pile of data
 
 ```{r}
-tbl_names <- get_tbl_names_by_stage(edu_db_con, "deidentified", "raw")
 pattern <- "^deidentified\\Wraw\\W\\d{4}.*[[:alpha:]]$"
 
-tbl_names %<>%
-  str_detect(pattern) %>%
-  extract(tbl_names, .) %>%
-  print()
 ```
 
+```{r}
+tracking_columns <- c("appl_submit_date",
+                      "appl_complete_date",
+                      "screening_complete_date",
+                      "interview_invite_date",
+                      "interview_schedule_date",
+                      "interview_day",
+                      "interview_complete_date",
+                      "committee_date",
+                      "offer_date",
+                      "accept_date")
+
+
+```
 
 
 ```{r}

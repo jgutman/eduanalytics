@@ -2,22 +2,20 @@
 % Please edit documentation in R/tbl_functions.R
 \name{get_tbls_by_pattern}
 \alias{get_tbls_by_pattern}
-\title{get tbl_by_pattern returns a list of tibbles into memory from database and where applies,
-converts dates to the approprite date functions}
+\title{Just like get tbl_by_pattern expect returns a named list of tibbles}
 \usage{
 get_tbls_by_pattern(conn, pattern, in_memory = TRUE)
 }
 \arguments{
 \item{conn}{database connection object}
 
-\item{pattern}{regular expression pattern for matching with tables names}
+\item{pattern}{regular expression patterm for matching with table names}
 
-\item{in_memory}{if true, put tbl_df in memory, if false, lazy evaluation}
+\item{in_memory}{if true, put table into memory, if false, do lazy evaluation}
 }
 \value{
-a list of tibbles, either in memory or lazily evaluated
+a list of named tibbles or tables
 }
 \description{
-get tbl_by_pattern returns a list of tibbles into memory from database and where applies,
-converts dates to the approprite date functions
+Just like get tbl_by_pattern expect returns a named list of tibbles
 }

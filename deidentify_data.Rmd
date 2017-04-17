@@ -26,7 +26,6 @@ knitr::read_chunk("setup_notebook.R")
 ```
 
 ```{r echo = FALSE, purl = FALSE}
-source("functions_to_add.R")
 print_loaded_pkgs()
 ```
 

@@ -18,7 +18,7 @@ output:
 ## Load packages
 ## Read in database credentials and open connection
 
-```{r setup, message=FALSE, echo = FALSE, purl = FALSE}
+```{r setup, message = FALSE, echo = FALSE, purl = FALSE}
 knitr::read_chunk("setup_notebook.R")
 ```
 
@@ -26,7 +26,6 @@ knitr::read_chunk("setup_notebook.R")
 ```
 
 ```{r echo = FALSE, purl = FALSE}
-source("functions_to_add.R")
 print_loaded_pkgs()
 ```
 
@@ -51,23 +50,26 @@ edudw_pull_path <- data_dirs %>%
 
 ```{r}
 # File containing all experiences data for all years
-experiences_path <- file.path(edudw_pull_path, "experiences.csv") %>% print()
-```
-
-```{r}
-# Reference contact info to remove
-drop_cols <- c("CONTACT_FNAME", "CONTACT_LNAME",
-               "CONTACT_PHONE", "CONTACT_EMAIL")
+experiences_path <- file.path(edudw_pull_path, 
+                              "experiences.csv") %>% print()
 ```
 
 `experiences_2006_2013.csv` for 2006-2013 application cycle extracurriculars (avg hrs per week)
 `experiences.csv` for 2014-2017 application cycle extracurriculars (total hrs per week)
 
 ```{r}
-read_csv(experiences_path, na = "null") %>%
+fread(experiences_path, na.strings = c("NA","N/A","null", "")) %>%
   mutate(year_range = if_else(appl_year <= 2013, "_2006_2013", "")) %>% 
   group_by(year_range) %>% 
   nest() -> exp
+```
+
+```{r}
+# Reference contact info to remove
+drop_cols <- c("CONTACT_FNAME", 
+               "CONTACT_LNAME",
+               "CONTACT_PHONE", 
+               "CONTACT_EMAIL")
 ```
 
 ```{r}
@@ -78,19 +80,21 @@ exp %>%
   mutate(data = fix_colnames(data)) %>%
   mutate(filename = sprintf("experiences%s.csv", year_range)) %>%
   mutate(path = file.path(identified_raw_edudw_path, filename)) %>%
-  {map2(.$data, .$path, write_csv)}
+  {map2(.$data, .$path, write_csv)} %>% 
+  invisible()
 ```
 
 ```{r}
 # File containing MMI data for all years
-mmi_path <- file.path(edudw_pull_path, "mmi_scores.csv") %>% print()
+mmi_path <- file.path(edudw_pull_path, 
+                      "mmi_scores.csv") %>% print()
 ```
 
 `mmi_scores_2013.csv` for 1-on-1 2013 application cycle interviews
 `mmi_scores.csv` for MMI application cycle 2014-2017 interviews
 
 ```{r}
-read_csv(mmi_path, na = "null") %>%
+fread(mmi_path, na.strings = c("NA","N/A","null", "")) %>%
   mutate(year_range = if_else(app_year <= 2013, "_2013", "")) %>% 
   group_by(year_range) %>% 
   nest() -> mmi
@@ -103,6 +107,49 @@ mmi %>%
   mutate(data = fix_colnames(data)) %>%
   mutate(filename = sprintf("mmi_scores%s.csv", year_range)) %>%
   mutate(path = file.path(identified_raw_edudw_path, filename)) %>%
-  {map2(.$data, .$path, write_csv)}
+  {map2(.$data, .$path, write_csv)} %>%
+  invisible()
 ```
 
+```{r}
+# File containing all grades data for all years
+grades_path <- file.path(edudw_pull_path, 
+                         "Grades.csv") %>% print()
+```
+
+```{r}
+fread(grades_path, na.strings = c("NA","N/A","null", "")) %>%
+  mutate(year_range = if_else(appl_year <= 2009, "_2006_2009", 
+                      if_else(appl_year <= 2013, "_2010_2013", ""))) %>% 
+  group_by(year_range) %>% 
+  nest() -> grades
+```
+```{r}
+# grades columns to keep - condensed amcas version
+keep_cols <- c("appl_year",
+               "aamc_id",
+               "academic_year",
+               "course_qp",
+               "aca_term_cd",
+               "aca_term_desc",
+               "semester_hours",
+               "aca_status_cd",
+               "aca_status_desc",
+               "class_cd",
+               "class_desc",
+               "bcpm_ind",
+               "amcas_grade_cd",
+               "amcas_weight")
+```
+
+```{r}
+grades %>%
+  mutate(data = map(data, drop_empty_cols)) %>%
+  mutate(data = fix_colnames(data)) %>%
+  mutate(data = map(data, function(df) select(df, one_of(keep_cols)))) %>%
+  mutate(data = map(data, function(df) arrange(df, desc(appl_year)))) %>%
+  mutate(filename = sprintf("grades%s.csv", year_range)) %>%
+  mutate(path = file.path(identified_raw_edudw_path, filename)) %>%
+  {map2(.$data, .$path, write_csv)} %>% 
+  invisible()
+```
