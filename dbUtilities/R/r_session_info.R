@@ -24,8 +24,8 @@ unload_workspace <- function() {
     paste0('package:', .) -> pkgs
 
   detach_pkg <- partial(detach,
-                               character.only = TRUE,
-                               force = TRUE)
+        character.only = TRUE,
+        force = TRUE)
 
   map(pkgs, detach_pkg)
   rm(list = ls(all.names = TRUE, envir = .GlobalEnv),

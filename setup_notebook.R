@@ -10,8 +10,6 @@ library(lubridate)
 
 ##  devtools::install("dbUtilities",
 #    dependencies = FALSE, quiet = TRUE)
-
-packrat::restore()
 library(dbUtilities)
 
 knitr::opts_chunk$set(

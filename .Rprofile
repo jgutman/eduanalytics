@@ -2,4 +2,7 @@
 source("packrat/init.R")
 #### -- End Packrat Autoloader -- ####
 
-# source("setup_notebook.R")
+devtools::install("dbUtilities",
+    dependencies = FALSE, quiet = TRUE)
+
+packrat::restore(overwrite.dirty = TRUE)
