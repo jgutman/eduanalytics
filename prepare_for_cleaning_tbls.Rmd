@@ -125,7 +125,7 @@ tracking_columns <- c("appl_submit_date",
 
 ```{r}
 edu_db_con %>%
-  get_tbls_by_pattern(pattern, in_memory = FALSE) -> 
+  get_tbls_by_pattern(pattern) -> 
   app_data_deidentified
 
 app_data_deidentified %<>%
@@ -134,6 +134,71 @@ app_data_deidentified %<>%
   set_names(app_data_deidentified, .)
 ```
 
+```{r}
+app_data_deidentified %>% 
+  names() %>% 
+  str_detect("201[4-7]") %>%
+  extract(app_data_deidentified, .) %>%
+  do.call(bind_rows, .) %>%
+  select(study_id, appl_year, one_of(tracking_columns), everything()) ->
+  applicant_data
+  
+```
+
+```{r}
+filter_applications <- . %>%
+  # filter out M.D./Ph.D. applicants, special programs (i.e. linkages), and 
+  # deferred applicants from previous years
+  filter(appl_type_desc %in% c("Regular M.D.", "Combined  Medical Degree/Graduate")) %>%
+  filter(!str_detect(status, "M\\w{2}")) %>%
+  filter(!is.na(appl_submit_date) & !is.na(appl_complete_date))
+
+applicant_data %<>% 
+  filter_applications() %>% 
+  drop_empty_cols() %>%
+  select(-mstp, -mstp_to_md)
+```
+
+```{r}
+split_screener_score <- . %>% 
+  mutate(screener_a_b = recode(scr_dec, 
+          `2` = "1_1", `3` = "1_2", `4` = "4", `5` = "2_3", `6` = "3_3"),
+        screener_a_b = if_else(scr_dec == 4, 
+                       if_else(screener_sd == 0, "2_2", "1_3"), 
+                       screener_a_b)) %>%
+  separate(screener_a_b, c("screener_a", "screener_b"))
+
+applicant_data %<>%
+  split_screener_score() %>%
+  select(-screener_sd, -committee_sd) %>%
+  rename(screener_total = scr_dec)
+```
+
+```{r}
+applicant_data %<>%
+  mutate(is_faculty_screened = !is.na(screening_complete_date),
+         is_invited_interview = !is.na(interview_invite_date),
+         is_interviewed = !is.na(interview_day),
+         is_committee_reviewed = !is.na(committee_date),
+         is_offered_admission = !is.na(offer_date))
+```
+
+```{r}
+tbl_name <- "all_applicants" %>%
+  add_tbl_prefix()
+
+applicant_data %>%
+  write_to_database_single(edu_db_con, tbl_name)
+```
+
+```{r}
+if (write_deidentified_to_file) {
+  applicant_data %>%
+  write_to_file(deidentified_output, 
+                  "admissions_all_applicants_deidentified_clean.csv")
+}
+```
+```
 
 ```{r}
 disconnect_all()
