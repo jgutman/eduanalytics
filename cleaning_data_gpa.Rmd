@@ -41,6 +41,12 @@ gpa <- dbUtilities::put_tbl_to_memory(edu_db_con, "deidentified$clean$gpa")
 
 ```{r ensure_has_14_17_data}
 
+library(assertr)
+
+gpa %>% 
+  assert(within_bounds(2014, 2017), appl_year, success_fun = success_logical, error_fun = error_stop) 
+
+assertr::
 #assert that application years are between 2014 and 2017
 #assertive::assert_all_are_in_closed_range(gpa$appl_year, lower = 2014, upper = 2017, na_ignore = TRUE, severity = "warning")
 
