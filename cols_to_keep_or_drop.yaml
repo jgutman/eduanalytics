@@ -84,3 +84,7 @@ experiences:
         - contact_lname
         - contact_phone
         - contact_email
+grades:
+    drop:
+        - appl_person_id
+        - aamc_id

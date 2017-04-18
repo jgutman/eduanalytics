@@ -17,15 +17,14 @@ output:
 ## Load packages
 ## Read in database credentials and open connection
 
-```{r setup, message=FALSE, echo = FALSE}
+```{r setup, message=FALSE, echo = FALSE, purl = FALSE}
 knitr::read_chunk("setup_notebook.R")
 ```
 
-```{r setup_notebook}
+```{r setup_notebook, purl = FALSE}
 ```
 
-```{r echo = FALSE}
-source("functions_to_add.R")
+```{r echo = FALSE, purl = FALSE}
 print_loaded_pkgs()
 ```
 
@@ -97,15 +96,15 @@ identified_raw_admissions_list %>%
 ### Upload EduDW-provided datasets
 
 - ethnicity
+- experiences [2006-2013, 2014-2017]
 - gpa
+- grades [2006_2009, 2010-2013, 2014-2017]
 - old_mcat
 - mmi_scores [2013, 2014-2017]
 - new_mcat
 - race
 - school
 - parent_guardian
-- experiences [2006-2013, 2014-2017]
-
 
 ```{r}
 identified_raw_edudw_path <- data_dirs %>%
@@ -118,7 +117,7 @@ list.files(identified_raw_edudw_path, full.names = TRUE) %>%
 
 ```{r}
 identified_raw_edudw_files %>%
-  map(function(path) read_csv(path)) %>%
+  map(function(path) fread(path)) %>%
   fix_colnames() %>%
   map(drop_empty_cols) ->
   identified_raw_edudw_list
@@ -158,23 +157,12 @@ identified_raw_edudw_list$`identified$raw$old_mcat` %<>%
 identified_raw_edudw_list$`identified$raw$school` %<>%
   mutate(attend_start_dt = parse_time_mod(attend_start_dt),
          attend_finish_dt = parse_time_mod(attend_finish_dt))
-
-no_date_cols <- . %>%
-  map_lgl(is.POSIXt) %>%
-  sum() %>%
-  equals(0)
-
-identified_raw_edudw_list %>%
-  map_lgl(no_date_cols)
 ```
 
 ```{r}
 identified_raw_edudw_list$`identified$raw$experiences` %<>%
-  mutate(avg_hrs_per_week = if_else(appl_year >= 2015, NA_integer_, avg_hrs_per_week))
-
-identified_raw_edudw_list$`identified$raw$experiences` %>%
-  group_by(appl_year) %>%
-  summarize_all(funs(pct_missing = mean(is.na(.))))
+  mutate(avg_hrs_per_week = if_else(appl_year >= 2015, 
+                                    NA_integer_, avg_hrs_per_week))
 ```
 
 
