@@ -7,9 +7,9 @@
 select_by_keyword(df, cols_list)
 }
 \arguments{
-\item{cols_list}{a list of length one containing many column names}
+\item{df}{an individual tibble}
 
-\item{df_list}{a list of tibbles}
+\item{cols_list}{a list of length one containing many column names}
 }
 \value{
 

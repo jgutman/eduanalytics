@@ -11,7 +11,10 @@ write_to_separate_files(df_nested, output_dir, filename_template)
 
 \item{output_dir}{path to write files to}
 
-\item{filename_template}{}
+\item{filename_template}{a string to be interpolated}
+}
+\value{
+a list of nulls
 }
 \description{
 Write to file with unique names for files written

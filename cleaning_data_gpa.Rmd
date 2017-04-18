@@ -13,6 +13,9 @@ output:
     toc_depth: 4
 ---
 
+# Setup
+## Load packages
+## Read in database credentials and open connection
 
 ```{r setup, message=FALSE, echo = FALSE, purl = FALSE}
 knitr::read_chunk("setup_notebook.R")
@@ -22,6 +25,11 @@ knitr::read_chunk("setup_notebook.R")
 
 ```
 
+```{r echo = FALSE, purl = FALSE}
+print_loaded_pkgs()
+```
+
+## GPA cleaning
 
 
 ```{r check_tables_in_database}
