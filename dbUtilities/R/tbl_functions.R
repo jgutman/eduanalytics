@@ -351,9 +351,9 @@ write_to_file <- function(df, path, filename) {
 #'
 #' @param df_nested nested data frame with a list column called data
 #' @param output_dir path to write files to
-#' @param filename_template
+#' @param filename_template a string to be interpolated
 #'
-#' @return
+#' @return a list of nulls
 #' @export
 #'
 write_to_separate_files <- function(df_nested, output_dir, filename_template) {

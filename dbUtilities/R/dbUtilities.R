@@ -25,6 +25,7 @@
 #' @importFrom purrr set_names
 #' @importFrom purrr flatten_chr
 #' @importFrom purrr by_row
+#' @importFrom purrr invoke_rows
 #' @importFrom purrr map_lgl
 #' @importFrom purrr map_chr
 #' @importFrom purrr partial
@@ -37,6 +38,7 @@
 #' @importFrom magrittr equals
 #' @importFrom magrittr use_series
 #' @importFrom magrittr is_less_than
+#' @importFrom magrittr is_in
 #' @importFrom magrittr not
 #' @importFrom magrittr use_series
 #' @import dplyr
@@ -46,5 +48,7 @@
 #' @importFrom stringr str_replace_all
 #' @importFrom stringr str_interp
 #' @importFrom readr write_csv
+#' @importFrom utils sessionInfo
+#' @importFrom utils tail
 #'
 NULL
