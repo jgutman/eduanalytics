@@ -360,7 +360,33 @@ drop_empty_cols <- function(df) {
 }
 
 
-### Output data functions
+
+#' Function to get the earliest application in the specified application year range
+#'
+#' @param df_list list of dataframes
+#' @param min_year min application year
+#' @param max_year max application year
+#'
+#' @return the earlier application for each application year
+#' @export
+#'
+filter_first_app_only <- function(df_list, min_year, max_year) {
+  df_list %>%
+    # limit to application years in specified range
+    map(function(df) filter(df,
+                            appl_year >= min_year,
+                            appl_year <= max_year)) %>%
+    # convert to in-memory in order to apply group by
+    map_if(function(df) not(tibble::is_tibble(df)),
+           collect, n = Inf) %>%
+    # group by applicant
+    map(function(df) group_by(df, study_id)) %>%
+    # for each applicant, take only data from earliest application year in range
+    map(function(df) filter(df, appl_year == min(appl_year)))
+}
+
+
+### OUTPUT DATA FUNCTIONS
 
 #' Write data to local machine or share drive
 #'
@@ -371,4 +397,26 @@ drop_empty_cols <- function(df) {
 write_to_file <- function(df, path, filename) {
   full_path <- file.path(path, filename)
   write_csv(df, full_path)
+}
+
+
+#' Write to file with unique names for files written
+#'
+#' @param df_nested nested data frame with a list column called data
+#' @param output_dir path to write files to
+#' @param filename_template
+#'
+#' @return
+#' @export
+#'
+write_to_separate_files <- function(df_nested, output_dir, filename_template) {
+  df_nested %>%
+    mutate(data = map(data, drop_empty_cols)) %>%
+    mutate(data = fix_colnames(data)) %>%
+    mutate(data = map(data, function(df) arrange(df, desc(appl_year)))) %>%
+    invoke_rows(list, ., .to = "filename") %>%
+    mutate(filename = map_chr(filename,
+                              str_interp, string = filename_template)) %>%
+    mutate(path = file.path(output_dir, filename)) %>%
+    {map2(.$data, .$path, write_csv)}
 }
