@@ -4,12 +4,12 @@
 \alias{select_by_keyword}
 \title{Helper function to prase_yaml_cols, either drops for keeps columns based on input from a yaml file}
 \usage{
-select_by_keyword(df_list, cols_list)
+select_by_keyword(df, cols_list)
 }
 \arguments{
-\item{df_list}{a list of tibbles}
-
 \item{cols_list}{a list of length one containing many column names}
+
+\item{df_list}{a list of tibbles}
 }
 \value{
 

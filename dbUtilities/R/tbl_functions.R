@@ -250,7 +250,7 @@ clean_deidentified <- function(conn, tbl_name,
 #'
 #' @return
 #'
-select_by_keyword <- function(df_list, cols_list) {
+select_by_keyword <- function(df, cols_list) {
 
   drop <- function(df, cols) {select(df, -one_of(cols))}
   keep <- function(df, cols) {select(df, one_of(cols))}
