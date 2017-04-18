@@ -28,5 +28,6 @@ unload_workspace <- function() {
                                force = TRUE)
 
   map(pkgs, detach_pkg)
-  rm(list = ls(all.names = TRUE, envir = .GlobalEnv))
+  rm(list = ls(all.names = TRUE, envir = .GlobalEnv),
+     envir = .GlobalEnv)
 }
