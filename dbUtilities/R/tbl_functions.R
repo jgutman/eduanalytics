@@ -162,8 +162,10 @@ add_tbl_prefix <- function(tbl_names,
 #' @export
 #'
 write_to_database_single <- function(df, conn, tbl_name) {
-  dbWriteTable(conn, tbl_name, df,
-                    row.names = FALSE, overwrite = TRUE)
+
+  df %>% mutate_if(is.logical, as.integer) %>%
+    dbWriteTable(conn, tbl_name, .,
+                 row.names = FALSE, overwrite = TRUE)
 }
 
 
