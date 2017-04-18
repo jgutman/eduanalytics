@@ -1,5 +1,4 @@
 ## ---- setup_notebook
-packrat::restore(overwrite.dirty = TRUE)
 library(RMySQL)
 library(yaml)
 library(data.table)

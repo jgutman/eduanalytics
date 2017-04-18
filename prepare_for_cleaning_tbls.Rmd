@@ -42,7 +42,7 @@ tbl_names <- get_tbl_names_by_stage(edu_db_con, "deidentified", "raw")
 
 tbl_names %>%
   find_tbls_with_col("app_year", edu_db_con) %>%
-  map(function(tbl_name) interpolate_and_execute(query_rename_col, edu_db_con,
+  map_lgl(function(tbl_name) interpolate_and_execute(query_rename_col, edu_db_con,
           commit = TRUE, tbl_name = tbl_name,                               
            old_name = "app_year", new_name = "appl_year"))
 ```
@@ -50,54 +50,40 @@ tbl_names %>%
 ```{r}
 pattern <- "^deidentified\\Wraw\\W[[:alpha:]].*[[:alpha:]]$"
 
-db_list_tables(edu_db_con) %<>%
-  str_detect(pattern) %>%
-  extract(tbl_names, .) %>%
-  print() -> tbl_names
-
 edu_db_con %>%
-  get_tbls_by_pattern(pattern, in_memory = FALSE) %>%
-  set_names(tbl_names) -> edudw_deidentified
-```
-
-```{r}
-min_year <- 2014
-max_year <- 2017
+  get_tbls_by_pattern(pattern, in_memory = FALSE) -> 
+  edudw_deidentified
 
 edudw_deidentified %<>%
-  map(function(df) filter(df,
-        appl_year >= min_year, appl_year <= max_year)) %>%
-  map(collect, n = Inf) %>%
-  map(function(df) group_by(df, study_id)) %>%
-  map(function(df) filter(df, appl_year == min(appl_year)))
+  names() %>%
+  add_tbl_prefix() %>%
+  set_names(edudw_deidentified, .) ->
+  edudw_deidentified
 ```
 
 ```{r}
-edudw_deidentified$`deidentified$raw$mmi_scores` %<>%
+edudw_deidentified %<>%
+  filter_first_app_only(min_year = 2014, max_year = 2017) %>%
+  map(drop_empty_cols)
+```
+
+```{r}
+edudw_deidentified$`deidentified$clean$mmi_scores` %<>%
   select(-mmi_question_id, -code) %>%
   mutate(interviewer_type = str_replace(interviewer_type, "Interviewer ", "")) %>%
   mutate(interviewer_type = as.integer(interviewer_type))
 ```
 
 ```{r}
-edudw_deidentified$`deidentified$raw$experiences` %<>%
+edudw_deidentified$`deidentified$clean$experiences` %<>%
   replace_na(list(first_total_hrs = 0,
                   second_total_hrs = 0,
                   third_total_hrs = 0,
                   fourth_total_hrs = 0)) %>%
-  mutate(total_hrs = first_total_hrs + second_total_hrs +
-                     third_total_hrs + fourth_total_hrs)
-```
-
-```{r}
-names(edudw_deidentified) %>%
-  get_tbl_suffix() %>%
-  add_tbl_prefix(status = "clean") ->
-  tbl_names
-
-edudw_deidentified %<>%
-  map(drop_empty_cols) %>%
-  set_names(tbl_names)
+  mutate(total_hrs = first_total_hrs + 
+                     second_total_hrs +
+                     third_total_hrs + 
+                     fourth_total_hrs)
 ```
 
 ```{r}
@@ -135,6 +121,17 @@ tracking_columns <- c("appl_submit_date",
                       "committee_date",
                       "offer_date",
                       "accept_date")
+```
+
+```{r}
+edu_db_con %>%
+  get_tbls_by_pattern(pattern, in_memory = FALSE) -> 
+  app_data_deidentified
+
+app_data_deidentified %<>%
+  names() %>%
+  add_tbl_prefix() %>%
+  set_names(app_data_deidentified, .)
 ```
 
 
