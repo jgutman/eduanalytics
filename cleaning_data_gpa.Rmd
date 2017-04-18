@@ -54,9 +54,6 @@ library(assertr)
 gpa %>% 
   assert(within_bounds(2014, 2017), appl_year, success_fun = success_logical, error_fun = error_stop) 
 
-assertr::
-#assert that application years are between 2014 and 2017
-#assertive::assert_all_are_in_closed_range(gpa$appl_year, lower = 2014, upper = 2017, na_ignore = TRUE, severity = "warning")
 
 ```
 
@@ -106,11 +103,12 @@ gpa %>% missing_science_gpa_year()
 
 ```{r postbacs}
 
-#1. any postback missing science gpa
+#1 
+#Any postback missing science gpa
 gpa %>% filter(is.na(bcpm_gpa) & aca_status_desc == "Postbaccalaureate Undergraduate") 
 
 
-#if postback then science gpa is also total gpa
+#If postback then science gpa is total gpa
 gpa %>% 
   mutate(bcpm_gpa = ifelse((is.na(bcpm_gpa) & aca_status_desc == "Postbaccalaureate Undergraduate"), total_gpa, bcpm_gpa)) -> gpa
   
@@ -120,49 +118,60 @@ gpa %>% is_science_gpa_missing()
 
 
 
-#2. Are there people still missing science gpa if postbac - total or science - yes!
-gpa %>%  
-  filter(aca_status_desc == "Postbaccalaureate Undergraduate") %>% 
-  filter(is.na(bcpm_gpa) | is.na(total_gpa)) %>%
+#2
+#Are there people still missing science gpa if postbac - total or science? 
+gpa %>% 
+  filter(aca_status_desc == "Postbaccalaureate Undergraduate" & is.na(bcpm_gpa) & is.na(total_gpa)) %>% 
   dim()
 
+#Are these people also missing all science gpa's?
+gpa %>% 
+  filter(aca_status_desc == "Postbaccalaureate Undergraduate" & is.na(bcpm_gpa) & is.na(total_gpa)) %>% 
+  semi_join(gpa, ., by = "study_id") %>% 
+  group_by(study_id) %>% 
+  dplyr::mutate(missing = all(is.na(bcpm_gpa))) %>% 
+  use_series(missing) %>% 
+  sum()
+  
 
-gpa %>% sho
-
-
+#Filter out the rows for these postbac people
+gpa %>%
+  filter(aca_status_desc == "Postbaccalaureate Undergraduate" & is.na(bcpm_gpa) & is.na(total_gpa)) %>%
+  dplyr::setdiff(gpa, .) -> gpa
 
 
 gpa %>% is_science_gpa_missing()
-#5496
+#6800
+
+gpa %>% missing_science_gpa_year()
+
+#3 
+#... 
+
+
 
 ```
 
 
 
-
 ```{r}
-
-#3.
-#did postback and has at least one science gpa?
+#is anybody missing any science gpa
 
 gpa %>% 
-  filter(is.na(bcpm_gpa) & aca_status_desc == "Postbaccalaureate Undergraduate" | aca_status_desc == "Junior") %>% 
   group_by(study_id) %>% 
-  summarise(is.na())
+  dplyr::mutate(missing = all(is.na(bcpm_gpa))) %>% 
+  use_series(missing) %>% 
+  sum()
 
 
-
-#missing status
-gpa %>% is_science_gpa_missing()  
-#6700
-
-gpa %>% missing_science_gpa_year()
-
-
-#explore missing
-missing_science_gpa <- gpa %>% group_by(study_id) %>% summarise(missing = sum(is.na(bcpm_gpa))) %>% filter(missing > 0)
-gpa %>% filter(study_id == "002b99176d360c9275696b20a193b186")
-
+gpa %>% 
+  group_by(study_id) %>% 
+  dplyr::mutate(missing = all(is.na(bcpm_gpa))) %>% 
+  arrange(study_id, missing) %>% 
+  filter(missing == TRUE)
+  
+  
+gpa %>% filter(study_id == "01044f52e372b0c5e83d6719fe7fe92e")
 
 ```
 
