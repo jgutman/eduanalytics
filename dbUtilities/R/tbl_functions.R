@@ -27,7 +27,6 @@ interpolate_and_execute <- function(query, conn, commit = FALSE, ...) {
 
 
 
-
 #FUNCTIONS FOR GETTING DATA FROM DATABASE
 
 # Helper function to parse dates
@@ -47,6 +46,7 @@ convert_or_retain <- function(col) {
   no_errors <- is_empty(col_mutated$warnings)
   if (no_errors) col_mutated$result else col
 }
+
 
 
 #' put_tbl_to_memory pulls down a table into memory from database and where applies,
@@ -93,6 +93,7 @@ get_tbls_by_pattern <- function(conn, pattern, in_memory = TRUE) {
 }
 
 
+
 #'Find tibble with specified column name
 #'
 #' @param tbl_list a list of table names
@@ -112,7 +113,6 @@ find_tbls_with_col <- function(tbl_list, col_name, conn) {
 
 
 
-
 #' Get tibble name by stage and status
 #'
 #' @param conn database connection object
@@ -129,8 +129,6 @@ get_tbl_names_by_stage <- function(conn, id, status) {
     str_detect(tbl_names, .) %>%
     extract(tbl_names, .)
 }
-
-
 
 
 
@@ -162,7 +160,9 @@ add_tbl_prefix <- function(tbl_names,
 #' @export
 #'
 write_to_database_single <- function(df, conn, tbl_name) {
-  dbWriteTable(conn, tbl_name, df,
+  df %>%
+    mutate_if(is.logical, as.integer) %>%
+    dbWriteTable(conn, tbl_name, .,
                     row.names = FALSE, overwrite = TRUE)
 }
 
@@ -184,73 +184,17 @@ write_to_database <- function(df_list, conn) {
 }
 
 
-#' Function to build a de-identified table from a hashed table in database.
-#' It takes a database connection and strings to find table matching pattern `{id}${status}${tbl_name}` and
-#' characters list conatining names of fields to be dropped and returns a deidentified table
-#'
-#' @param conn database connection
-#' @param tbl_name table name in database
-#' @param ... variables names to be dropped
-#' @param id table id from database schema
-#' @param status table status from database schema
-#'
-#' @return a deidentified dataset that can be written to the table
-#'
-#' @export
-deidentify_hashed <- function(conn, tbl_name, ...,
-                              id = "hashed", status = "raw") {
-
-  pattern <- sprintf("^%s\\W%s\\W%s$",
-                     id, status, tbl_name)
-  cols_to_drop <- as.character(c(...))
-
-  conn %>%
-    get_tbls_by_pattern(pattern) %>%
-    flatten_df() %>%
-    select(-one_of(cols_to_drop))
-}
-
-
-#' Function to create a clean table from raw table in database. It takes a database connection,
-#' strings to find matching pattern `{id}${status}${tbl_name}`, range of years to filter applicantions by,
-#' and using the first application for each applicant.
-#'
-#' @param conn database connection object
-#' @param tbl_name table name, shold be deidentified
-#' @param min_year minimum application year
-#' @param max_year maximum application year
-#' @param id table id from database schema
-#' @param status table status from database schema
-#'
-#' @return a clean deidentified table for analysis
-#' @export
-#'
-clean_deidentified <- function(conn, tbl_name,
-                               min_year = 2014, max_year = 2017,
-                               id = "deidentified", status = "raw") {
-
-  pattern <- sprintf("^%s\\W%s\\W%s$", id, status, tbl_name)
-
-  conn %>%
-    get_tbls_by_pattern(pattern) %>%
-    flatten_df() %>%
-    filter(appl_year >= min_year, appl_year <= max_year) %>%
-    group_by(study_id) %>%
-    filter(appl_year == min(appl_year))
-}
-
-
 
 ### FUNCTIONS FOR MANAGING DATA AFTER GETTING FROM DATABASE
 
 #' Helper function to prase_yaml_cols, either drops for keeps columns based on input from a yaml file
 #'
-#' @param df_list a list of tibbles
+#' @param df an individual tibble
 #' @param cols_list a list of length one containing many column names
 #'
 #' @return
 #'
-select_by_keyword <- function(df_list, cols_list) {
+select_by_keyword <- function(df, cols_list) {
 
   drop <- function(df, cols) {select(df, -one_of(cols))}
   keep <- function(df, cols) {select(df, one_of(cols))}
@@ -259,11 +203,11 @@ select_by_keyword <- function(df_list, cols_list) {
 
   f <- if (names(cols_list ) == "keep") {keep
   } else if (names(cols_list) == "drop") {drop
-      } else {function(...) NULL}
+  } else {function(...) NULL}
 
   f(df, flatten_chr(cols_list))
-
 }
+
 
 
 #' Get the suffix of tibble names
@@ -278,6 +222,7 @@ get_tbl_suffix <- function(tbl_names) {
     str_split("\\$", n=3) %>%
     map_chr(tail, n=1L)
 }
+
 
 
 #' For a list of tibbles, either keep or drop columns based on input from a yaml file
@@ -317,6 +262,7 @@ fix_colnames <- function(df_list) {
     map(function(df) set_names(df,
                       tolower(colnames(df))))
 }
+
 
 
 #' When the same data is stored in multiple tables/tibbles and you want to merge them together
@@ -360,7 +306,34 @@ drop_empty_cols <- function(df) {
 }
 
 
+
 ### Output data functions
+
+#' Function to get the earliest application in the specified application year range
+#'
+#' @param df_list list of dataframes
+#' @param min_year min application year
+#' @param max_year max application year
+#'
+#' @return the earlier application for each application year
+#' @export
+#'
+filter_first_app_only <- function(df_list, min_year, max_year) {
+  df_list %>%
+    # limit to application years in specified range
+    map(function(df) filter(df,
+                            appl_year >= min_year,
+                            appl_year <= max_year)) %>%
+    # convert to in-memory in order to apply group by
+    map_if(function(df) not(tibble::is_tibble(df)),
+           collect, n = Inf) %>%
+    # group by applicant
+    map(function(df) group_by(df, study_id)) %>%
+    # for each applicant, take only data from earliest application year in range
+    map(function(df) filter(df, appl_year == min(appl_year)))
+}
+
+
 
 #' Write data to local machine or share drive
 #'
@@ -371,4 +344,26 @@ drop_empty_cols <- function(df) {
 write_to_file <- function(df, path, filename) {
   full_path <- file.path(path, filename)
   write_csv(df, full_path)
+}
+
+
+#' Write to file with unique names for files written
+#'
+#' @param df_nested nested data frame with a list column called data
+#' @param output_dir path to write files to
+#' @param filename_template
+#'
+#' @return
+#' @export
+#'
+write_to_separate_files <- function(df_nested, output_dir, filename_template) {
+  df_nested %>%
+    mutate(data = map(data, drop_empty_cols)) %>%
+    mutate(data = fix_colnames(data)) %>%
+    mutate(data = map(data, function(df) arrange(df, desc(appl_year)))) %>%
+    invoke_rows(list, ., .to = "filename") %>%
+    mutate(filename = map_chr(filename,
+                              str_interp, string = filename_template)) %>%
+    mutate(path = file.path(output_dir, filename)) %>%
+    {map2(.$data, .$path, write_csv)}
 }

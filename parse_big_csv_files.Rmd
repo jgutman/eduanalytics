@@ -49,6 +49,11 @@ edudw_pull_path <- data_dirs %>%
 ```
 
 ```{r}
+fread_na <- purrr::partial(data.table::fread, na.strings = c("NA","N/A","null", ""))
+```
+
+
+```{r}
 # File containing all experiences data for all years
 experiences_path <- file.path(edudw_pull_path, 
                               "experiences.csv") %>% print()
@@ -58,29 +63,22 @@ experiences_path <- file.path(edudw_pull_path,
 `experiences.csv` for 2014-2017 application cycle extracurriculars (total hrs per week)
 
 ```{r}
-fread(experiences_path, na.strings = c("NA","N/A","null", "")) %>%
+# Reference contact info to remove
+drop_cols <- c("CONTACT_FNAME", 
+               "CONTACT_LNAME",
+               "CONTACT_PHONE", 
+               "CONTACT_EMAIL")
+
+experiences_path %>%
+  fread_na(drop = drop_cols) %>%
   mutate(year_range = if_else(appl_year <= 2013, "_2006_2013", "")) %>% 
   group_by(year_range) %>% 
   nest() -> exp
 ```
 
 ```{r}
-# Reference contact info to remove
-drop_cols <- c("CONTACT_FNAME", 
-               "CONTACT_LNAME",
-               "CONTACT_PHONE", 
-               "CONTACT_EMAIL")
-```
-
-```{r}
 exp %>%
-  mutate(data = map(data, function(df) select(df, -one_of(drop_cols)))) %>%
-  mutate(data = map(data, drop_empty_cols)) %>%
-  mutate(data = map(data, function(df) arrange(df, desc(appl_year)))) %>%
-  mutate(data = fix_colnames(data)) %>%
-  mutate(filename = sprintf("experiences%s.csv", year_range)) %>%
-  mutate(path = file.path(identified_raw_edudw_path, filename)) %>%
-  {map2(.$data, .$path, write_csv)} %>% 
+  write_to_separate_files(identified_raw_edudw_path, "experiences${year_range}.csv") %>% 
   invisible()
 ```
 
@@ -94,20 +92,17 @@ mmi_path <- file.path(edudw_pull_path,
 `mmi_scores.csv` for MMI application cycle 2014-2017 interviews
 
 ```{r}
-fread(mmi_path, na.strings = c("NA","N/A","null", "")) %>%
-  mutate(year_range = if_else(app_year <= 2013, "_2013", "")) %>% 
+mmi_path %>%
+  fread_na() %>%
+  rename(appl_year = app_year) %>%
+  mutate(year_range = if_else(appl_year <= 2013, "_2013", "")) %>% 
   group_by(year_range) %>% 
   nest() -> mmi
 ```
 
 ```{r}
 mmi %>%
-  mutate(data = map(data, drop_empty_cols)) %>%
-  mutate(data = map(data, function(df) arrange(df, desc(app_year)))) %>%
-  mutate(data = fix_colnames(data)) %>%
-  mutate(filename = sprintf("mmi_scores%s.csv", year_range)) %>%
-  mutate(path = file.path(identified_raw_edudw_path, filename)) %>%
-  {map2(.$data, .$path, write_csv)} %>%
+  write_to_separate_files(identified_raw_edudw_path, "mmi_scores${year_range}") %>%
   invisible()
 ```
 
@@ -116,40 +111,36 @@ mmi %>%
 grades_path <- file.path(edudw_pull_path, 
                          "Grades.csv") %>% print()
 ```
-
-```{r}
-fread(grades_path, na.strings = c("NA","N/A","null", "")) %>%
-  mutate(year_range = if_else(appl_year <= 2009, "_2006_2009", 
-                      if_else(appl_year <= 2013, "_2010_2013", ""))) %>% 
-  group_by(year_range) %>% 
-  nest() -> grades
-```
 ```{r}
 # grades columns to keep - condensed amcas version
 keep_cols <- c("appl_year",
                "aamc_id",
                "academic_year",
                "course_qp",
-               "aca_term_cd",
-               "aca_term_desc",
-               "semester_hours",
-               "aca_status_cd",
-               "aca_status_desc",
-               "class_cd",
-               "class_desc",
-               "bcpm_ind",
-               "amcas_grade_cd",
-               "amcas_weight")
+               toupper("aca_term_cd"),
+               toupper("aca_term_desc"),
+               toupper("semester_hours"),
+               toupper("aca_status_cd"),
+               toupper("aca_status_desc"),
+               toupper("class_cd"),
+               toupper("class_desc"),
+               toupper("bcpm_ind"),
+               toupper("amcas_grade_cd"),
+               toupper("amcas_weight"))
 ```
 
 ```{r}
+grades_path %>%
+  fread_na(select = keep_cols) %>%
+  mutate(year_range = if_else(appl_year <= 2009, "_2006_2009", 
+                      if_else(appl_year <= 2013, "_2010_2013", ""))) %>% 
+  group_by(year_range) %>% 
+  nest() -> grades
+```
+
+
+```{r}
 grades %>%
-  mutate(data = map(data, drop_empty_cols)) %>%
-  mutate(data = fix_colnames(data)) %>%
-  mutate(data = map(data, function(df) select(df, one_of(keep_cols)))) %>%
-  mutate(data = map(data, function(df) arrange(df, desc(appl_year)))) %>%
-  mutate(filename = sprintf("grades%s.csv", year_range)) %>%
-  mutate(path = file.path(identified_raw_edudw_path, filename)) %>%
-  {map2(.$data, .$path, write_csv)} %>% 
+  write_to_separate_files(identified_raw_edudw_path, "grades${year_range}.csv") %>%
   invisible()
 ```

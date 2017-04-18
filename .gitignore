@@ -1,5 +1,4 @@
 packrat/lib*/
-packrat/src/*
 data/*
 .Rproj.user
 *.zip
@@ -7,3 +6,4 @@ data/*
 *.Rhistory
 *.html
 *_cache/*
+packrat/src/
