@@ -97,7 +97,11 @@ gpa %>% is_science_gpa_missing()
 
 #missing breakdown by application year
 gpa %>% missing_science_gpa_year()
+
 ```
+
+
+
 
 
 
@@ -145,13 +149,42 @@ gpa %>% is_science_gpa_missing()
 
 gpa %>% missing_science_gpa_year()
 
-#3 
-#... 
-
-
 
 ```
 
+
+
+```{r}
+#how many cumulative amd postbac SCIENCE gpa's are missing
+
+gpa %>% 
+  filter(aca_status_desc == "Cumulative" | aca_status_desc == "Postbaccalaureate Undergraduate") %>% 
+  use_series(bcpm_gpa) %>% 
+  is.na() %>% 
+  sum()
+
+
+#how many cumulative amd postbac TOTAL gpa's are missing
+
+gpa %>% 
+  filter(aca_status_desc == "Cumulative" | aca_status_desc == "Postbaccalaureate Undergraduate") %>% 
+  use_series(total_gpa) %>% 
+  is.na() %>% 
+  sum()
+
+
+
+#who are missing science GPA -- should they be excluded
+gpa %>% 
+  filter(aca_status_desc == "Cumulative" | aca_status_desc == "Postbaccalaureate Undergraduate") %>% 
+  filter(is.na(bcpm_gpa))
+
+
+
+gpa %>% 
+  filter(study_id == "a4611e1445da78b4cb6e937d2cc529b3")
+
+```
 
 
 ```{r}

@@ -2,7 +2,7 @@
 source("packrat/init.R")
 #### -- End Packrat Autoloader -- ####
 
-devtools::install("dbUtilities",
-    dependencies = FALSE, quiet = TRUE)
+devtools::document("dbUtilities")
+packrat::install("dbUtilities")
 
 packrat::restore(overwrite.dirty = TRUE)
