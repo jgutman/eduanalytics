@@ -1,37 +1,3 @@
----
-title: "Prepare raw versions of MMI and Experiences data"
-subtitle: "Separate data from 2014 to present from older data"
-author: "Jacqueline Gutman, Suvam Paul"
-date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
-output:
-  html_document:
-    toc: yes
-    toc_depth: '4'
-  html_notebook:
-    highlight: tango
-    theme: cosmo
-    toc: yes
-    toc_depth: 4
----
-
-# Setup
-## Load packages
-## Read in database credentials and open connection
-
-```{r setup, message = FALSE, echo = FALSE}
-knitr::read_chunk("setup_notebook.R")
-```
-
-```{r setup_notebook}
-```
-
-```{r echo = FALSE}
-print_loaded_pkgs()
-```
-
-## Load data from shared drive
-
-```{r}
 # Path containing all data directories
 parent_path <- "/Volumes/IIME/EDS/data/admissions"
 data_dirs <- list.dirs(parent_path, 
@@ -46,23 +12,10 @@ identified_raw_edudw_path <- data_dirs %>%
 edudw_pull_path <- data_dirs %>%
   str_detect("edudw.*pull") %>% 
   extract(data_dirs, .)
-```
-
-```{r}
 fread_na <- purrr::partial(data.table::fread, na.strings = c("NA","N/A","null", ""))
-```
-
-
-```{r}
 # File containing all experiences data for all years
 experiences_path <- file.path(edudw_pull_path, 
                               "experiences.csv") %>% print()
-```
-
-`experiences_2006_2013.csv` for 2006-2013 application cycle extracurriculars (avg hrs per week)
-`experiences.csv` for 2014-2017 application cycle extracurriculars (total hrs per week)
-
-```{r}
 # Reference contact info to remove
 drop_cols <- c("CONTACT_FNAME", 
                "CONTACT_LNAME",
@@ -74,44 +27,24 @@ experiences_path %>%
   mutate(year_range = if_else(appl_year <= 2013, "_2006_2013", "")) %>% 
   group_by(year_range) %>% 
   nest() -> exp
-```
-
-```{r}
 exp %>%
   write_to_separate_files(identified_raw_edudw_path, "experiences${year_range}.csv") %>% 
   invisible()
-```
-
-```{r}
 # File containing MMI data for all years
 mmi_path <- file.path(edudw_pull_path, 
                       "mmi_scores.csv") %>% print()
-```
-
-`mmi_scores_2013.csv` for 1-on-1 2013 application cycle interviews
-`mmi_scores.csv` for MMI application cycle 2014-2017 interviews
-
-```{r}
 mmi_path %>%
   fread_na() %>%
   rename(appl_year = app_year) %>%
   mutate(year_range = if_else(appl_year <= 2013, "_2013", "")) %>% 
   group_by(year_range) %>% 
   nest() -> mmi
-```
-
-```{r}
 mmi %>%
   write_to_separate_files(identified_raw_edudw_path, "mmi_scores${year_range}") %>%
   invisible()
-```
-
-```{r}
 # File containing all grades data for all years
 grades_path <- file.path(edudw_pull_path, 
                          "Grades.csv") %>% print()
-```
-```{r}
 # grades columns to keep - condensed amcas version
 keep_cols <- c("appl_year",
                "aamc_id",
@@ -127,20 +60,12 @@ keep_cols <- c("appl_year",
                toupper("bcpm_ind"),
                toupper("amcas_grade_cd"),
                toupper("amcas_weight"))
-```
-
-```{r}
 grades_path %>%
   fread_na(select = keep_cols) %>%
   mutate(year_range = if_else(appl_year <= 2009, "_2006_2009", 
                       if_else(appl_year <= 2013, "_2010_2013", ""))) %>% 
   group_by(year_range) %>% 
   nest() -> grades
-```
-
-
-```{r}
 grades %>%
   write_to_separate_files(identified_raw_edudw_path, "grades${year_range}.csv") %>%
   invisible()
-```

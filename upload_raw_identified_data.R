@@ -1,62 +1,5 @@
----
-title: "Prepare identified and deidentified datasets for database"
-author: "Jacqueline Gutman, Suvam Paul"
-date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
-output:
-  html_document:
-    toc: yes
-    toc_depth: '4'
-  html_notebook:
-    highlight: tango
-    theme: cosmo
-    toc: yes
-    toc_depth: 4
----
-
-# Setup
-## Load packages
-## Read in database credentials and open connection
-
-```{r setup, message=FALSE, echo = FALSE}
-knitr::read_chunk("setup_notebook.R")
-```
-
-```{r setup_notebook}
-```
-
-```{r echo = FALSE}
-print_loaded_pkgs()
-```
-
-# Check available data directories
-
-```{r}
 parent_path <- "/Volumes/IIME/EDS/data/admissions"
 (data_dirs <- list.dirs(parent_path, full.names = TRUE, recursive = FALSE))
-```
-
-# Upload identified datasets
-- No study_id column
-- Fully identified versions
-
-## Upload raw datasets
-
-### Upload admissions-provided datasets
-
-- 2013_all_applicants
-- 2013_matriculated_report
-- 2013_tracking_report
-- 2014_all_applicants
-- 2014_matriculated_report
-- 2014_tracking_report
-- 2015_all_applicants
-- 2015_matriculated_report
-- 2015_tracking_report
-- 2016_all_applicants
-- 2016_matriculated_report
-- 2016_tracking_report
-
-```{r}
 data_dirs %>%
   str_detect("from_.*admissions") %>%
   extract(data_dirs, .) %>%
@@ -65,17 +8,11 @@ data_dirs %>%
 
 list.files(identified_raw_admissions_path, full.names = TRUE) %>%
   print() -> identified_raw_admissions_files
-```
-
-```{r}
 identified_raw_admissions_files %>%
   map(function(path) readxl::read_excel(path)) %>%
   fix_colnames() %>%
   map(drop_empty_cols) ->
   identified_raw_admissions_list
-```
-
-```{r}
 paste(rep(2013:2017, each = 3),
         c("all_applicants", "matriculated_report", "tracking_report"), sep = "_") %>%
   add_tbl_prefix(id = "identified", status = "raw") %>%
@@ -86,44 +23,19 @@ identified_raw_admissions_list %<>%
   set_names(table_names) %>%
   map(function(df) set_names(df, str_replace(colnames(df), "recevied", "received")))
 
-```
-
-```{r}
 identified_raw_admissions_list %>%
   write_to_database(edu_db_con)
-```
-
-### Upload EduDW-provided datasets
-
-- ethnicity
-- experiences [2006-2013, 2014-2017]
-- gpa
-- grades [2006_2009, 2010-2013, 2014-2017]
-- old_mcat
-- mmi_scores [2013, 2014-2017]
-- new_mcat
-- race
-- school
-- parent_guardian
-
-```{r}
 identified_raw_edudw_path <- data_dirs %>%
   str_detect("raw.*identified.*edudw") %>%
   extract(data_dirs, .)
 
 list.files(identified_raw_edudw_path, full.names = TRUE) %>%
   print() -> identified_raw_edudw_files
-```
-
-```{r}
 identified_raw_edudw_files %>%
   map(function(path) fread(path)) %>%
   fix_colnames() %>%
   map(drop_empty_cols) ->
   identified_raw_edudw_list
-```
-
-```{r}
 identified_raw_edudw_files %>%
   str_replace(identified_raw_edudw_path, "") %>%
   str_replace_all(c("/" = "", ".csv" = "")) %>%
@@ -135,11 +47,6 @@ identified_raw_edudw_list %<>%
   map(function(df) set_names(df,
         str_replace(colnames(df), "(?<=(low)|(high))_p$", "_percentile"))) %>%
   map(function(df) set_names(df, str_replace(colnames(df), "meaningfull", "meaningful")))
-```
-
-#### Determine date-formatted columns in each table
-
-```{r}
 parse_time_mod <- purrr::partial(lubridate::parse_date_time,
       orders = c("%Y-%m-%d %H:%M:%S", "%d-%b-%y"),
       tz = "America/New_York", truncated = 3)
@@ -157,20 +64,9 @@ identified_raw_edudw_list$`identified$raw$old_mcat` %<>%
 identified_raw_edudw_list$`identified$raw$school` %<>%
   mutate(attend_start_dt = parse_time_mod(attend_start_dt),
          attend_finish_dt = parse_time_mod(attend_finish_dt))
-```
-
-```{r}
 identified_raw_edudw_list$`identified$raw$experiences` %<>%
   mutate(avg_hrs_per_week = if_else(appl_year >= 2015, 
                                     NA_integer_, avg_hrs_per_week))
-```
-
-
-```{r}
 identified_raw_edudw_list %>%
   write_to_database(edu_db_con)
-```
-
-```{r}
 disconnect_all()
-```

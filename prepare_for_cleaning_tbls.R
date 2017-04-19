@@ -1,42 +1,5 @@
----
-title: "Prepare clean tables with basic cleaning and filtering"
-subtitle: "Clean schema in preparation for ready-for-analysis stage"
-author: "Jacqueline Gutman, Suvam Paul"
-date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
-output:
-  html_document:
-    toc: yes
-    toc_depth: '4'
-  html_notebook:
-    highlight: tango
-    theme: cosmo
-    toc: yes
-    toc_depth: 4
----
-
-# Setup
-## Load packages
-## Read in database credentials and open connection
-
-```{r setup, message=FALSE, echo = FALSE}
-knitr::read_chunk("setup_notebook.R")
-```
-
-```{r setup_notebook}
-```
-
-```{r echo = FALSE}
-print_loaded_pkgs()
-```
-
-## Optionally write all deidentified data to text files
-
-```{r}
 write_deidentified_to_file = FALSE
 deidentified_output <- "/Volumes/IIME/EDS/data/admissions/data_for_itai/"
-```
-
-```{r}
 query_rename_col <- "alter table ${tbl_name} change ${old_name} ${new_name} DOUBLE;"
 tbl_names <- get_tbl_names_by_stage(edu_db_con, "deidentified", "raw")
 
@@ -45,9 +8,6 @@ tbl_names %>%
   map_lgl(function(tbl_name) interpolate_and_execute(query_rename_col, edu_db_con,
           commit = TRUE, tbl_name = tbl_name,                               
            old_name = "app_year", new_name = "appl_year"))
-```
-
-```{r}
 pattern <- "^deidentified\\Wraw\\W[[:alpha:]].*[[:alpha:]]$"
 
 edu_db_con %>%
@@ -59,22 +19,13 @@ edudw_deidentified %<>%
   add_tbl_prefix() %>%
   set_names(edudw_deidentified, .) ->
   edudw_deidentified
-```
-
-```{r}
 edudw_deidentified %<>%
   filter_first_app_only(min_year = 2014, max_year = 2017) %>%
   map(drop_empty_cols)
-```
-
-```{r}
 edudw_deidentified$`deidentified$clean$mmi_scores` %<>%
   select(-mmi_question_id, -code) %>%
   mutate(interviewer_type = str_replace(interviewer_type, "Interviewer ", "")) %>%
   mutate(interviewer_type = as.integer(interviewer_type))
-```
-
-```{r}
 edudw_deidentified$`deidentified$clean$experiences` %<>%
   replace_na(list(first_total_hrs = 0,
                   second_total_hrs = 0,
@@ -84,14 +35,8 @@ edudw_deidentified$`deidentified$clean$experiences` %<>%
                      second_total_hrs +
                      third_total_hrs + 
                      fourth_total_hrs)
-```
-
-```{r}
 edudw_deidentified %>%
   write_to_database(edu_db_con)
-```
-
-```{r}
 if (write_deidentified_to_file) {
   names(edudw_deidentified) %>%
     get_tbl_suffix() %>%
@@ -101,16 +46,8 @@ if (write_deidentified_to_file) {
   edudw_deidentified %>%
     map2(filenames, function(df, name) write_to_file(df, deidentified_output, name))
 }
-```
-
-## Add clean for admissions pile of data
-
-```{r}
 pattern <- "^deidentified\\Wraw\\W\\d{4}.*[[:alpha:]]$"
 
-```
-
-```{r}
 tracking_columns <- c("appl_submit_date",
                       "appl_complete_date",
                       "screening_complete_date",
@@ -121,9 +58,6 @@ tracking_columns <- c("appl_submit_date",
                       "committee_date",
                       "offer_date",
                       "accept_date")
-```
-
-```{r}
 edu_db_con %>%
   get_tbls_by_pattern(pattern) -> 
   app_data_deidentified
@@ -132,9 +66,6 @@ app_data_deidentified %<>%
   names() %>%
   add_tbl_prefix() %>%
   set_names(app_data_deidentified, .)
-```
-
-```{r}
 app_data_deidentified %>% 
   names() %>% 
   str_detect("201[4-7]") %>%
@@ -143,9 +74,6 @@ app_data_deidentified %>%
   select(study_id, appl_year, one_of(tracking_columns), everything()) ->
   applicant_data
   
-```
-
-```{r}
 filter_applications <- . %>%
   # filter out M.D./Ph.D. applicants, special programs (i.e. linkages), and 
   # deferred applicants from previous years
@@ -157,9 +85,6 @@ applicant_data %<>%
   filter_applications() %>% 
   drop_empty_cols() %>%
   select(-mstp, -mstp_to_md)
-```
-
-```{r}
 split_screener_score <- . %>% 
   mutate(screener_a_b = recode(scr_dec, 
           `2` = "1_1", `3` = "1_2", `4` = "4", `5` = "2_3", `6` = "3_3"),
@@ -172,34 +97,20 @@ applicant_data %<>%
   split_screener_score() %>%
   select(-screener_sd, -committee_sd) %>%
   rename(screener_total = scr_dec)
-```
-
-```{r}
 applicant_data %<>%
   mutate(is_faculty_screened = !is.na(screening_complete_date),
          is_invited_interview = !is.na(interview_invite_date),
          is_interviewed = !is.na(interview_day),
          is_committee_reviewed = !is.na(committee_date),
          is_offered_admission = !is.na(offer_date))
-```
-
-```{r}
 tbl_name <- "all_applicants" %>%
   add_tbl_prefix()
 
 applicant_data %>%
   write_to_database_single(edu_db_con, tbl_name)
-```
-
-```{r}
 if (write_deidentified_to_file) {
   applicant_data %>%
   write_to_file(deidentified_output, 
                   "admissions_all_applicants_deidentified_clean.csv")
 }
-```
-```
-
-```{r}
 disconnect_all()
-```
