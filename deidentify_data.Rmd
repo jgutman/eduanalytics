@@ -25,14 +25,12 @@ knitr::read_chunk("setup_notebook.R")
 ```{r setup_notebook}
 ```
 
-```{r echo = FALSE}
+```{r show_pkgs, echo = FALSE}
 print_loaded_pkgs()
 ```
 
-
 ## Optionally write all deidentified data to text files
-
-```{r}
+```{r deid_path}
 write_deidentified_to_file = FALSE
 deidentified_output <- "/Volumes/IIME/EDS/data/admissions/data_for_itai/"
 ```
@@ -41,7 +39,7 @@ deidentified_output <- "/Volumes/IIME/EDS/data/admissions/data_for_itai/"
 
 ## Read in all_applicants tables from database
 
-```{r}
+```{r get_all_applicants}
 pattern <- "^hashed\\Wraw\\W\\d{4}_all_applicants"
 
 edu_db_con %>%
@@ -51,7 +49,7 @@ edu_db_con %>%
   applicants_data
 ```
 
-```{r, warning=FALSE}
+```{r write_all_applicants, warning=FALSE}
 names(applicants_data) %>%
   add_tbl_prefix(status = "raw") ->
   tbl_names
@@ -62,7 +60,7 @@ applicants_data %>%
   write_to_database(edu_db_con)
 ```
 
-```{r}
+```{r write_apps_to_file}
 if (write_deidentified_to_file) {
   applicants_data %>%
     map(collect, n = Inf) %>%
@@ -74,7 +72,7 @@ if (write_deidentified_to_file) {
 
 # Raw features from eduDW tables
 
-```{r, warning = FALSE}
+```{r get_edudw, warning = FALSE}
 pattern <- "^hashed\\Wraw\\W[[:alpha:]]"
 
 edu_db_con %>%
@@ -86,14 +84,16 @@ edu_db_con %>%
 names(edudw_df_list) %>%
   add_tbl_prefix(status = "raw") ->
   tbl_names
+```
 
+```{r write_edudw}
 edudw_df_list %>%
   set_names(tbl_names) %>%
   map(collect, n = Inf) %>%
   write_to_database(edu_db_con)
 ```
 
-```{r}
+```{r edudw_write_to_file}
 if (write_deidentified_to_file) {
   names(edudw_df_list) %>%
     get_tbl_suffix() %>%
@@ -106,6 +106,6 @@ if (write_deidentified_to_file) {
 }
 ```
 
-```{r}
+```{r disconnect}
 disconnect_all()
 ```

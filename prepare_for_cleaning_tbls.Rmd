@@ -25,18 +25,18 @@ knitr::read_chunk("setup_notebook.R")
 ```{r setup_notebook}
 ```
 
-```{r echo = FALSE}
+```{r show_pkgs, echo = FALSE}
 print_loaded_pkgs()
 ```
 
 ## Optionally write all deidentified data to text files
 
-```{r}
+```{r deid_path}
 write_deidentified_to_file = FALSE
 deidentified_output <- "/Volumes/IIME/EDS/data/admissions/data_for_itai/"
 ```
 
-```{r}
+```{r query_app_year}
 query_rename_col <- "alter table ${tbl_name} change ${old_name} ${new_name} DOUBLE;"
 tbl_names <- get_tbl_names_by_stage(edu_db_con, "deidentified", "raw")
 
@@ -47,7 +47,7 @@ tbl_names %>%
            old_name = "app_year", new_name = "appl_year"))
 ```
 
-```{r}
+```{r get_edudw_deidentified}
 pattern <- "^deidentified\\Wraw\\W[[:alpha:]].*[[:alpha:]]$"
 
 edu_db_con %>%
@@ -61,20 +61,20 @@ edudw_deidentified %<>%
   edudw_deidentified
 ```
 
-```{r}
+```{r filter_edudw}
 edudw_deidentified %<>%
   filter_first_app_only(min_year = 2014, max_year = 2017) %>%
   map(drop_empty_cols)
 ```
 
-```{r}
+```{r edudw_mmi_fix}
 edudw_deidentified$`deidentified$clean$mmi_scores` %<>%
   select(-mmi_question_id, -code) %>%
   mutate(interviewer_type = str_replace(interviewer_type, "Interviewer ", "")) %>%
   mutate(interviewer_type = as.integer(interviewer_type))
 ```
 
-```{r}
+```{r edudw_exp_fix}
 edudw_deidentified$`deidentified$clean$experiences` %<>%
   replace_na(list(first_total_hrs = 0,
                   second_total_hrs = 0,
@@ -86,12 +86,12 @@ edudw_deidentified$`deidentified$clean$experiences` %<>%
                      fourth_total_hrs)
 ```
 
-```{r}
+```{r edudw_write}
 edudw_deidentified %>%
   write_to_database(edu_db_con)
 ```
 
-```{r}
+```{r edudw_write_file}
 if (write_deidentified_to_file) {
   names(edudw_deidentified) %>%
     get_tbl_suffix() %>%
@@ -105,12 +105,9 @@ if (write_deidentified_to_file) {
 
 ## Add clean for admissions pile of data
 
-```{r}
+```{r set_pattern_cols}
 pattern <- "^deidentified\\Wraw\\W\\d{4}.*[[:alpha:]]$"
 
-```
-
-```{r}
 tracking_columns <- c("appl_submit_date",
                       "appl_complete_date",
                       "screening_complete_date",
@@ -123,7 +120,7 @@ tracking_columns <- c("appl_submit_date",
                       "accept_date")
 ```
 
-```{r}
+```{r get_app_data}
 edu_db_con %>%
   get_tbls_by_pattern(pattern) -> 
   app_data_deidentified
@@ -134,18 +131,18 @@ app_data_deidentified %<>%
   set_names(app_data_deidentified, .)
 ```
 
-```{r}
+```{r clean_app_data}
 app_data_deidentified %>% 
   names() %>% 
   str_detect("201[4-7]") %>%
-  extract(app_data_deidentified, .) %>%
+  magrittr::extract(app_data_deidentified, .) %>%
   do.call(bind_rows, .) %>%
   select(study_id, appl_year, one_of(tracking_columns), everything()) ->
   applicant_data
   
 ```
 
-```{r}
+```{r filter_applications}
 filter_applications <- . %>%
   # filter out M.D./Ph.D. applicants, special programs (i.e. linkages), and 
   # deferred applicants from previous years
@@ -159,7 +156,7 @@ applicant_data %<>%
   select(-mstp, -mstp_to_md)
 ```
 
-```{r}
+```{r fix_screener_score}
 split_screener_score <- . %>% 
   mutate(screener_a_b = recode(scr_dec, 
           `2` = "1_1", `3` = "1_2", `4` = "4", `5` = "2_3", `6` = "3_3"),
@@ -174,7 +171,7 @@ applicant_data %<>%
   rename(screener_total = scr_dec)
 ```
 
-```{r}
+```{r add_indicator_cols}
 applicant_data %<>%
   mutate(is_faculty_screened = !is.na(screening_complete_date),
          is_invited_interview = !is.na(interview_invite_date),
@@ -183,7 +180,7 @@ applicant_data %<>%
          is_offered_admission = !is.na(offer_date))
 ```
 
-```{r}
+```{r write_apps}
 tbl_name <- "all_applicants" %>%
   add_tbl_prefix()
 
@@ -191,15 +188,14 @@ applicant_data %>%
   write_to_database_single(edu_db_con, tbl_name)
 ```
 
-```{r}
+```{r write_apps_to_file}
 if (write_deidentified_to_file) {
   applicant_data %>%
   write_to_file(deidentified_output, 
                   "admissions_all_applicants_deidentified_clean.csv")
 }
 ```
-```
 
-```{r}
+```{r disconnect}
 disconnect_all()
 ```
