@@ -1,10 +1,10 @@
 PackratFormat: 1.4
 PackratVersion: 0.4.8.1
 RVersion: 3.3.2
-Repos: BioCsoft=https://bioconductor.org/packages/3.4/bioc,
-    BioCann=https://bioconductor.org/packages/3.4/data/annotation,
-    BioCexp=https://bioconductor.org/packages/3.4/data/experiment,
-    BioCextra=https://bioconductor.org/packages/3.4/extra,
+Repos: BioCsoft=http://bioconductor.org/packages/3.4/bioc,
+    BioCann=http://bioconductor.org/packages/3.4/data/annotation,
+    BioCexp=http://bioconductor.org/packages/3.4/data/experiment,
+    BioCextra=http://bioconductor.org/packages/3.4/extra,
     CRAN=https://cran.rstudio.com/
 
 Package: BH
@@ -16,6 +16,16 @@ Package: DBI
 Source: CRAN
 Version: 0.6-1
 Hash: 4aef5bda70897c1663d5b8bae2f4419a
+
+Package: DEoptimR
+Source: CRAN
+Version: 1.0-8
+Hash: adc74e88e85eabe6c7d73db6a86fe6cf
+
+Package: MatrixModels
+Source: CRAN
+Version: 0.4-1
+Hash: 60a5c75e57aae4a0ce76cb7422939aaf
 
 Package: R6
 Source: CRAN
@@ -43,6 +53,24 @@ Package: Rcpp
 Source: CRAN
 Version: 0.12.10
 Hash: 6cf65d0dd6a92f2d43c8d4805d33efe9
+
+Package: RcppEigen
+Source: CRAN
+Version: 0.3.2.9.1
+Hash: 78c99b40f3d8b1f432348916cc1c22c7
+Requires: Rcpp
+
+Package: SparseM
+Source: CRAN
+Version: 1.77
+Hash: 08f1f60e1038957030bcd9f4a58d22d8
+
+Package: VIM
+Source: CRAN
+Version: 4.7.0
+Hash: 59db421ac67d6860f7dfbe51364f9461
+Requires: Rcpp, car, colorspace, data.table, e1071, laeken, robustbase,
+    sp, vcd
 
 Package: assertthat
 Source: CRAN
@@ -91,6 +119,12 @@ Source: CRAN
 Version: 1.17.1
 Hash: 97cb6f6293cd18d17df77a6383cc6763
 Requires: bitops
+
+Package: car
+Source: CRAN
+Version: 2.1-4
+Hash: d8cc2f66d4ba0c91312f1c1c5773d502
+Requires: pbkrtest, quantreg
 
 Package: cellranger
 Source: CRAN
@@ -174,6 +208,11 @@ GithubRepo: dplyr
 GithubUsername: tidyverse
 GithubRef: master
 GithubSha1: e2cd19a8e46a550a0d0f506d528bf6151b2a4247
+
+Package: e1071
+Source: CRAN
+Version: 1.6-8
+Hash: 20320ec66d4dc608654769145b7c624a
 
 Package: evaluate
 Source: CRAN
@@ -261,6 +300,11 @@ Source: CRAN
 Version: 0.3
 Hash: ecf589b42cd284b03a4beb9665482d3e
 
+Package: laeken
+Source: CRAN
+Version: 0.4.6
+Hash: bb2c9f04593f521fc34584ffb4b5f17d
+
 Package: lazyeval
 Source: github
 Version: 0.2.0.9000
@@ -269,6 +313,18 @@ GithubRepo: lazyeval
 GithubUsername: hadley
 GithubRef: master
 GithubSha1: c155c3d534072ca58bcb5fe22ab185e3e4098c73
+
+Package: lme4
+Source: CRAN
+Version: 1.1-13
+Hash: d3aa59ebf48bb53e0251e6c454729c34
+Requires: Rcpp, RcppEigen, minqa, nloptr
+
+Package: lmtest
+Source: CRAN
+Version: 0.9-35
+Hash: 370fc77c3949074497a1dac38180b4a9
+Requires: zoo
 
 Package: lubridate
 Source: CRAN
@@ -298,6 +354,12 @@ Source: CRAN
 Version: 0.5
 Hash: 463550cf44fb6f0a2359368f42eebe62
 
+Package: minqa
+Source: CRAN
+Version: 1.2.4
+Hash: 6e61ec948327e6dd044ccb09cf12db8d
+Requires: Rcpp
+
 Package: mnormt
 Source: CRAN
 Version: 1.5-5
@@ -315,6 +377,11 @@ Version: 0.4.3
 Hash: f96d896947fcaf9b6d0074002e9f4f9d
 Requires: colorspace
 
+Package: nloptr
+Source: CRAN
+Version: 1.0.4
+Hash: 8053df240a4635aeb54fc68c6de67709
+
 Package: openssl
 Source: CRAN
 Version: 0.9.6
@@ -324,6 +391,12 @@ Package: packrat
 Source: CRAN
 Version: 0.4.8-1
 Hash: 6ad605ba7b4b476d84be6632393f5765
+
+Package: pbkrtest
+Source: CRAN
+Version: 0.4-7
+Hash: f195c3a0f527f69c491569c5cbaaf1db
+Requires: lme4
 
 Package: pkgconfig
 Source: CRAN
@@ -357,6 +430,12 @@ Source: CRAN
 Version: 0.2.2
 Hash: b9adddc5ccf7579f636d77d9cbceecab
 Requires: BH, Rcpp, dplyr, lazyeval, magrittr
+
+Package: quantreg
+Source: CRAN
+Version: 5.33
+Hash: 30421e83e9d36563250019b6b2adafce
+Requires: MatrixModels, SparseM
 
 Package: readr
 Source: CRAN
@@ -401,6 +480,12 @@ Hash: 030a6baa0a39c528665ed80d14992c11
 Requires: base64enc, caTools, evaluate, htmltools, jsonlite, knitr,
     rprojroot, yaml
 
+Package: robustbase
+Source: CRAN
+Version: 0.92-7
+Hash: 8d57db5d29d2a4dddaac976d7054428d
+Requires: DEoptimR
+
 Package: roxygen2
 Source: CRAN
 Version: 6.0.1
@@ -436,6 +521,11 @@ Source: CRAN
 Version: 0.3-1
 Hash: 367275e3dcdd208339e131c7a41bec56
 Requires: stringr
+
+Package: sp
+Source: CRAN
+Version: 1.2-4
+Hash: 4ffcf86fffee89e7b859f760528dd545
 
 Package: stringi
 Source: CRAN
@@ -474,6 +564,12 @@ Requires: broom, dplyr, forcats, ggplot2, haven, hms, httr, jsonlite,
     lubridate, magrittr, modelr, purrr, readr, readxl, rvest, stringr,
     tibble, tidyr, xml2
 
+Package: vcd
+Source: CRAN
+Version: 1.4-3
+Hash: 77757721dbf90bbbaab7a2e2be604bc2
+Requires: colorspace, lmtest
+
 Package: whisker
 Source: CRAN
 Version: 0.3-2
@@ -494,3 +590,8 @@ Package: yaml
 Source: CRAN
 Version: 2.1.14
 Hash: c81230c3a7d9ba20607ad6b4331173d1
+
+Package: zoo
+Source: CRAN
+Version: 1.8-0
+Hash: df9711767f56f086e8a8d1f0fb926ff6
