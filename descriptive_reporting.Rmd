@@ -1,0 +1,339 @@
+---
+title: "R Notebook"
+output:
+  html_notebook: default
+
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.align = 'center')
+
+library(RMySQL)
+library(yaml)
+library(data.table)
+library(knitr)
+library(tidyverse)
+library(stringr)
+library(magrittr)
+library(lubridate)
+library(dbUtilities)
+library(DBI)
+library(VIM)
+library(xtable)
+
+```
+
+
+
+
+```{r credentials}
+
+credentials_path <- "/Users/iime/Desktop/admissions"
+edu_deid_con <- dbUtilities::get_mysql_conn(path = credentials_path, credentials_file = "edu_deid.my.cnf", group = "edu_deident")
+
+tables_list <- dbListTables(edu_deid_con)
+
+clean_tables <- tables_list[grep("clean", tables_list)]
+
+dat_name <- clean_tables[1]
+
+# gpa
+dat <- dbUtilities::put_tbl_to_memory(edu_deid_con, dat_name)
+
+
+```
+
+
+
+## Descriptives
+
+```{r basic_descriptives}
+
+# dim
+dims <- dim(dat)
+
+# complete cases
+complete.obs <- sum(complete.cases(dat)) / nrow(dat)
+
+```
+
+Dataset name: `r dat_name`
+
+This data contains `r dims[1]` observations and `r dims[2]` variables. 
+`r complete.obs`% of observations in data are complete. 
+
+
+\
+
+
+## Missing Data
+
+
+```{r missings}
+
+# percent missing in each numeric var
+pct_miss <- dat %>%
+  dplyr::group_by(appl_year) %>%
+  summarize_all(funs(pct_missing = mean(is.na(.)))) %>%
+  column_to_rownames("appl_year") %>%
+  t() %>%
+  multiply_by(100) %>%
+  round(., 2)
+
+kable(pct_miss, caption="Percent missing by year")
+
+```
+
+
+
+```{r miss_plot, fig.width=9.5, fig.height = 7}
+
+# visually display missings
+aggr(dat, bars=FALSE, numbers=TRUE, sortVars=TRUE, cex.axis=.7)
+
+```
+
+
+
+\
+
+__Correlation Matrix for Missingness__
+
+```{r missingness_correlation}
+
+# which rows have missings?
+miss_rows <- !complete.cases(t(dat))
+
+miss_mat <- is.na(dat[miss_rows])+0
+kable(round(cor(miss_mat),2))
+
+```
+
+
+
+```{r classes}
+
+# converting application year to character
+dat$appl_year <- as.character(dat$appl_year)
+
+# converting study_id to factor so it is ignored
+dat$study_id <- as.factor(dat$study_id)
+
+# separating variables by type
+classes <- dat %>% map(class) %>% sapply(function(x) x[1])
+names(classes) <- NULL
+
+nums <- which(classes=="numeric")
+binaries <- nums[apply(dat[nums],2,function(x) { all(na.omit(x) %in% 0:1) })]
+continuous <- setdiff(nums, binaries)
+  
+cats <- which(classes=="character")
+dates <- which(classes=="POSIXct")
+
+```
+
+
+
+## Summary Statistics 
+
+__Table of summary statistics for continuous variables__
+
+There are `r length(continuous)` continuous numeric variables in the dataset.
+
+```{r summarize_continuous_vars}
+
+if (length(continuous)>0) {
+
+dat <- as.data.frame(dat)
+  
+sumstats <- matrix(NA, nrow=length(continuous)*4, 9, dimnames=list(c(), 
+                  c("Year", "N", "Min", "Q1", "Median", "Mean", "Q3", "Max", "SD")))
+j = 1
+for (i in 1:length(continuous)) {
+  for (y in unique(dat$appl_year)) {
+    sumstats[j,1] <- y
+    sumstats[j,2] <- sum(!is.na(dat[dat$appl_year==y,continuous[i]]))
+    sumstats[j,3] <- min(dat[dat$appl_year==y,continuous[i]], na.rm=TRUE)
+    sumstats[j,4] <- quantile(dat[dat$appl_year==y,continuous[i]], .25, na.rm=TRUE)
+    sumstats[j,5] <- median(dat[dat$appl_year==y,continuous[i]], na.rm=TRUE)
+    sumstats[j,6] <- round(mean(dat[dat$appl_year==y,continuous[i]], na.rm=TRUE),2)
+    sumstats[j,7] <- quantile(dat[dat$appl_year==y,continuous[i]], .75, na.rm=TRUE)
+    sumstats[j,8] <- max(dat[dat$appl_year==y,continuous[i]], na.rm=TRUE)
+    sumstats[j,9] <- round(sd(dat[dat$appl_year==y,continuous[i]], na.rm=TRUE),2)
+    j = j + 1
+  }
+}
+
+# row names
+new_seq <- seq(1, to = nrow(sumstats), by = 4)
+
+row_names <- rep("", nrow(sumstats))
+
+for(i in 1:length(continuous)) {
+  row_names[new_seq[i]] <- names(dat)[continuous[i]]
+}
+
+row.names(sumstats) <- row_names
+
+kable(sumstats)
+}
+
+```
+
+
+__Histograms of Continuous Variables__
+
+```{r histograms}
+
+# l <- length(nums)
+# 
+# if (l <= 5) { par(mfrow=c(1,l)) }
+# if (l >5 & l <= 10) {
+#   if (l %% 2 == 0) { par(mfrow=c(2, l/2)) }
+#   else { par(mfrow=c(2,5)) }
+# }
+# if (l > 10) {
+#   par(mfrow=c(l %/% 5 + 1, 5))
+# }
+
+for (i in continuous) {
+  var <- names(dat)[i]  
+  hist(dat[,i], main = var, xlab="", ylab="")
+}
+
+```
+
+
+
+\
+
+__Summary statistics for binary variables__
+
+There are `r length(binaries)` binary variables in the dataset. 
+ 
+```{r binaries}
+
+if (length(binaries) > 0) {
+  
+dat <- as.data.frame(dat)  
+  
+binary_mat <- matrix(NA, nrow=length(binaries), 2, dimnames=list(c(), 
+                  c("N", "Proportion"))) 
+
+for (i in 1:length(binaries)) {
+  binary_mat[i,1] <- sum(!is.na(dat[,binaries[i]]))
+  binary_mat[i,2] <- mean(dat[,binaries[i]], na.rm=TRUE)
+}
+
+row.names(binary_mat) <- names(dat)[binaries]
+
+kable(binary_mat)
+
+}
+
+
+```
+
+\
+
+__Correlation Matrix containing all numeric variables__
+
+```{r corr_matrix}
+
+cor_mat <- round(cor(dat[nums], use = 'pairwise.complete.obs'),2)
+
+kable(cor_mat)
+
+```
+
+
+
+\
+
+__Tables of Categorical Variables__
+
+There are `r length(cats)` categorical variables in the dataset. 
+For variables with more than 10 categories, only the 10 largest categories are
+included. 
+
+```{r categorical_tables, results='asis'}
+
+# Want N's and proportions in each category
+for (i in 1:length(cats)) {
+  rawN <- sort(as.numeric(table(dat[,cats[i]])), decreasing=TRUE)
+  prop <- sort(round(as.numeric(prop.table(table(dat[,cats[i]]))),2), decreasing=TRUE)
+
+  col_names <- names(sort(table(dat[,cats[i]]), decreasing=TRUE))
+  
+  if (length(rawN) > 10) {
+    rawN <- rawN[1:10]
+    prop <- prop[1:10]
+    col_names <- col_names[1:10]
+    }
+  
+  cells <- paste0(rawN, " (", prop, ")")
+  names(cells) <- col_names
+  #cells <- as.matrix(cells, ncol=4, dimnames = list(c(), col_names))
+
+  tables <- xtable(t(cells), caption = names(dat[cats[i]]))
+  print(tables, type='html', include.rownames=FALSE, caption.placement = "top")
+}
+
+```
+
+
+```{r tables2, results = 'asis'}
+
+for (i in 2:length(cats)) {
+  tab <- with(dat, prop.table(table(appl_year, dat[,cats[i]], useNA = "ifany")))
+  tab <- xtable(as.matrix(tab), caption = names(dat[cats[i]]), digits=2, auto=TRUE)
+  print(tab, type='html', caption = names(dat[cats[i]]), caption.placement = "top")
+}
+
+
+
+
+```
+
+\
+
+__Table of summary statistics for date variables__
+
+```{r dates}
+
+
+if (length(dates)>0) {
+
+dat <- as.data.frame(dat)
+  
+datestats <- data.frame()
+
+j = 1
+for (i in 1:length(dates)) {
+  for (y in unique(dat$appl_year)) {
+    datestats[j,1] <- as.numeric(y)
+    datestats[j,2] <- sum(!is.na(dat[dat$appl_year==y,dates[i]]))
+    datestats[j,3] <- format(min(dat[dat$appl_year==y,dates[i]], na.rm=TRUE), "%D")
+    datestats[j,4] <- format(quantile(dat[dat$appl_year==y,dates[i]], .25, na.rm=TRUE), "%D")
+    datestats[j,5] <- format(median(dat[dat$appl_year==y,dates[i]], na.rm=TRUE), "%D")
+    datestats[j,6] <- format(quantile(dat[dat$appl_year==y,dates[i]], .75, na.rm=TRUE), "%D")
+    datestats[j,7] <- format(max(dat[dat$appl_year==y,dates[i]], na.rm=TRUE), "%D")
+    j = j + 1
+  }
+}
+
+# colnames
+colnames(datestats) <- c("Year", "N", "Min", "Q1", "Median", "Q3", "Max")
+
+# row names
+new_seq2 <- seq(1, to = nrow(datestats), by = 4)
+rownames(datestats)[new_seq2] <- names(dat)[dates]
+
+kable(datestats)
+}
+
+```
+
+
+
