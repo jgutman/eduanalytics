@@ -32,8 +32,22 @@ gpa_ready <- gpa_cumulative %>%
 #grades 
 grades <- dbUtilities::put_tbl_to_memory(edu_db_con, "deidentified$clean$grades")
 
-as_tibble(grades)
+grades_subset <- grades %>% 
+  filter(aca_status_desc != "Graduate" & aca_status_desc != "High School") %>% 
+  filter(class_desc == "Biology" | class_desc == "Chemistry" | class_desc == "Physics" | class_desc == "Natural/Physical Sciences" | class_desc == "Math")
 
+
+
+
+
+
+#create a function
+
+
+
+grades_subset <- grades_subset %>% 
+  group_by(study_id) %>% 
+  mutate(total_count_A = sum(amcas_grade_cd == "A", na.rm = TRUE))
 
 
 
