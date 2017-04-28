@@ -20,13 +20,14 @@ library(lubridate)
 library(dbUtilities)
 library(DBI)
 library(VIM)
-
+library(rlang)
 ```
 
 
 ```{r credentials}
 
-credentials_path <- "/Users/iime/Desktop/DW"
+#credentials_path <- "/Users/iime/Desktop/DW"
+credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials"
 edu_deid_con <- dbUtilities::get_mysql_conn(path = credentials_path, credentials_file = "edu_deid.my.cnf", group = "edu_deident")
 
 tables_list <- dbListTables(edu_deid_con)
@@ -35,6 +36,10 @@ clean_tables <-  tables_list[grep("clean", tables_list)]
 
 # gpa
 dat <- dbUtilities::put_tbl_to_memory(edu_deid_con, clean_tables[4])
+
+#list tof tiblles
+tbl <- dbUtilities::get_tbls_by_pattern(edu_deid_con, "\\Wclean\\Wgpa|\\Wclean\\Wexperiences")
+
 
 ```
 
@@ -50,16 +55,50 @@ pct_miss <- dat %>%
   multiply_by(100) %>%
   round(., 2)
 
+
 # visually display missings
-aggr(dat, bars=FALSE, numbers=TRUE, sortVars=TRUE)
+aggr(dat, bars=FALSE, numbers=FALSE, sortVars=TRUE)
+
+
+######## refactor of code to explore a single tibble and a list of tibbles#######
+
+# a single tibble
+explore_missingness_single <- function(dat, plot = TRUE) {
+  
+  miss_obj <- aggr(dat, bars = FALSE, sortVars = TRUE, numbers = TRUE, plot = plot)
+  summary(miss_obj)
+  
+}
+
+#a list of tibbles
+explore_missingness <- function(df_list, plot = TRUE) {
+  
+  df_list %>% 
+    map(., function(df)
+      explore_missingness_single(df, plot = plot))
+}
+
+
+explore_missingness(tbl, plot = TRUE)
+explore_missingness_single(dat, plot = FALSE)
+
+###################################################################################
+
 
 
 # complete cases
 complete.obs <- sum(complete.cases(dat)) / nrow(dat)
 
+
+
+
+
+
 ```
 
+
 `r complete.obs`% of observations in data are complete. 
+
 
 ```{r}
 
@@ -124,6 +163,49 @@ row.names(sumstats) <- row_names
 
 kable(sumstats)
 }
+
+
+
+
+##########################refeactor summary for numerical variables##############
+
+get_basic_summaries_single <- function(dat, varname) {
+  
+  quo_group_by <- enquo(varname)
+  print(quo_group_by)
+  
+  dat %>% 
+    group_by(!!quo_group_by) %>% 
+    summarise_if(., is.numeric, funs(min, max, mean, median), na.rm = TRUE)
+}
+
+get_basic_summaries_single(dat, appl_year)
+
+
+
+get_basic_summaries <- function(df_list, varname) {
+  
+  #need to write function- not so easy
+  
+}
+
+
+
+
+
+################################################################################
+
+tbl$experiences
+
+#quantiles diffiucly
+dat %>% 
+  group_by(appl_year) %>% 
+  summarise_if(., is.numeric, quantile, na.rm = TRUE, prob = 0.25) 
+
+
+
+
+
 
 ```
 
