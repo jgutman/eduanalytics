@@ -169,6 +169,7 @@ kable(sumstats)
 
 ##########################refeactor summary for numerical variables##############
 
+
 get_basic_summaries_single <- function(dat, varname) {
   
   quo_group_by <- enquo(varname)
@@ -179,23 +180,32 @@ get_basic_summaries_single <- function(dat, varname) {
     summarise_if(., is.numeric, funs(min, max, mean, median), na.rm = TRUE)
 }
 
+
 get_basic_summaries_single(dat, appl_year)
 
 
 
 get_basic_summaries <- function(df_list, varname) {
   
-  #need to write function- not so easy
+  quo_group_by <- enquo(varname)
+  print(quo_group_by)
   
+
+  df_list %>% 
+    map(., function(df) {
+      df %>% 
+        group_by(!!quo_group_by) %>% 
+          summarise_if(., is.numeric, funs(min,max, mean, median), na.rm = TRUE)
+    }
+  )
 }
 
-
+get_basic_summaries(df_list = tbl, varname = appl_year)
 
 
 
 ################################################################################
 
-tbl$experiences
 
 #quantiles diffiucly
 dat %>% 
