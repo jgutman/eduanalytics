@@ -97,6 +97,7 @@ explore_missingness(tbl, plot = TRUE)
 
 
 #group a list of tibble by application year each year and return...
+#how to return the a named list that's the app_year
 
 tbl %>%
   map(.,function(df) {
@@ -329,8 +330,8 @@ tbl %>%
       nest() %>%
       mutate(var = map(data, get_cor_mat_single))
   }) %>%
-  map(., "var", extract)
-
+  map(., "var", extract) 
+  
 ```
 
 ```{r histograms}
