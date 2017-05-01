@@ -60,6 +60,14 @@ pct_miss <- dat %>%
 aggr(dat, bars=FALSE, numbers=FALSE, sortVars=TRUE)
 
 
+#what does aggr return?
+miss_obj <- aggr(dat, bars = FALSE, sortVars = TRUE, numbers = TRUE, plot = TRUE)
+
+print(miss_obj)
+summary(miss_obj)
+
+
+
 ######## refactor of code to explore a single tibble and a list of tibbles#######
 
 # a single tibble
@@ -70,6 +78,9 @@ explore_missingness_single <- function(dat, plot = TRUE) {
   
 }
 
+
+
+
 #a list of tibbles
 explore_missingness <- function(df_list, plot = TRUE) {
   
@@ -79,8 +90,32 @@ explore_missingness <- function(df_list, plot = TRUE) {
 }
 
 
+
+summary(explore_missingness_single(dat, plot = TRUE))
 explore_missingness(tbl, plot = TRUE)
-explore_missingness_single(dat, plot = FALSE)
+
+
+
+#group by application year...
+
+#single tibble
+dat %>%
+  group_by(appl_year) %>% 
+  nest() %>%
+  mutate(var = map(data, explore_missingness_single, plot = FALSE))
+
+
+#list of tibbles
+see_var <- tbl %>%
+  map(.,function(df) {
+    df %>% 
+      group_by(appl_year) %>% 
+      nest() %>%
+      mutate(var = map(data, explore_missingness_single))
+  })
+
+
+
 
 ###################################################################################
 
@@ -114,6 +149,7 @@ get_complete_cases_single(dat)
 tbl %>% get_complete_cases()
 
 
+#group by application year?
 ```
 
 
@@ -267,6 +303,31 @@ cor_mat <- round(cor(dat[nums], use = 'pairwise.complete.obs'),2)
 
 kable(cor_mat)
 
+
+#for a single tibble
+get_cor_mat_single <- function(dat, use = 'pairwise.complete.obs') {
+  
+  dat %>% 
+    select_if(is.numeric) %>% 
+    cor(., use = use)
+}
+
+
+#for a list of tibbles
+get_cor_mat <- function(df_list, use = 'pairwise.complete.obs') {
+  
+  df_list %>% 
+    map(., function(df)
+      get_cor_mat_single(df, use = use))
+    
+}
+
+
+get_cor_mat_single(dat)
+
+get_cor_mat(tbl)
+
+#group by application year?
 ```
 
 ```{r histograms}
