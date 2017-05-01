@@ -87,11 +87,31 @@ explore_missingness_single(dat, plot = FALSE)
 
 
 # complete cases
-complete.obs <- sum(complete.cases(dat)) / nrow(dat)
+
+#a single tibble
+
+get_complete_cases_single <- function(dat) {
+  
+  sum(complete.cases(dat)/nrow(dat))
+}
+
+
+# a list of tibbles
+
+
+get_complete_cases <- function(df_list) {
+  
+  df_list %>% 
+    map(., function(df)
+      get_complete_cases_single(df))
+  
+}
 
 
 
+get_complete_cases_single(dat)
 
+tbl %>% get_complete_cases()
 
 
 ```
@@ -213,16 +233,6 @@ get_basic_summaries(df_list = tbl, varname = appl_year)
 
 
 ################################################################################
-
-
-#quantiles diffiucly
-dat %>% 
-  group_by(appl_year) %>% 
-  summarise_if(., is.numeric, quantile, na.rm = TRUE, prob = 0.25) 
-
-
-
-
 
 
 ```
