@@ -169,6 +169,15 @@ kable(sumstats)
 
 ##########################refeactor summary for numerical variables##############
 
+twentyfive_quantile <- function(a_vec,...) {
+  unname(quantile(a_vec, .25, ...))
+}
+
+
+seventyfive_quantile <- function(a_vec,...) {
+  unname(quantile(a_vec, .75, ...))
+}
+
 
 get_basic_summaries_single <- function(dat, varname) {
   
@@ -177,12 +186,8 @@ get_basic_summaries_single <- function(dat, varname) {
   
   dat %>% 
     group_by(!!quo_group_by) %>% 
-    summarise_if(., is.numeric, funs(min, max, mean, median), na.rm = TRUE)
+    summarise_if(., is.numeric, funs(min, max, mean, median, twentyfive_quantile, seventyfive_quantile), na.rm = TRUE)
 }
-
-
-get_basic_summaries_single(dat, appl_year)
-
 
 
 get_basic_summaries <- function(df_list, varname) {
@@ -195,10 +200,13 @@ get_basic_summaries <- function(df_list, varname) {
     map(., function(df) {
       df %>% 
         group_by(!!quo_group_by) %>% 
-          summarise_if(., is.numeric, funs(min,max, mean, median), na.rm = TRUE)
+          summarise_if(., is.numeric, funs(min,max, mean, median, twentyfive_quantile, seventyfive_quantile), na.rm = TRUE)
     }
   )
 }
+
+
+get_basic_summaries_single(dat, appl_year)
 
 get_basic_summaries(df_list = tbl, varname = appl_year)
 
