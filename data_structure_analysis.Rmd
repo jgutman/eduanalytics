@@ -98,24 +98,14 @@ explore_missingness(tbl, plot = TRUE)
 
 #group by application year...
 
-#single tibble
-dat %>%
-  group_by(appl_year) %>% 
-  nest() %>%
-  mutate(var = map(data, explore_missingness_single, plot = FALSE))
-
-
-#list of tibbles
-see_var <- tbl %>%
+tbl %>%
   map(.,function(df) {
     df %>% 
       group_by(appl_year) %>% 
       nest() %>%
       mutate(var = map(data, explore_missingness_single))
-  })
-
-
-
+  }) %>%
+  map(., "var", extract)
 
 ###################################################################################
 
