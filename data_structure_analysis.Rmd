@@ -96,7 +96,7 @@ explore_missingness(tbl, plot = TRUE)
 
 
 
-#group by application year...
+#group a list of tibble by application year each year and return...
 
 tbl %>%
   map(.,function(df) {
@@ -319,7 +319,18 @@ get_cor_mat_single(dat)
 
 get_cor_mat(tbl)
 
-#group by application year?
+
+#group a list of tibbles by application year for each tibble and then return?
+
+tbl %>%
+  map(.,function(df) {
+    df %>% 
+      group_by(appl_year) %>% 
+      nest() %>%
+      mutate(var = map(data, get_cor_mat_single))
+  }) %>%
+  map(., "var", extract)
+
 ```
 
 ```{r histograms}
