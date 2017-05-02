@@ -1,51 +1,51 @@
 ---
-title: "R Notebook"
+title: "Descriptive reporting template"
+author: "Dana Weisenfeld, Suvam Paul"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
 output:
-  html_notebook: default
-
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+  html_document:
+    toc: yes
+    toc_depth: '4'
 ---
 
-```{r setup, include=FALSE}
+# Setup
+## Load packages
+## Read in database credentials and open connection
 
-knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.align = 'center')
+```{r setup, message = FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook_dana.R")
+```
 
-library(RMySQL)
-library(yaml)
-library(data.table)
-library(knitr)
-library(tidyverse)
-library(stringr)
-library(magrittr)
-library(lubridate)
-library(dbUtilities)
-library(DBI)
+```{r setup_notebook}
+```
+
+```{r echo = FALSE}
+print_loaded_pkgs()
+```
+
+```{r addl_setup, include=FALSE}
+knitr::opts_chunk$set(fig.align = 'center')
 library(VIM)
 library(xtable)
-
 ```
 
 
-
-
 ```{r credentials}
-
-credentials_path <- "/Users/iime/Desktop/admissions"
-edu_deid_con <- dbUtilities::get_mysql_conn(path = credentials_path, credentials_file = "edu_deid.my.cnf", group = "edu_deident")
-
 tables_list <- dbListTables(edu_deid_con)
 
-clean_tables <- tables_list[grep("clean", tables_list)]
+clean_tables <- get_tbl_names_by_stage(edu_deid_con, "deidentified", "clean")
 
 dat_name <- clean_tables[5]
 
 dat <- dbUtilities::put_tbl_to_memory(edu_deid_con, dat_name)
-
-# escaping "$" from dataset name for printing in rmarkdown
-dat_name <- gsub("\\$", "\\\\$", dat_name)
-
 ```
 
-
+Dataset name: `r cat(dat_name)`
 
 ```{r data_cleaning}
 
@@ -67,19 +67,14 @@ complete.obs <- (sum(complete.cases(dat)) / nrow(dat)) * 100
 
 ```
 
-Dataset name: `r dat_name`
-
 This data contains `r dims[1]` observations and `r dims[2]` variables. 
 `r round(complete.obs, 2)`% of the observations in the data are complete. 
-
-
-\
 
 
 ## Missing Data
 
 
-```{r missings}
+```{r missings, warning=FALSE}
 
 # percent missing in each numeric var
 pct_miss <- dat %>%
@@ -95,7 +90,6 @@ kable(pct_miss, caption="Percent missing by year")
 ```
 
 
-
 ```{r miss_plot, fig.width=9.5, fig.height = 7}
 
 # visually display missings
@@ -104,10 +98,7 @@ aggr(dat, bars=FALSE, numbers=TRUE, sortVars=TRUE, cex.axis=.7)
 ```
 
 
-
-\
-
-__Correlation Matrix for Missingness__
+###Correlation Matrix for Missingness
 
 ```{r missingness_correlation}
 
@@ -130,7 +121,7 @@ dat$appl_year <- as.character(dat$appl_year)
 dat$study_id <- as.factor(dat$study_id)
 
 # separating variables by type
-classes <- dat %>% map(class) %>% sapply(function(x) x[1])
+classes <- dat %>% map(class) %>% map(extract, 1)
 names(classes) <- NULL
 
 nums <- which(classes=="numeric")
@@ -152,7 +143,7 @@ dat_dates <- dat[,dates]
 
 ## Summary Statistics 
 
-__Table of summary statistics for continuous variables__
+###Table of summary statistics for continuous variables
 
 There are `r length(continuous)` continuous numeric variables in the dataset.
 
@@ -207,7 +198,7 @@ stats_by_var <- lapply(splits, sapply, summary)
 ```
 
 
-__Histograms of Continuous Variables__
+###Histograms of Continuous Variables
 
 ```{r histograms, fig.height=3.5, fig.width=9}
 
@@ -226,9 +217,7 @@ for (i in 1:length(continuous)) {
 
 
 
-\
-
-__Summary statistics for binary variables__
+###Summary statistics for binary variables
 
 There are `r length(binaries)` binary variables in the dataset. The table 
 below contains the proportions of 1's for each binary variable. 
@@ -256,9 +245,7 @@ kable(round(binary_mat,2))
 
 ```
 
-\
-
-__Correlation Matrix containing all numeric variables__
+###Correlation Matrix containing all numeric variables
 
 ```{r corr_matrix}
 
@@ -269,10 +256,7 @@ kable(cor_mat)
 ```
 
 
-
-\
-
-__Tables of Categorical Variables__
+###Tables of Categorical Variables
 
 There are `r length(cats)` categorical variables in the dataset. 
 Tables of the numer of observations in each category by year are shown below.
@@ -357,10 +341,7 @@ for (i in 1:length(cats)) {
 ```
 
 
-
-\
-
-__Table of summary statistics for date variables__
+###Table of summary statistics for date variables
 
 ```{r dates}
 

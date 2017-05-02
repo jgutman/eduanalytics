@@ -1,20 +1,30 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Add hashed study ID for deidentification"
+author: "Jacqueline Gutman, Suvam Paul"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_document:
+    toc: yes
+    toc_depth: '4'
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
 ---
 
 # Setup
 ## Load packages
 ## Read in database credentials and open connection
 
-```{r setup, message=FALSE, echo = FALSE, purl = FALSE}
+```{r setup, message=FALSE, echo = FALSE}
 knitr::read_chunk("setup_notebook.R")
 ```
 
-```{r setup_notebook, purl = FALSE}
+```{r setup_notebook}
 ```
 
-```{r echo = FALSE, purl = FALSE}
+```{r echo = FALSE}
 print_loaded_pkgs()
 ```
 
