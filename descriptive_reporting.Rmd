@@ -29,7 +29,7 @@ print_loaded_pkgs()
 ```
 
 ```{r addl_setup, include=FALSE}
-knitr::opts_chunk$set(fig.align = 'center')
+knitr::opts_chunk$set(echo = FALSE, fig.align = 'center')
 library(VIM)
 library(xtable)
 ```

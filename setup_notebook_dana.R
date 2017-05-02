@@ -20,8 +20,8 @@ knitr::opts_chunk$set(
     autodep = TRUE,
     cache.comments = FALSE)
 
-credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials"
-# credentials_path <- "/Users/iime/Desktop/admissions"
+# credentials_path <- "/Volumes/IIME/EDS/data/admissions/db_credentials"
+credentials_path <- "/Users/iime/Desktop/admissions"
 reconnect <- function() {
     get_mysql_conn(path = credentials_path,
         credentials_file = "edu_deid.my.cnf",
