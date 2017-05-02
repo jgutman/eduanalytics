@@ -1,32 +1,8 @@
----
-title: "R Notebook"
-output: html_notebook
----
-
-# Setup
-## Load packages
-## Read in database credentials and open connection
-
-```{r setup, message=FALSE, echo = FALSE}
-knitr::read_chunk("setup_notebook.R")
-```
-
-```{r setup_notebook}
-```
-
-```{r show_pkgs, echo = FALSE}
-print_loaded_pkgs()
-```
-
-```{r get_tbls}
 all_table_names <- dbListTables(edu_db_con)
 
 all_table_names %>%
   str_detect("^identified") %>%
-  magrittr::extract(all_table_names, .) -> raw_identified_tbls
-```
-
-```{r amcas_aamc}
+  extract(all_table_names, .) -> raw_identified_tbls
 raw_identified_tbls %>%
   find_tbls_with_col("amcas_id", edu_db_con) %>%
   get_tbl_suffix() -> amcas_id_tbls
@@ -34,9 +10,6 @@ raw_identified_tbls %>%
 raw_identified_tbls %>%
   find_tbls_with_col("aamc_id", edu_db_con) %>%
   get_tbl_suffix() -> aamc_id_tbls
-```
-
-```{r hash_amcas, results='hide'}
 interpolate_hash <- function(tbl_name, col_name, conn) {
   query_drop <- "drop table if exists `${hashed_tbl_name}`;"
 
@@ -63,14 +36,7 @@ interpolate_hash <- function(tbl_name, col_name, conn) {
 map(amcas_id_tbls, interpolate_hash,
     col_name = "amcas_id", conn = edu_db_con) %>%
   flatten_lgl()
-```
-
-```{r hash_aamc, results='hide'}
 map(aamc_id_tbls, interpolate_hash,
     col_name = "aamc_id", conn = edu_db_con) %>%
   flatten_lgl()
-```
-
-```{r disconnect}
 disconnect_all()
-```
