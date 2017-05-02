@@ -2,14 +2,11 @@
 library(RMySQL)
 library(yaml)
 library(data.table)
+library(magrittr)
 library(knitr)
 library(tidyverse)
 library(stringr)
-library(magrittr)
 library(lubridate)
-
-##  devtools::install("dbUtilities",
-#    dependencies = FALSE, quiet = TRUE)
 library(dbUtilities)
 
 knitr::opts_chunk$set(
