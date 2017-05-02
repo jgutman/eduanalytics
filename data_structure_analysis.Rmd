@@ -110,7 +110,7 @@ tbl %>%
     df %>% 
       group_by(appl_year) %>% 
       nest() %>%
-      mutate(var = map(data, explore_missingness_single))
+      do(var = map(data, explore_missingness_single))
   }) %>%
   map(., "var", extract)
 
