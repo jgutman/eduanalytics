@@ -11,6 +11,7 @@ feature_status:
     - clean
     - ready
     - generated
+    - outcome
 
 table_name:
     - 2013_all_applicants
@@ -207,3 +208,33 @@ table_name:
             [2013, 2014, 2015, 2016, 2017]
         - deidentified clean:
             [2014, 2015, 2016, 2017]
+    - student_aoa
+        - identified outcome:
+            [?]
+        - hashed outcome:
+            [?]
+    - student_applications
+        - identified outcome:
+            [?]
+        - hashed outcome:
+            [?]
+    - student_medschool_grades
+        - identified outcome:
+            [?]
+        - hashed outcome:
+            [?]
+    - student_moodle_exams
+        - identified outcome:
+            [?]
+        - hashed outcome:
+            [?]
+    - student_residency_match
+        - identified outcome:
+            [?]
+        - hashed outcome:
+            [?]
+    - student_shelf_step_scores
+        - identified outcome:
+            [?]
+        - hashed outcome:
+            [?]
