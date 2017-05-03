@@ -56,7 +56,7 @@ fread_na <- purrr::partial(data.table::fread, na.strings = c("NA","N/A","null", 
 ```{r exp_path}
 # File containing all experiences data for all years
 experiences_path <- file.path(edudw_pull_path, 
-                              "experiences.csv") %>% print()
+                              "experiences_old_version.csv") %>% print()
 ```
 
 `experiences_2006_2013.csv` for 2006-2013 application cycle extracurriculars (avg hrs per week)
@@ -85,7 +85,7 @@ exp %>%
 ```{r mmi_path}
 # File containing MMI data for all years
 mmi_path <- file.path(edudw_pull_path, 
-                      "mmi_scores.csv") %>% print()
+                      "mmi_scores_old_version.csv") %>% print()
 ```
 
 `mmi_scores_2013.csv` for 1-on-1 2013 application cycle interviews
@@ -109,7 +109,7 @@ mmi %>%
 ```{r grades_path}
 # File containing all grades data for all years
 grades_path <- file.path(edudw_pull_path, 
-                         "Grades.csv") %>% print()
+                         "grades_old_version.csv") %>% print()
 ```
 
 ```{r grades_keep}

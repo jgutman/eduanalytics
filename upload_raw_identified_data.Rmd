@@ -104,7 +104,7 @@ identified_raw_admissions_list %>%
 - ethnicity
 - experiences [2006-2013, 2014-2017]
 - gpa
-- grades [2006_2009, 2010-2013, 2014-2017]
+- grades [2006-2009, 2010-2013, 2014-2017]
 - old_mcat
 - mmi_scores [2013, 2014-2017]
 - new_mcat

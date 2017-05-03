@@ -86,6 +86,12 @@ edudw_deidentified$`deidentified$clean$experiences` %<>%
                      fourth_total_hrs)
 ```
 
+```{r edudw_old_mcat_fix}
+edudw_deidentified$`deidentified$clean$old_mcat` %<>%
+  set_names(str_replace_all(colnames(.), "_high", "")) %>%
+  mutate(combined_score = vr_score + ps_score + bs_score)
+```
+
 ```{r edudw_write}
 edudw_deidentified %>%
   write_to_database(edu_db_con)

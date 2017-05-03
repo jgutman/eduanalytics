@@ -1,10 +1,10 @@
 PackratFormat: 1.4
 PackratVersion: 0.4.8.1
 RVersion: 3.3.2
-Repos: BioCsoft=http://bioconductor.org/packages/3.4/bioc,
-    BioCann=http://bioconductor.org/packages/3.4/data/annotation,
-    BioCexp=http://bioconductor.org/packages/3.4/data/experiment,
-    BioCextra=http://bioconductor.org/packages/3.4/extra,
+Repos: BioCsoft=https://bioconductor.org/packages/3.4/bioc,
+    BioCann=https://bioconductor.org/packages/3.4/data/annotation,
+    BioCexp=https://bioconductor.org/packages/3.4/data/experiment,
+    BioCextra=https://bioconductor.org/packages/3.4/extra,
     CRAN=https://cran.rstudio.com/
 
 Package: BH
@@ -585,6 +585,11 @@ Source: CRAN
 Version: 1.1.1
 Hash: 19ad10ef8e73cb435eb49f9d5d259980
 Requires: BH, Rcpp
+
+Package: xtable
+Source: CRAN
+Version: 1.8-2
+Hash: 7293235cfcc14cdff1ce7fd1a0212031
 
 Package: yaml
 Source: CRAN
