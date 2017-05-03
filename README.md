@@ -27,6 +27,8 @@
 1. Get `hashed` versions of all datasets
     - Run `make_hashed_tables_all.Rmd`
     - Some are hashed on `aamc_id`, some are hashed on `amcas_id`
+1. Extract supplemental applicant data from application tracking
+    - Run `extract_from_applicant_data.Rmd`
 1. Get `deidentified` versions of all datasets
     - Run `deidentify_data.Rmd`
     - Can read in column names to drop or keep from `.yaml` file
