@@ -109,7 +109,7 @@ explore_missingness(tbl, plot = TRUE)
 #group a list of tibble by application year each year and return...
 #how to return the a named list that's the app_year
 
-tbl %>%
+grped_tbl_appl_yr <- tbl %>%
   map(.,function(df) {
     df %>% 
       group_by(appl_year) %>% 
@@ -117,8 +117,6 @@ tbl %>%
       mutate(var = map(data, explore_missingness_single))
   }) %>%
   map(., "var", extract)
-
-
 
 
 
@@ -410,6 +408,53 @@ get_ndistinct_single <- function(dat, varname) {
 
 get_tables_single(dat, appl_year)
 
+
+
+# creates tables 
+get_cat_tables <- function(dat, varname) {
+  dat %>% 
+    select_if(is.character) %>%
+    # rewrite without apply? use map instead? 
+    # how to specify varname in function call?
+    apply(., 2, table, dat$appl_year, useNA = "always") %>% 
+    lapply(., t)
+}
+
+# formats tables -- only keep 10 largest categories
+format_cat_tables <- function(table_list, prop=TRUE, digits = 3) {
+
+  table_list <- lapply(names(table_list), function(x) {
+
+    if (ncol(table_list[[x]]) > 10) {
+      new_table <- sort(table(dat[[x]]), decreasing=TRUE)[1:10]
+      table_list[[x]] <- table_list[[x]][,names(new_table)]
+    } else {
+      table_list[[x]] <- table_list[[x]]
+    }
+  })
+  
+  # rewrite this?
+  if (prop) {
+    # takes proportions instead of raw N's and rounds to 3 decimals
+    table_list %<>% lapply(function(x) {
+        round(prop.table(x, margin = 1),digits)
+  })
+  }
+    
+  return(table_list)
+}
+
+cat_tabs <- get_cat_tables(dat)
+cat_tabs2 <- format_cat_tables(cat_tabs)
+
+
+
+names(cat_tabs) <- names(dat_cats)
+
+
+new_kables <- lapply(names(cat_tabs), function(x) kable(cat_tabs[[x]], caption = x, type='html'))
+
+new_kables 
 
 
 
