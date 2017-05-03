@@ -1,6 +1,5 @@
 PackratFormat: 1.4
 PackratVersion: 0.4.8.1
-
 RVersion: 3.3.1
 Repos: BioCsoft=https://bioconductor.org/packages/3.3/bioc,
     BioCann=https://bioconductor.org/packages/3.3/data/annotation,
@@ -72,6 +71,12 @@ Version: 4.7.0
 Hash: 59db421ac67d6860f7dfbe51364f9461
 Requires: Rcpp, car, colorspace, data.table, e1071, laeken, robustbase,
     sp, vcd
+
+Package: assertr
+Source: CRAN
+Version: 2.0.2
+Hash: cc4b3dc0bb84fe60fdd51eb93d00da3f
+Requires: dplyr, lazyeval
 
 Package: assertthat
 Source: CRAN
@@ -586,11 +591,6 @@ Source: CRAN
 Version: 1.1.1
 Hash: 19ad10ef8e73cb435eb49f9d5d259980
 Requires: BH, Rcpp
-
-Package: xtable
-Source: CRAN
-Version: 1.8-2
-Hash: 7293235cfcc14cdff1ce7fd1a0212031
 
 Package: yaml
 Source: CRAN
