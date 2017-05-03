@@ -41,6 +41,9 @@
     - Add individual cleaning scripts to master notebook as they are completed
 
 ## Descriptives
+See detailed outline in [descriptives reporting feature requests](DescriptivesReporting.md)
+1. Run `data_structure_analysis.Rmd`
+
 
 ## Feature generation
 

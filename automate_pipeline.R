@@ -2,9 +2,9 @@ library(magrittr)
 steps <- list("parse_big_csv_files",
               "upload_raw_identified_data",
               "make_hashed_tables_all",
+              "extract_from_applicant_data",
               "deidentify_data",
               "prepare_for_cleaning_tbls")
-              # "master_ready_for_analysis")
 
 # Create .R scripts from .Rmd notebooks
 render <- function (input) {
