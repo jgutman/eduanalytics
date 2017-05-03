@@ -69,142 +69,30 @@ gpa %>% filter(aca_status_desc != "High School") -> gpa
 
 
 
-
-
-```{r simple_functions}
-#simple utility funcions - missingness
-
-#functions
-is_science_gpa_missing <- . %>% 
-  use_series(bcpm_gpa) %>% 
-  is.na() %>% 
-  sum()
-
-
-missing_science_gpa_year <- . %>% 
-  group_by(appl_year) %>% 
-  summarise(count = sum(is.na(bcpm_gpa)))
-
-```
-
-
-
-```{r missing}
-#total missing
-gpa %>% is_science_gpa_missing()
-#7187
-
-
-#missing breakdown by application year
-gpa %>% missing_science_gpa_year()
-
-```
-
-
-
-
-
-
-```{r postbacs}
-
-#1 
-#Any postback missing science gpa
-gpa %>% filter(is.na(bcpm_gpa) & aca_status_desc == "Postbaccalaureate Undergraduate") 
-
-
-#If postback then science gpa is total gpa
-gpa %>% 
-  mutate(bcpm_gpa = ifelse((is.na(bcpm_gpa) & aca_status_desc == "Postbaccalaureate Undergraduate"), total_gpa, bcpm_gpa)) -> gpa
-  
-
-gpa %>% is_science_gpa_missing()
-#6911
-
-
-
-#2
-#Are there people still missing science gpa if postbac - total or science? 
-gpa %>% 
-  filter(aca_status_desc == "Postbaccalaureate Undergraduate" & is.na(bcpm_gpa) & is.na(total_gpa)) %>% 
-  dim()
-
-#Are these people also missing all science gpa's?
-gpa %>% 
-  filter(aca_status_desc == "Postbaccalaureate Undergraduate" & is.na(bcpm_gpa) & is.na(total_gpa)) %>% 
-  semi_join(gpa, ., by = "study_id") %>% 
-  group_by(study_id) %>% 
-  dplyr::mutate(missing = all(is.na(bcpm_gpa))) %>% 
-  use_series(missing) %>% 
-  sum()
-  
-
-#Filter out the rows for these postbac people
-gpa %>%
-  filter(aca_status_desc == "Postbaccalaureate Undergraduate" & is.na(bcpm_gpa) & is.na(total_gpa)) %>%
-  dplyr::setdiff(gpa, .) -> gpa
-
-
-gpa %>% is_science_gpa_missing()
-#6800
-
-gpa %>% missing_science_gpa_year()
-
-
-```
-
-
-
 ```{r}
-#how many cumulative amd postbac SCIENCE gpa's are missing
 
-gpa %>% 
-  filter(aca_status_desc == "Cumulative" | aca_status_desc == "Postbaccalaureate Undergraduate") %>% 
-  use_series(bcpm_gpa) %>% 
-  is.na() %>% 
-  sum()
+names(gpa)
+
+gpa_subset <- gpa %>% select(-aca_status_cd) %>% 
+  filter(aca_status_desc == "Cumulative" | aca_status_desc == "Postbaccalaureate Undergraduate") 
 
 
-#how many cumulative amd postbac TOTAL gpa's are missing
+find_and_replace <- function(dat_tbl, pattern, val) {
+  dat_tbl %>% 
+    names(.) %>% 
+    stringr::str_replace_all(., pattern, map_chr(names(dat_tbl), function(x) {paste(x, val, sep = "_") })) 
 
-gpa %>% 
-  filter(aca_status_desc == "Cumulative" | aca_status_desc == "Postbaccalaureate Undergraduate") %>% 
-  use_series(total_gpa) %>% 
-  is.na() %>% 
-  sum()
+}
 
-
-
-#who are missing science GPA -- should they be excluded
-gpa %>% 
-  filter(aca_status_desc == "Cumulative" | aca_status_desc == "Postbaccalaureate Undergraduate") %>% 
-  filter(is.na(bcpm_gpa))
+gpa_cumulative <- gpa_subset %>% filter(aca_status_desc == "Cumulative")
+names(gpa_cumulative) <- find_and_replace(gpa_cumulative, "bcpm_gpa|ao_gpa|total_gpa", "cumulative")
 
 
+gpa_post_bac <- gpa_subset %>% filter(aca_status_desc == "Postbaccalaureate Undergraduate")
+names(gpa_post_bac) <- find_and_replace(gpa_post_bac, "bcpm_gpa|ao_gpa|total_gpa", "postbac")
 
-gpa %>% 
-  filter(study_id == "a4611e1445da78b4cb6e937d2cc529b3")
-
-```
-
-
-```{r}
-#is anybody missing any science gpa
-
-gpa %>% 
-  group_by(study_id) %>% 
-  dplyr::mutate(missing = all(is.na(bcpm_gpa))) %>% 
-  use_series(missing) %>% 
-  sum()
-
-
-gpa %>% 
-  group_by(study_id) %>% 
-  dplyr::mutate(missing = all(is.na(bcpm_gpa))) %>% 
-  arrange(study_id, missing) %>% 
-  filter(missing == TRUE)
-  
-  
-gpa %>% filter(study_id == "01044f52e372b0c5e83d6719fe7fe92e")
-
+gpa_ready <- gpa_cumulative %>% 
+  select(-aca_status_desc) %>% 
+  left_join(., select(gpa_post_bac, -appl_year, -aca_status_desc), by = "study_id")
 ```
 
