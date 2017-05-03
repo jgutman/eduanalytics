@@ -43,10 +43,12 @@ clean_tables <-  get_tbl_names_by_stage(edu_deid_con, "deidentified", "clean")
 # gpa
 dat <- dbUtilities::put_tbl_to_memory(edu_deid_con, clean_tables[4])
 
-#list tof tiblles
+#list of tibbles
 tbl <- dbUtilities::get_tbls_by_pattern(edu_deid_con, "\\Wclean\\Wgpa|\\Wclean\\Wexperiences")
 
+#appl 
 
+appl <- dbUtilities::put_tbl_to_memory(edu_deid_con, clean_tables[1])
 ```
 
 
@@ -69,6 +71,8 @@ aggr(dat, bars=FALSE, numbers=FALSE, sortVars=TRUE)
 #what does aggr return?
 miss_obj <- aggr(dat, bars = FALSE, sortVars = TRUE, numbers = TRUE, plot = TRUE)
 
+aggr(dat, sortVars=TRUE, numbers=FALSE, prop=c(TRUE, TRUE), plot=TRUE)
+
 print(miss_obj)
 summary(miss_obj)
 
@@ -80,7 +84,7 @@ summary(miss_obj)
 explore_missingness_single <- function(dat, plot = TRUE) {
   
   miss_obj <- aggr(dat, bars = FALSE, sortVars = TRUE, numbers = TRUE, plot = plot)
-  summary(miss_obj)
+  #summary(miss_obj)
   
 }
 
@@ -157,19 +161,18 @@ tbl %>% get_complete_cases()
 
 ```{r}
 
-# converting application year to character
+# converting application year to character so it doesn't get summarized with numerics
 dat$appl_year <- as.character(dat$appl_year)
 
-# converting study_id to factor so it is ignored
+# converting study_id to factor so it is ignored during summaries
 dat$study_id <- as.factor(dat$study_id)
 
 # summarize variables
 
-classes <- dat %>% map(class) %>% sapply(function(x) x[1])
-names(classes) <- NULL
+classes <- dat %>% map(class) %>% sapply(function(x) x[1]) %>% unname
 
 nums <- which(classes=="numeric")
-binaries <- nums[apply(dat[nums],2,function(x) { all(na.omit(x) %in% 0:1) })]
+binaries <- nums[apply(dat[nums], 2, function(x) { all(na.omit(x) %in% 0:1) })]
 continuous <- setdiff(nums, binaries)
   
 cats <- which(classes=="character")
@@ -290,7 +293,6 @@ kable(binary_mat)
 
 }
 
-
 ```
 
 
@@ -300,12 +302,21 @@ kable(binary_mat)
 #get_binary returns a character vector with the names of the columns that are binary for a data frame
 get_binary <- function(df) {
   df %>% 
-    summarise_all(funs(n_distinct(.))) %>% 
+    summarise_all(funs(n_distinct(., na.rm = TRUE))) %>% 
     t() %>% as.data.frame() %>% 
     rownames_to_column("col_name") %>% 
-    filter(V1 == 2) %>%
+    filter(V1 <= 2) %>%   
     use_series(col_name)
 }
+
+appl %>% get_binary()
+names(appl)
+
+
+table(appl$ses, useNA = "always")
+table(appl$dual_degree_applicant, useNA = "always")
+table(appl$appl_type_desc, useNA = "always")
+
 
 #get_binary cols returns only the binary cols plus the appl_year and study_id cols for any data frame
 get_binary_cols <- function(df) {
@@ -313,6 +324,8 @@ get_binary_cols <- function(df) {
     get_binary() %>%
     {select(df, study_id, appl_year, one_of(.))}
 }
+
+
 ```
 
 
@@ -329,27 +342,28 @@ kable(cor_mat)
 
 
 #for a single tibble
-get_cor_mat_single <- function(dat, use = 'pairwise.complete.obs') {
+get_cor_mat_single <- function(dat, use = 'pairwise.complete.obs', round_digits = 2) {
   
   dat %>% 
     select_if(is.numeric) %>% 
-    cor(., use = use)
+    cor(., use = use) %>%
+    round(round_digits)
 }
 
 
 #for a list of tibbles
-get_cor_mat <- function(df_list, use = 'pairwise.complete.obs') {
+get_cor_mat <- function(df_list, use = 'pairwise.complete.obs', round_digits = 2) {
   
   df_list %>% 
     map(., function(df)
-      get_cor_mat_single(df, use = use))
+      get_cor_mat_single(df, use = use, round=round_digits))
     
 }
 
 
 get_cor_mat_single(dat)
 
-get_cor_mat(tbl)
+get_cor_mat(tbl, round_digits = 2)
 
 
 #group a list of tibbles by application year for each tibble and then return?
@@ -362,31 +376,43 @@ tbl %>%
       mutate(var = map(data, get_cor_mat_single))
   }) %>%
   map(., "var", extract) 
-  
+
+
 ```
 
 ```{r histograms}
 
-# l <- length(nums)
-# 
-# if (l <= 5) { par(mfrow=c(1,l)) }
-# if (l >5 & l <= 10) {
-#   if (l %% 2 == 0) { par(mfrow=c(2, l/2)) }
-#   else { par(mfrow=c(2,5)) }
-# }
-# if (l > 10) {
-#   par(mfrow=c(l %/% 5 + 1, 5))
-# }
+par_rows <- length(continous) %% 4 + 1
+par(mfrow=c(par_rows, 4))
 
-for (i in nums) {
-  var <- names(dat)[i]  
-  hist(dat[,i], main = var, xlab="", ylab="")
+# hists <- apply(dat_cont, 2, hist, plot=FALSE)
+# lapply(names(hists), function(x) plot(hists[[x]], main=x, xlab="")) # this produces unnecessary output 
+
+for (i in 1:par_rows) {
+  hist(dat_cont[,i], main=names(dat_cont)[i], xlab="")
 }
 
 ```
 
 
 ```{r categorical_tables, results='asis'}
+
+# number of categories for categorical variables
+get_ndistinct_single <- function(dat, varname) {
+  
+  quo_group_by <- enquo(varname)
+  print(quo_group_by)
+  
+  dat %>% 
+    group_by(!!quo_group_by) %>% 
+    summarise_if(., is.character, funs(n_distinct))
+}
+
+get_tables_single(dat, appl_year)
+
+
+
+
 
 # Want N's and proportions in each category
 for (i in 1:length(cats)) {
