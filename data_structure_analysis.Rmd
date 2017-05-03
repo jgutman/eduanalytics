@@ -110,7 +110,7 @@ tbl %>%
     df %>% 
       group_by(appl_year) %>% 
       nest() %>%
-      do(var = map(data, explore_missingness_single))
+      mutate(var = map(data, explore_missingness_single))
   }) %>%
   map(., "var", extract)
 
@@ -292,6 +292,32 @@ kable(binary_mat)
 
 
 ```
+
+
+```{r}
+#functions for binary data
+
+#get_binary returns a character vector with the names of the columns that are binary for a data frame
+get_binary <- function(df) {
+  df %>% 
+    summarise_all(funs(n_distinct(.))) %>% 
+    t() %>% as.data.frame() %>% 
+    rownames_to_column("col_name") %>% 
+    filter(V1 == 2) %>%
+    use_series(col_name)
+}
+
+#get_binary cols returns only the binary cols plus the appl_year and study_id cols for any data frame
+get_binary_cols <- function(df) {
+  df %>%
+    get_binary() %>%
+    {select(df, study_id, appl_year, one_of(.))}
+}
+```
+
+
+
+
 
 ###Correlation Matrix
 
