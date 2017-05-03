@@ -9,7 +9,6 @@ table_status:
 feature_status:
     - raw
     - clean
-    - ready
     - generated
     - outcome
 
