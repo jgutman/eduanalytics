@@ -29,7 +29,6 @@ knitr::read_chunk("setup_notebook.R")
 print_loaded_pkgs()
 ```
 
-## GPA cleaning
 
 
 ```{r check_tables_in_database}
@@ -47,16 +46,6 @@ gpa <- dbUtilities::put_tbl_to_memory(edu_db_con, "deidentified$clean$gpa")
 ```
 
 
-```{r ensure_has_14_17_data}
-
-library(assertr)
-
-gpa %>% 
-  assert(within_bounds(2014, 2017), appl_year, success_fun = success_logical, error_fun = error_stop) 
-
-
-```
-
 
 
 ```{r drop_high_school}
@@ -65,17 +54,21 @@ table(gpa$aca_status_desc)
 
 #drop high school grades
 gpa %>% filter(aca_status_desc != "High School") -> gpa
+
 ```
 
 
 
-```{r}
 
-names(gpa)
+```{r get_rid_of_unnecessary_columns}
 
-gpa_subset <- gpa %>% select(-aca_status_cd) %>% 
-  filter(aca_status_desc == "Cumulative" | aca_status_desc == "Postbaccalaureate Undergraduate") 
+gpa %>% select(-supp_hours_failed, -supp_hours_passed, -supp_hours_ap, -supp_hours_clep) -> gpa
 
+```
+
+
+
+```{r useful_rename_function}
 
 find_and_replace <- function(dat_tbl, pattern, val) {
   dat_tbl %>% 
@@ -84,15 +77,87 @@ find_and_replace <- function(dat_tbl, pattern, val) {
 
 }
 
-gpa_cumulative <- gpa_subset %>% filter(aca_status_desc == "Cumulative")
-names(gpa_cumulative) <- find_and_replace(gpa_cumulative, "bcpm_gpa|ao_gpa|total_gpa", "cumulative")
+```
 
 
-gpa_post_bac <- gpa_subset %>% filter(aca_status_desc == "Postbaccalaureate Undergraduate")
-names(gpa_post_bac) <- find_and_replace(gpa_post_bac, "bcpm_gpa|ao_gpa|total_gpa", "postbac")
+```{r cumulative_gpa}
+
+gpa_cumulative <- gpa %>% select(-ao_gpa, -ao_hours, -total_hours) %>% 
+  filter(aca_status_desc == "Cumulative") 
+
+names(gpa_cumulative) <- find_and_replace(gpa_cumulative, "bcpm_gpa|total_gpa|bcpm_hours", "cumulative")
+
+gpa_cumulative <- gpa_cumulative %>% select(-aca_status_desc)
+
+```
+
+
+```{r post_bac}
+
+gpa_post_bac <- gpa %>% select(-ao_gpa, -ao_hours, -appl_year) %>%  
+  filter(aca_status_desc == "Postbaccalaureate Undergraduate")
+names(gpa_post_bac) <- find_and_replace(gpa_post_bac, "bcpm_gpa|total_gpa|bcpm_hours|total_hours", "postbac")
+
+#remove those less than 12 total_post_back_hours
+gpa_post_bac <- gpa_post_bac %>% mutate(did_postbac = ifelse(total_hours_postbac > 12, 1,0))
+
+gpa_post_bac <- gpa_post_bac %>% select(-aca_status_desc, -total_hours_postbac)
+
+```
+
+
+```{r attended_grad_schools}
+
+table(gpa$aca_status_desc)
+
+gpa_grad <- gpa %>% 
+  select(study_id, aca_status_desc, total_hours) %>%  
+  filter(aca_status_desc == "Graduate") %>% 
+  mutate(graduate_school_attended = ifelse(total_hours > 12, 1, 0)) %>% 
+  select(study_id, graduate_school_attended)
+
+
+```
+
+
+```{r total_and_science_gpa_trend}
+
+
+#total gpa
+totat_gpa_trend <- gpa %>% 
+  filter(aca_status_desc == "Freshman" | aca_status_desc == "Sophomore" | aca_status_desc == "Junior" | aca_status_desc == "Senior") %>%
+  select(study_id, aca_status_desc, total_gpa) %>% 
+  spread(aca_status_desc, total_gpa) %>% 
+  mutate(total_gpa_soph_higher = as.numeric(Sophomore > Freshman),
+         total_gpa_juni_higher = as.numeric(Junior > Freshman),
+         total_gpa_seni_higher = as.numeric(Senior > Junior)) %>% 
+  select(-Freshman, -Sophomore, -Junior, -Senior) 
+ 
+
+#science gpa
+bcmp_gpa_trend <- gpa %>% 
+  filter(aca_status_desc == "Freshman" | aca_status_desc == "Sophomore" | aca_status_desc == "Junior" | aca_status_desc == "Senior") %>%
+  select(study_id, aca_status_desc, bcpm_gpa) %>% 
+  spread(aca_status_desc, bcpm_gpa) %>% 
+  mutate(bcmp_gpa_soph_higher = as.numeric(Sophomore > Freshman),
+         bcmp_gpa_juni_higher = as.numeric(Junior > Freshman),
+         bcmp_gpa_seni_higher = as.numeric(Senior > Junior)) %>% 
+  select(-Freshman, -Sophomore, -Junior, -Senior) 
+
+
+```
+
+
+
+
+```{r gpa_ready}
 
 gpa_ready <- gpa_cumulative %>% 
-  select(-aca_status_desc) %>% 
-  left_join(., select(gpa_post_bac, -appl_year, -aca_status_desc), by = "study_id")
+  left_join(.,gpa_post_bac, by = "study_id") %>% 
+  left_join(.,gpa_grad, by = "study_id") %>% 
+  left_join(.,totat_gpa_trend, by = "study_id") %>% 
+  left_join(., bcmp_gpa_trend, by = "study_id")
+
+names(gpa_ready)
 ```
 
