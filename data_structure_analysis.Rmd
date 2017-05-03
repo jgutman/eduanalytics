@@ -378,6 +378,7 @@ tbl %>%
 
 ```
 
+
 ```{r histograms}
 
 par_rows <- length(continous) %% 4 + 1
@@ -395,7 +396,7 @@ for (i in 1:par_rows) {
 
 ```{r categorical_tables, results='asis'}
 
-# number of categories for categorical variables
+# number of categories for categorical variables by application year
 get_ndistinct_single <- function(dat, varname) {
   
   quo_group_by <- enquo(varname)
@@ -406,60 +407,76 @@ get_ndistinct_single <- function(dat, varname) {
     summarise_if(., is.character, funs(n_distinct))
 }
 
-get_tables_single(dat, appl_year)
+get_ndistinct_single(dat, appl_year)
 
+## HELPER FUNCTIONS
 
-
-# creates tables 
+# creates tables for every categorical variable 
 get_cat_tables <- function(dat, varname) {
-  dat %>% 
+
+  table_list <- dat %>% 
     select_if(is.character) %>%
     # rewrite without apply? use map instead? 
     # how to specify varname in function call?
     apply(., 2, table, dat$appl_year, useNA = "always") %>% 
     lapply(., t)
+  
+  return(table_list)
 }
 
-# formats tables -- only keep 10 largest categories
-format_cat_tables <- function(table_list, prop=TRUE, digits = 3) {
+# keep 10 largest categories for each variable
+keep10_categories <- function(table_list) {
 
-  table_list <- lapply(names(table_list), function(x) {
-
-    if (ncol(table_list[[x]]) > 10) {
+  #table_list <- get_cat_tables(dat, varname)
+  names <- names(table_list) 
+  
+  table_list <- lapply(names, function(x) {
+    many_cats <- ncol(table_list[[x]]) > 10
+    if (many_cats) {
       new_table <- sort(table(dat[[x]]), decreasing=TRUE)[1:10]
       table_list[[x]] <- table_list[[x]][,names(new_table)]
     } else {
       table_list[[x]] <- table_list[[x]]
     }
   })
-  
-  # rewrite this?
-  if (prop) {
-    # takes proportions instead of raw N's and rounds to 3 decimals
-    table_list %<>% lapply(function(x) {
-        round(prop.table(x, margin = 1),digits)
-  })
-  }
-    
-  return(table_list)
+ 
+  names(table_list) <- names
+  return(table_list)   
 }
 
-cat_tabs <- get_cat_tables(dat)
-cat_tabs2 <- format_cat_tables(cat_tabs)
+# takes proportions instead of raw N's     
+get_table_props <- function(table_list, digits = 3) {
+    
+    table_list <- lapply(table_list, function(x) {
+        round(prop.table(x, margin = 1), digits)
+    })
+    
+    return(table_list)
+}
+
+# 
+format_cat_tables <- function(dat, varname, prop=T, digits = 3)   {
+  table_list <- keep10_categories(get_cat_tables(dat, appl_year))
+  if (prop) {
+    return(get_table_props(table_list, digits))
+  } else {
+    return(table_list)
+  }
+}
+
+cat_tabs <- format_cat_tables(dat, appl_year, prop=T, digits=3)
 
 
 
-names(cat_tabs) <- names(dat_cats)
-
-
+# format tables for nice display 
 new_kables <- lapply(names(cat_tabs), function(x) kable(cat_tabs[[x]], caption = x, type='html'))
 
-new_kables 
 
 
 
+##########################################
 
-# Want N's and proportions in each category
+# Provides N and proportin in each category across years
 for (i in 1:length(cats)) {
   rawN <- sort(as.numeric(table(dat[,cats[i]])), decreasing=TRUE)
   prop <- sort(round(as.numeric(prop.table(table(dat[,cats[i]]))),2), decreasing=TRUE)
@@ -483,5 +500,36 @@ for (i in 1:length(cats)) {
 
 
 ```{r dates}
+
+get_basic_date_summaries_single <- function(dat, varname) {
+  
+  quo_group_by <- enquo(varname)
+  print(quo_group_by)
+  
+  dat %>% 
+    group_by(!!quo_group_by) %>% 
+    summarise_if(., is.POSIXct, funs(min, max, median, twentyfive_quantile, seventyfive_quantile), na.rm = TRUE)
+}
+
+
+get_basic_date_summaries <- function(df_list, varname) {
+  
+  quo_group_by <- enquo(varname)
+  print(quo_group_by)
+  
+
+  df_list %>% 
+    map(., function(df) {
+      df %>% 
+        group_by(!!quo_group_by) %>% 
+          summarise_if(., is.POSIXct, funs(min,max, median, twentyfive_quantile, seventyfive_quantile), na.rm = TRUE)
+    }
+  )
+}
+
+
+get_basic_summaries_single(dat, appl_year)
+
+get_basic_summaries(df_list = tbl, varname = appl_year)
 
 ```
