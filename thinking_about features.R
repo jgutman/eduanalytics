@@ -1,3 +1,32 @@
+#all applicants
+
+
+all_applicants <- dbUtilities::put_tbl_to_memory(edu_db_con, "deidentified$clean$all_applicants")
+
+names(all_applicants)
+
+
+get_binary <- function(df) {
+  df %>% 
+    summarise_all(
+      funs(sum(n_distinct(., na.rm = TRUE), as.numeric(any(is.na(.)))))) %>% 
+    t() %>% 
+    as.data.frame() %>% 
+    rownames_to_column("col_name") %>% 
+    filter(V1 <= 3) %>%
+    use_series(col_name)
+}
+
+
+get_binary_cols <- function(df) {
+  df %>%
+    get_binary() %>%
+    {select(df, study_id, appl_year, one_of(.))}
+}
+
+
+
+
 #gpa
 
 #get data
@@ -35,9 +64,6 @@ grades <- dbUtilities::put_tbl_to_memory(edu_db_con, "deidentified$clean$grades"
 grades_subset <- grades %>% 
   filter(aca_status_desc != "Graduate" & aca_status_desc != "High School") %>% 
   filter(class_desc == "Biology" | class_desc == "Chemistry" | class_desc == "Physics" | class_desc == "Natural/Physical Sciences" | class_desc == "Math")
-
-
-
 
 
 
