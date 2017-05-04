@@ -37,8 +37,7 @@
 1. Prepare `clean` versions of tables with basic applicant filtering and formatting fixes
     - Run `prepare_for_cleaning_tbls.Rmd`
 1. Prepare `ready` versions of tables with more ad-hoc iterative data fixes
-    - Run `master_ready_for_analysis.Rmd`
-    - Add individual cleaning scripts to master notebook as they are completed
+   - TODO!
 
 ## Descriptives
 See detailed outline in [descriptives reporting feature requests](DescriptivesReporting.md)
@@ -46,8 +45,19 @@ See detailed outline in [descriptives reporting feature requests](DescriptivesRe
 
 
 ## Feature generation
+- Generate GPA features for modeling
+    - Run `gpa_feature_generation.Rmd`
+- Generate MCAT (old/new) features for modeling
+    - Run `mcat_feature_generation.Rmd`
+- Generate BCPM grade features for modeling
+    - Run `feature_generate_grades.Rmd`
 
 ## Model building
+1. Construct design matrix for modeling using generated features
+    - Run `construct_design_matrix.Rmd`
+1. Transform and build pipeline in scikit-learn
+    - see ipython notebook
+
 
 ## Model evaluation
 
