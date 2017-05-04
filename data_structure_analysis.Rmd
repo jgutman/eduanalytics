@@ -52,21 +52,24 @@ appl <- dbUtilities::put_tbl_to_memory(edu_deid_con, clean_tables[1])
 ```
 
 
-```{r miss_plot}
+```{r miss_table, warning=FALSE}
 
 # percent missing in each numeric var
-pct_miss <- dat %>%
-  dplyr::group_by(appl_year) %>%
-  summarize_all(funs(pct_missing = mean(is.na(.)))) %>%
-  column_to_rownames("appl_year") %>%
-  t() %>%
-  multiply_by(100) %>%
-  round(., 2)
+pct_miss_table <- function(dat) {
+  dat %>%
+    group_by(appl_year) %>%
+    summarize_all(funs(pct_missing = mean(is.na(.)))) %>%
+    column_to_rownames("appl_year") %>%
+    t() %>% multiply_by(100) %>% round(2)
+}
+
+kable(pct_miss_table(dat), type='html', caption="Percent missing in each variable by year")
+
+```
 
 
-# visually display missings
-aggr(dat, bars=FALSE, numbers=FALSE, sortVars=TRUE)
 
+```{r missing_plots}
 
 #what does aggr return?
 miss_obj <- aggr(dat, bars = FALSE, sortVars = TRUE, numbers = TRUE, plot = TRUE, cex.axis=.8)
@@ -118,6 +121,17 @@ tbl %>%
   map(., "var", extract)
 
 
+# produces same output as above, but year names are preserved in list headers so output is more readable
+tbl %>%
+    map(., function(df) {
+      df %>% 
+      split(use_series(., appl_year)) %>% 
+      lapply(select, -appl_year) %>%
+      lapply(explore_missingness_single)
+  } ) 
+
+
+
 
 # complete cases
 
@@ -153,7 +167,7 @@ tbl %>% get_complete_cases()
 ```
 
 
-```{r}
+```{r class_identification}
 
 # converting application year to character so it doesn't get summarized with numerics
 dat$appl_year <- as.character(dat$appl_year)
@@ -177,7 +191,6 @@ identify_yesno <- function(dat) {
   dat %>% 
     sapply(., function(x) { all(na.omit(x) %in% c("Y", "N")) })
 }
-
 
 
 ```
@@ -253,7 +266,7 @@ get_basic_summaries_single <- function(dat, varname) {
 
 
 # should this function produce one large tibble or a list of tibbles?
-# one tibble per variable would be easier to process
+# one tibble per variable would be easier to read
 get_basic_summaries <- function(df_list, varname) {
   
   quo_group_by <- enquo(varname)
@@ -274,7 +287,6 @@ get_basic_summaries <- function(df_list, varname) {
 get_basic_summaries_single(dat, appl_year)
 
 get_basic_summaries(df_list = tbl, varname = appl_year)
-
 
 
 ################################################################################
@@ -343,11 +355,6 @@ get_binary_cols <- function(df) {
 
 ```{r corr_matrix}
 
-cor_mat <- round(cor(dat[nums], use = 'pairwise.complete.obs'),2)
-
-kable(cor_mat)
-
-
 #for a single tibble
 get_cor_mat_single <- function(dat, use = 'pairwise.complete.obs', round_digits = 3) {
   
@@ -368,9 +375,9 @@ get_cor_mat <- function(df_list, use = 'pairwise.complete.obs', round_digits = 3
 }
 
 
-get_cor_mat_single(dat)
+kable(get_cor_mat_single(dat), type='html')
 
-get_cor_mat(tbl, round_digits = 3)
+kable(get_cor_mat(tbl, round_digits = 3), type='html')
 
 
 #group a list of tibbles by application year for each tibble and then return?
@@ -399,12 +406,11 @@ tbl %>%
 
 ```{r histograms}
 
-par_rows <- length(continous) %% 4 + 1
-par(mfrow=c(par_rows, 4))
+# rewrite this
 
-# hists <- apply(dat_cont, 2, hist, plot=FALSE)
-# lapply(names(hists), function(x) plot(hists[[x]], main=x, xlab="")) # this produces unnecessary output 
-
+# setting par settings so histograms display in a grid
+par_rows <- length(continuous) %% 4 + 1
+par(mfrow=c(par_rows, 4)) # add more par settings for better display
 
 for (i in 1:par_rows) {
   hist(dat_cont[,i], main=names(dat_cont)[i], xlab="")
@@ -412,29 +418,43 @@ for (i in 1:par_rows) {
 
 ```
 
-
-```{r categorical_tables, results='asis'}
+Number of distinct categories for each categorical variable (character vector) by year
+```{r distinct_categories, results='asis'}
 
 # number of distinct categories for categorical variables by application year
 get_ndistinct_single <- function(dat, varname) {
   
   quo_group_by <- enquo(varname)
-  print(quo_group_by)
+  #print(quo_group_by)
   
   dat %>% 
     group_by(!!quo_group_by) %>% 
     summarise_if(., is.character, funs(n_distinct))
 }
 
-get_ndistinct_single(dat, appl_year)
+get_ndistinct_single(dat, appl_year) 
+
 
 # number of distinct categories for categorical variables by application year for
 # list of tibbles
 
-# get_ndistinct <- function()
+get_ndistinct <- function(df_list, varname) {
+
+    quo_group_by <- enquo(varname)
+  
+    df_list %>% 
+      map(., function(df) {
+        get_ndistinct_single(df, varname = !!quo_group_by)
+  } )
+}
+
+get_ndistinct(tbl, appl_year)
 
 
-######################
+```
+
+
+```{r categorical_tables}
 
 ## HELPER FUNCTIONS
 
@@ -483,11 +503,14 @@ get_table_props <- function(table_list, digits = 3) {
 }
 
 
-##################
+######################
  
-
-get_cat_tables <- function(dat, varname, prop=T, digits = 3)   {
-  big_tables <- initialize_cat_tables(dat, appl_year)
+# tables for a single df
+get_cat_tables_single <- function(dat, varname, prop=T, digits = 3)   {
+  quo_group_by <- enquo(varname)
+  print(quo_group_by)
+  
+  big_tables <- initialize_cat_tables(dat, !!quo_group_by)
   table_list <- keep10_categories(big_tables)
   if (prop) {
     return(get_table_props(table_list, digits))
@@ -496,15 +519,30 @@ get_cat_tables <- function(dat, varname, prop=T, digits = 3)   {
   }
 }
 
-cat_tabs <- get_cat_tables(dat, appl_year, prop=T, digits=3)
+cat_tabs <- get_cat_tables_single(dat, appl_year, prop=T, digits=3)
+cat_tabs
 
 
+##### fix this
+
+# tables for a list of tibbles
+get_cat_tables <- function(df_list, varname, prop=T, digits=3) {
+  
+  quo_group_by <- enquo(varname)
+  print(quo_group_by)
+  
+  df_list %>% 
+    map(., function(df) {
+      get_cat_tables_single(df, varname = !!quo_group_by, prop = prop, digits = digits)
+    } )
+  
+}
+
+get_cat_tables(tbl, appl_year)
 
 # format tables for nice display 
 categorical_kables <- lapply(names(cat_tabs), function(x) kable(cat_tabs[[x]], caption = x, type='html'))
 # categorical_kables
-
-
 
 ```
 
@@ -532,6 +570,7 @@ for (i in 1:length(cats)) {
 }
 
 ```
+
 
 
 ```{r dates}
