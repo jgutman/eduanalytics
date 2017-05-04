@@ -31,7 +31,42 @@ print_loaded_pkgs()
 # Extract generated features from database
 
 ```{r}
-get_tbls_by_pattern(edu_db_con, "^deidentified\\Wgenerated", in_memory = FALSE) %>%
-{left_join(.[[1]], .[[2]], by = "study_id")}
+generated_features <- get_tbl_names_by_stage(edu_db_con, "deidentified", "generated")
+```
+
+```{r}
+"all_applicants" %>% 
+  add_tbl_prefix() %>%
+  put_tbl_to_memory(edu_db_con, .) %>%
+  filter(is_faculty_screened == 1) ->
+  screened_applicants
+```
+
+```{r}
+outcomes <- screened_applicants %>%
+  select(study_id, is_invited_interview)
+```
+
+```{r}
+fetch_and_join <- function(df, tbl_name, conn, key) {
+  tbl_name %>%
+    put_tbl_to_memory(conn, .) %>%
+    left_join(df, ., by = key)
+}
+
+reduce(generated_features, fetch_and_join, 
+       conn = edu_db_con, key = "study_id", 
+       .init = outcomes) %>%
+select(-starts_with("appl_year")) -> 
+  features_plus_outcome
+```
+
+```{r}
+features_plus_outcome %>%
+  write_to_database_single(edu_db_con, "deidentified$model_data$grades_gpa_mcat")
+```
+
+```{r}
+disconnect_all()
 ```
 
