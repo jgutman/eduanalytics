@@ -106,10 +106,10 @@ explore_missingness(tbl, plot = TRUE)
 
 
 
-#group a list of tibble by application year each year and return...
+#group a list of tibbles by application year each year and return...
 #how to return the a named list that's the app_year
 
-grped_tbl_appl_yr <- tbl %>%
+tbl %>%
   map(.,function(df) {
     df %>% 
       group_by(appl_year) %>% 
@@ -154,7 +154,7 @@ tbl %>% get_complete_cases()
 ```
 
 
-`r complete.obs`% of observations in data are complete. 
+__% of observations in data are complete. 
 
 
 ```{r}
@@ -165,9 +165,8 @@ dat$appl_year <- as.character(dat$appl_year)
 # converting study_id to factor so it is ignored during summaries
 dat$study_id <- as.factor(dat$study_id)
 
-# summarize variables
 
-classes <- dat %>% map(class) %>% sapply(function(x) x[1]) %>% unname
+classes <- dat %>% map(class) %>% unlist %>% unname
 
 nums <- which(classes=="numeric")
 binaries <- nums[apply(dat[nums], 2, function(x) { all(na.omit(x) %in% 0:1) })]
@@ -176,13 +175,22 @@ continuous <- setdiff(nums, binaries)
 cats <- which(classes=="character")
 dates <- which(classes=="POSIXct")
 
+# identifies Y/N/NA and Y/NA variables
+# what to return? var names? index number?
+identify_yesno <- function(dat) {
+  dat %>% 
+    sapply(., function(x) { all(na.omit(x) %in% c("Y", "N")) })
+}
+
+
+
 ```
 
 ###Summary Statistics
 
 There are `r length(continuous)` continuous numeric variables in the dataset.
 
-```{r summarize_continuous_vars}
+```{r summarize_continuous_vars, eval=FALSE}
 
 if (length(continuous)>0) {
   
@@ -220,8 +228,10 @@ row.names(sumstats) <- row_names
 kable(sumstats)
 }
 
+```
 
 
+```{r summ_stats_cont_vars}
 
 ##########################refeactor summary for numerical variables##############
 
@@ -246,6 +256,8 @@ get_basic_summaries_single <- function(dat, varname) {
 }
 
 
+# should this function produce one large tibble or a list of tibbles?
+# one tibble per variable would be easier to process
 get_basic_summaries <- function(df_list, varname) {
   
   quo_group_by <- enquo(varname)
@@ -256,7 +268,8 @@ get_basic_summaries <- function(df_list, varname) {
     map(., function(df) {
       df %>% 
         group_by(!!quo_group_by) %>% 
-          summarise_if(., is.numeric, funs(min,max, mean, median, twentyfive_quantile, seventyfive_quantile), na.rm = TRUE)
+          summarise_if(., is.numeric, funs(min, twentyfive_quantile, median, mean, seventyfive_quantile, max), na.rm = TRUE) 
+        
     }
   )
 }
@@ -361,11 +374,10 @@ get_cor_mat <- function(df_list, use = 'pairwise.complete.obs', round_digits = 2
 
 get_cor_mat_single(dat)
 
-get_cor_mat(tbl, round_digits = 2)
+get_cor_mat(tbl, round_digits = 3)
 
 
 #group a list of tibbles by application year for each tibble and then return?
-
 tbl %>%
   map(.,function(df) {
     df %>% 
@@ -387,6 +399,7 @@ par(mfrow=c(par_rows, 4))
 # hists <- apply(dat_cont, 2, hist, plot=FALSE)
 # lapply(names(hists), function(x) plot(hists[[x]], main=x, xlab="")) # this produces unnecessary output 
 
+
 for (i in 1:par_rows) {
   hist(dat_cont[,i], main=names(dat_cont)[i], xlab="")
 }
@@ -396,7 +409,7 @@ for (i in 1:par_rows) {
 
 ```{r categorical_tables, results='asis'}
 
-# number of categories for categorical variables by application year
+# number of distinct categories for categorical variables by application year
 get_ndistinct_single <- function(dat, varname) {
   
   quo_group_by <- enquo(varname)
@@ -409,24 +422,30 @@ get_ndistinct_single <- function(dat, varname) {
 
 get_ndistinct_single(dat, appl_year)
 
+######################
+
 ## HELPER FUNCTIONS
 
 # creates tables for every categorical variable 
 get_cat_tables <- function(dat, varname) {
 
+  quo_group_by <- enquo(varname)
+  #print(quo_group_by)
+  
+  group_var <- dat %>% select(!!quo_group_by) %>% pull()
+
   table_list <- dat %>% 
     select_if(is.character) %>%
-    # rewrite without apply? use map instead? 
-    # how to specify varname in function call?
-    apply(., 2, table, dat$appl_year, useNA = "always") %>% 
-    lapply(., t)
+    apply(2, table, group_var, useNA = "always") %>% 
+    lapply(t)
   
   return(table_list)
 }
 
+
 # keep 10 largest categories for each variable
 keep10_categories <- function(table_list) {
-
+  
   #table_list <- get_cat_tables(dat, varname)
   names <- names(table_list) 
   
@@ -446,17 +465,19 @@ keep10_categories <- function(table_list) {
 
 # takes proportions instead of raw N's     
 get_table_props <- function(table_list, digits = 3) {
-    
     table_list <- lapply(table_list, function(x) {
         round(prop.table(x, margin = 1), digits)
     })
-    
     return(table_list)
 }
 
-# 
+
+##################
+ 
+
 format_cat_tables <- function(dat, varname, prop=T, digits = 3)   {
-  table_list <- keep10_categories(get_cat_tables(dat, appl_year))
+  big_tables <- get_cat_tables(dat, appl_year)
+  table_list <- keep10_categories(big_tables)
   if (prop) {
     return(get_table_props(table_list, digits))
   } else {
@@ -469,12 +490,15 @@ cat_tabs <- format_cat_tables(dat, appl_year, prop=T, digits=3)
 
 
 # format tables for nice display 
-new_kables <- lapply(names(cat_tabs), function(x) kable(cat_tabs[[x]], caption = x, type='html'))
+categorical_kables <- lapply(names(cat_tabs), function(x) kable(cat_tabs[[x]], caption = x, type='html'))
+# categorical_kables
 
 
 
+```
 
-##########################################
+
+```{r props_across_years, eval=FALSE}
 
 # Provides N and proportin in each category across years
 for (i in 1:length(cats)) {
@@ -508,7 +532,7 @@ get_basic_date_summaries_single <- function(dat, varname) {
   
   dat %>% 
     group_by(!!quo_group_by) %>% 
-    summarise_if(., is.POSIXct, funs(min, max, median, twentyfive_quantile, seventyfive_quantile), na.rm = TRUE)
+    summarise_if(., is.POSIXct, funs(min, twentyfive_quantile, median, seventyfive_quantile, max), na.rm = TRUE)
 }
 
 
@@ -522,14 +546,14 @@ get_basic_date_summaries <- function(df_list, varname) {
     map(., function(df) {
       df %>% 
         group_by(!!quo_group_by) %>% 
-          summarise_if(., is.POSIXct, funs(min,max, median, twentyfive_quantile, seventyfive_quantile), na.rm = TRUE)
+          summarise_if(., is.POSIXct, funs(min, twentyfive_quantile, median, seventyfive_quantile, max), na.rm = TRUE)
     }
   )
 }
 
 
-get_basic_summaries_single(dat, appl_year)
+get_basic_date_summaries_single(appl, appl_year)
 
-get_basic_summaries(df_list = tbl, varname = appl_year)
+get_basic_dat_summaries(df_list = tbl, varname = appl_year)
 
 ```
