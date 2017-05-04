@@ -56,19 +56,29 @@ bcpm_grade_counts <- grades_input %>%
 ```{r}
 grades_input %>%
   filter(bcpm_ind == 1) %>%
-  mutate(class_cd = as.factor(class_cd)) %>%
   group_by(class_cd) %>%
   nest() -> nested_science
 
 nested_science %<>%
   mutate(features = map(data, count_grades)) %>%
   mutate(features = map2(features, class_cd, 
-          function(df, name) rename_if(df, is.integer, funs(paste(name, ., sep = "_"))))) 
+          function(df, name) rename_if(df, is.integer, funs(paste(tolower(name), ., sep = "_"))))) 
 ```
 
 ```{r}
 nested_science %>% 
   use_series(features) %>%
-  Reduce(left_join, ., init = bcpm_grade_counts)
+  Reduce(left_join, ., init = bcpm_grade_counts) -> 
+  all_grade_counts
+```
+
+```{r}
+"grades" %>%
+  add_tbl_prefix(status = "generated") %>%
+  write_to_database_single(all_grade_counts, edu_db_con, .)
+```
+
+```{r}
+disconnect_all()
 ```
 
