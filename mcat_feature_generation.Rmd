@@ -17,15 +17,15 @@ output:
 ## Load packages
 ## Read in database credentials and open connection
 
-```{r setup, message=FALSE, echo = FALSE, purl = FALSE}
+```{r setup, message=FALSE, echo = FALSE}
 knitr::read_chunk("setup_notebook.R")
 ```
 
-```{r setup_notebook, purl = FALSE}
+```{r setup_notebook}
 
 ```
 
-```{r echo = FALSE, purl = FALSE}
+```{r echo = FALSE}
 print_loaded_pkgs()
 ```
 
@@ -43,7 +43,11 @@ new_mcat <- dbUtilities::put_tbl_to_memory(edu_db_con, "deidentified$clean$new_m
 
 names(old_mcat)
 
-old_mcat_features <- old_mcat %>% select(study_id, appl_year, test_date, total_percentile, bs_percentile, ps_percentile) %>% mutate (mcat = "old")
+old_mcat_features <- old_mcat %>% 
+  select(study_id, appl_year, test_date, total_percentile, bs_percentile, ps_percentile) %>% mutate (mcat_type = "old") %>% 
+  rename(bio_percentile = bs_percentile, phy_chem_percentile = ps_percentile)
+  
+
 
 ```
 
@@ -53,8 +57,8 @@ old_mcat_features <- old_mcat %>% select(study_id, appl_year, test_date, total_p
 
 new_mcat_features <- new_mcat %>% 
   select(study_id, appl_year, new_mcat_test_date, new_mcat_total_percentile, new_mcat_bbfl_percentile, new_mcat_cpbs_percentile) %>% 
-  rename( test_date = new_mcat_test_date, total_percentile = new_mcat_total_percentile, bs_percentile = new_mcat_bbfl_percentile, ps_percentile = new_mcat_cpbs_percentile) %>% 
-  mutate(mcat = "new")
+  rename( test_date = new_mcat_test_date, total_percentile = new_mcat_total_percentile, bio_percentile = new_mcat_bbfl_percentile, phy_chem_percentile = new_mcat_cpbs_percentile) %>% 
+  mutate(mcat_type = "new")
 
 ```
 
