@@ -1,5 +1,5 @@
 ---
-title: "Create clean version of GPA dataset"
+title: "Create feature version of GPA dataset"
 author: "Suvam Paul"
 date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
 output:

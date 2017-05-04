@@ -1,0 +1,91 @@
+---
+title: "Create clean version of MCAT dataset"
+author: "Suvam Paul"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+  html_document:
+    toc: yes
+    toc_depth: '4'
+---
+
+# Setup
+## Load packages
+## Read in database credentials and open connection
+
+```{r setup, message=FALSE, echo = FALSE, purl = FALSE}
+knitr::read_chunk("setup_notebook.R")
+```
+
+```{r setup_notebook, purl = FALSE}
+
+```
+
+```{r echo = FALSE, purl = FALSE}
+print_loaded_pkgs()
+```
+
+```{r get_gpa_dataset}
+
+#get data
+old_mcat <- dbUtilities::put_tbl_to_memory(edu_db_con, "deidentified$clean$old_mcat")
+
+new_mcat <- dbUtilities::put_tbl_to_memory(edu_db_con, "deidentified$clean$new_mcat")
+
+
+```
+
+```{r old_mcat_feat}
+
+names(old_mcat)
+
+old_mcat_features <- old_mcat %>% select(study_id, appl_year, test_date, total_percentile, bs_percentile, ps_percentile) %>% mutate (mcat = "old")
+
+```
+
+
+```{r new_mcat_feat}
+
+
+new_mcat_features <- new_mcat %>% 
+  select(study_id, appl_year, new_mcat_test_date, new_mcat_total_percentile, new_mcat_bbfl_percentile, new_mcat_cpbs_percentile) %>% 
+  rename( test_date = new_mcat_test_date, total_percentile = new_mcat_total_percentile, bs_percentile = new_mcat_bbfl_percentile, ps_percentile = new_mcat_cpbs_percentile) %>% 
+  mutate(mcat = "new")
+
+```
+
+
+
+```{r bind_data}
+
+all_mcat_features <- bind_rows(old_mcat_features, new_mcat_features)
+
+all_mcat_features <- all_mcat_features %>% arrange(study_id, desc(test_date))
+```
+
+
+```{r select_latest_mcat}
+
+all_mcat_features <- all_mcat_features %>% 
+  group_by(study_id) %>% 
+  mutate(test_ranking = rank(desc(test_date)), 
+         count_mcat = n()) %>% 
+  filter(test_ranking == 1) %>% 
+  select(-test_ranking)
+
+
+```
+
+
+
+```{r put_tbl_to_database}
+
+add_tbl_prefix("mcat", id = "deidentified", status = "generated") %>%
+               write_to_database_single(all_mcat_features, edu_db_con, tbl_name = .)
+
+```
+
