@@ -1,5 +1,6 @@
 PackratFormat: 1.4
 PackratVersion: 0.4.8.1
+
 RVersion: 3.3.1
 Repos: BioCsoft=http://bioconductor.org/packages/3.3/bioc,
     BioCann=http://bioconductor.org/packages/3.3/data/annotation,
@@ -591,6 +592,11 @@ Source: CRAN
 Version: 1.1.1
 Hash: 19ad10ef8e73cb435eb49f9d5d259980
 Requires: BH, Rcpp
+
+Package: xtable
+Source: CRAN
+Version: 1.8-2
+Hash: 7293235cfcc14cdff1ce7fd1a0212031
 
 Package: yaml
 Source: CRAN

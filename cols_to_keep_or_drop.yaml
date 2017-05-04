@@ -62,9 +62,18 @@ mmi_scores:
         - interview_id
         - scenario
 old_mcat:
-    drop:
-        - aamc_id
-        - appl_person_id
+    keep:
+        - study_id
+        - appl_year
+        - vr_score
+        - ps_score
+        - bs_score
+        - test_date
+        - combined_score
+        - vr_high_percentile
+        - ps_high_percentile
+        - bs_high_percentile
+        - total_high_percentile
 new_mcat:
     drop:
         - aamc_id

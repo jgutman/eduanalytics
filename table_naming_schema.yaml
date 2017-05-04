@@ -9,8 +9,8 @@ table_status:
 feature_status:
     - raw
     - clean
-    - ready
     - generated
+    - outcome
 
 table_name:
     - 2013_all_applicants
@@ -201,3 +201,39 @@ table_name:
             [2010, 2011, 2012, 2013]
         - deidentified raw:
             [2010, 2011, 2012, 2013]
+    - supp_applicant_info
+        # contains gender and highest degree earned
+        - deidentified raw:
+            [2013, 2014, 2015, 2016, 2017]
+        - deidentified clean:
+            [2014, 2015, 2016, 2017]
+    - student_aoa
+        - identified outcome:
+            [?]
+        - hashed outcome:
+            [?]
+    - student_applications
+        - identified outcome:
+            [?]
+        - hashed outcome:
+            [?]
+    - student_medschool_grades
+        - identified outcome:
+            [?]
+        - hashed outcome:
+            [?]
+    - student_moodle_exams
+        - identified outcome:
+            [?]
+        - hashed outcome:
+            [?]
+    - student_residency_match
+        - identified outcome:
+            [?]
+        - hashed outcome:
+            [?]
+    - student_shelf_step_scores
+        - identified outcome:
+            [?]
+        - hashed outcome:
+            [?]

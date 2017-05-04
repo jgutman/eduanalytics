@@ -1,0 +1,82 @@
+---
+title: "Explore screening outcomes"
+author: "Jacqueline Gutman, Suvam Paul"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_document:
+    toc: yes
+    toc_depth: '4'
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+---
+
+# Setup
+## Load packages
+## Read in database credentials and open connection
+
+```{r setup, message=FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook.R")
+```
+
+```{r setup_notebook}
+```
+
+```{r show_pkgs, echo = FALSE}
+print_loaded_pkgs()
+```
+
+```{r}
+tbl_name <- add_tbl_prefix("all_applicants")
+all_applicants <- put_tbl_to_memory(edu_db_con, tbl_name) %>%
+  mutate_at(vars(starts_with("is_")), as.logical)
+```
+
+Excluded from analysis:
+- MD/PhD applicant
+- Special programs applicant (postbaccalaureate linkages)
+- Re-applicants (not first application within 2014-2017 cycles)
+- Incomplete applications
+
+```{r}
+all_applicants %>% 
+  group_by(appl_year) %>%
+  summarize(n_screening_eligible = n(),
+            n_faculty_screened = sum(is_faculty_screened),
+            n_invited_interview = sum(is_invited_interview))
+```
+
+```{r}
+screener_codes <- list(`1` = "Invite for interview",
+                      `2` = "Hold for interview",
+                      `3` = "Do not invite")
+
+all_applicants_screened <- all_applicants %>%
+  filter(is_faculty_screened) %>%
+  filter(!is.na(screener_a), !is.na(screener_b)) %>%
+  select(appl_year, screener_a, screener_b, is_invited_interview, is_interviewed) %>%
+  mutate(screener_a = do.call(recode, append(screener_codes, list(.x = screener_a))),
+         screener_b = do.call(recode, append(screener_codes, list(.x = screener_b))))
+
+all_applicants_screened %>% 
+  {table(.$screener_b, .$screener_a)} %>% 
+  print() -> app_counts
+
+app_counts %>%
+  as.data.frame() %>% 
+  mutate(Freq = Freq/nrow(all_applicants_screened)) %>%
+  mutate(Freq = scales::percent(Freq))
+
+
+```
+
+```{r}
+all_applicants_screened %>%
+  group_by(screener_a, screener_b) %>%
+  summarize(pct_invited_interview = mean(is_invited_interview),
+            pct_interviewed = mean(is_interviewed)) %>%
+  mutate_if(is.double, scales::percent)
+```
+

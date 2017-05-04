@@ -1,0 +1,55 @@
+---
+title: "Extract other info from applicant tracking"
+author: "Jacqueline Gutman, Suvam Paul"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_document:
+    toc: yes
+    toc_depth: '4'
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+---
+
+# Setup
+## Load packages
+## Read in database credentials and open connection
+
+```{r setup, message=FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook.R")
+```
+
+```{r setup_notebook}
+```
+
+```{r show_pkgs, echo = FALSE}
+print_loaded_pkgs()
+```
+
+# Admissions applicants datasets: 2013-2017
+
+## Read in all_applicants tables from database
+
+```{r get_all_applicants}
+pattern <- "^hashed\\Wraw\\W\\d{4}_all_applicants"
+
+edu_db_con %>%
+  get_tbls_by_pattern(pattern, in_memory = FALSE) %>%
+  map(function(df) select(df, study_id, appl_year = app_year, highest_degree_earned, gender)) -> 
+  supp_applicants_data
+```
+
+```{r}
+supp_applicants_data %<>% 
+  map(collect, n = Inf) %>%
+  bind_rows()
+
+tbl_name <- "supp_applicant_info" %>% 
+  add_tbl_prefix(status = "raw")
+
+supp_applicants_data %>%
+  write_to_database_single(edu_db_con, tbl_name)
+```
+

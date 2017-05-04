@@ -21,9 +21,9 @@ print_loaded_pkgs()
 ```{r get_tbls}
 all_table_names <- dbListTables(edu_db_con)
 
-all_table_names %>%
-  str_detect("^identified") %>%
-  magrittr::extract(all_table_names, .) -> raw_identified_tbls
+get_tbl_names_by_stage(edu_db_con, "identified", "raw") -> raw_identified_tbls
+
+get_tbl_names_by_stage(edu_db_con, "identified", "outcome") -> raw_identified_outcome_tbls
 ```
 
 ```{r amcas_aamc}
@@ -37,7 +37,7 @@ raw_identified_tbls %>%
 ```
 
 ```{r hash_amcas, results='hide'}
-interpolate_hash <- function(tbl_name, col_name, conn) {
+interpolate_hash <- function(tbl_name, col_name, conn, status = "raw") {
   query_drop <- "drop table if exists `${hashed_tbl_name}`;"
 
   query_create <- "create table `${hashed_tbl_name}` as (
@@ -45,9 +45,9 @@ interpolate_hash <- function(tbl_name, col_name, conn) {
   from `${identified_tbl_name}` a);"
 
   hashed_tbl_name = add_tbl_prefix(tbl_name,
-                id = "hashed", status = "raw")
+                id = "hashed", status = status)
   identified_tbl_name = add_tbl_prefix(tbl_name,
-                id = "identified", status = "raw")
+                id = "identified", status = status)
 
   query_drop %>%
     interpolate_and_execute(., conn, commit = TRUE,
@@ -68,6 +68,10 @@ map(amcas_id_tbls, interpolate_hash,
 ```{r hash_aamc, results='hide'}
 map(aamc_id_tbls, interpolate_hash,
     col_name = "aamc_id", conn = edu_db_con) %>%
+  flatten_lgl()
+
+map(raw_identified_outcome_tbls, interpolate_hash,
+    col_name = "aamc_id", status = "outcome", conn = edu_db_con) %>%
   flatten_lgl()
 ```
 
