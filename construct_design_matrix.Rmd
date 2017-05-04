@@ -1,0 +1,37 @@
+---
+title: "Construct design matrix"
+author: "Jacqueline Gutman, Suvam Paul"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_document:
+    toc: yes
+    toc_depth: '4'
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+---
+
+# Setup
+## Load packages
+## Read in database credentials and open connection
+
+```{r setup, message=FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook.R")
+```
+
+```{r setup_notebook}
+```
+
+```{r show_pkgs, echo = FALSE}
+print_loaded_pkgs()
+```
+
+# Extract generated features from database
+
+```{r}
+get_tbls_by_pattern(edu_db_con, "^deidentified\\Wgenerated", in_memory = FALSE) %>%
+{left_join(.[[1]], .[[2]], by = "study_id")}
+```
+
