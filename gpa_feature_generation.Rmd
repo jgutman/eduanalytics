@@ -3,14 +3,14 @@ title: "Create clean version of GPA dataset"
 author: "Suvam Paul"
 date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
 output:
-  html_document:
-    toc: yes
-    toc_depth: '4'
   html_notebook:
     highlight: tango
     theme: cosmo
     toc: yes
     toc_depth: 4
+  html_document:
+    toc: yes
+    toc_depth: '4'
 ---
 
 # Setup
@@ -99,24 +99,26 @@ gpa_post_bac <- gpa %>% select(-ao_gpa, -ao_hours, -appl_year) %>%
 names(gpa_post_bac) <- find_and_replace(gpa_post_bac, "bcpm_gpa|total_gpa|bcpm_hours|total_hours", "postbac")
 
 #remove those less than 12 total_post_back_hours
-gpa_post_bac <- gpa_post_bac %>% mutate(did_postbac = ifelse(total_hours_postbac > 12, 1,0))
+#gpa_post_bac <- gpa_post_bac %>% mutate(did_postbac = ifelse(total_hours_postbac > 12, 1,0))
 
-gpa_post_bac <- gpa_post_bac %>% select(-aca_status_desc, -total_hours_postbac)
+gpa_post_bac <- gpa_post_bac %>% select(-aca_status_desc)
 
 ```
 
 
 ```{r attended_grad_schools}
 
-table(gpa$aca_status_desc)
-
 gpa_grad <- gpa %>% 
   select(study_id, aca_status_desc, total_hours) %>%  
-  filter(aca_status_desc == "Graduate") %>% 
-  mutate(graduate_school_attended = ifelse(total_hours > 12, 1, 0)) %>% 
-  select(study_id, graduate_school_attended)
+  filter(aca_status_desc == "Graduate")  
 
+names(gpa_grad) <- find_and_replace(gpa_grad, "total_hours", "grad")
 
+gpa_grad <- gpa_grad %>% select(-aca_status_desc)
+  
+#  mutate(graduate_school_attended = map_dbl(total_hours, recode_function)) %>% 
+#  select(study_id, graduate_school_attended)
+  
 ```
 
 
@@ -152,12 +154,29 @@ bcmp_gpa_trend <- gpa %>%
 
 ```{r gpa_ready}
 
-gpa_ready <- gpa_cumulative %>% 
+gpa_generated <- gpa_cumulative %>% 
   left_join(.,gpa_post_bac, by = "study_id") %>% 
   left_join(.,gpa_grad, by = "study_id") %>% 
   left_join(.,totat_gpa_trend, by = "study_id") %>% 
   left_join(., bcmp_gpa_trend, by = "study_id")
 
-names(gpa_ready)
+```
+
+
+```{r}
+gpa_generated <- gpa_generated %>% 
+  mutate(did_postbac = total_hours_postbac >= 12, 
+         attended_grad_school = total_hours_grad >= 12) %>%
+  replace_na(list(did_postbac = 0, attended_grad_school = 0)) %>% 
+  select(-total_hours_grad, -total_hours_postbac)
+
+```
+
+
+```{r put_tbl_to_database}
+
+add_tbl_prefix("gpa", id = "deidentified", status = "generated") %>%
+               write_to_database_single(gpa_generated, edu_db_con, tbl_name = .)
+
 ```
 
