@@ -69,13 +69,12 @@ aggr(dat, bars=FALSE, numbers=FALSE, sortVars=TRUE)
 
 
 #what does aggr return?
-miss_obj <- aggr(dat, bars = FALSE, sortVars = TRUE, numbers = TRUE, plot = TRUE)
+miss_obj <- aggr(dat, bars = FALSE, sortVars = TRUE, numbers = TRUE, plot = TRUE, cex.axis=.8)
 
-aggr(dat, sortVars=TRUE, numbers=FALSE, prop=c(TRUE, TRUE), plot=TRUE)
+aggr(dat, sortVars=TRUE, numbers=FALSE, prop=c(TRUE, TRUE), plot=TRUE, cex.axis=.8)
 
 print(miss_obj)
 summary(miss_obj)
-
 
 
 ######## refactor of code to explore a single tibble and a list of tibbles#######
@@ -83,7 +82,7 @@ summary(miss_obj)
 # a single tibble
 explore_missingness_single <- function(dat, plot = TRUE) {
   
-  miss_obj <- aggr(dat, bars = FALSE, sortVars = TRUE, numbers = TRUE, plot = plot)
+  miss_obj <- aggr(dat, bars = FALSE, sortVars = TRUE, numbers = TRUE, plot = plot, cex.axis=.8)
   #summary(miss_obj)
   
 }
@@ -152,9 +151,6 @@ tbl %>% get_complete_cases()
 
 ###################################################################################
 ```
-
-
-__% of observations in data are complete. 
 
 
 ```{r}
@@ -353,7 +349,7 @@ kable(cor_mat)
 
 
 #for a single tibble
-get_cor_mat_single <- function(dat, use = 'pairwise.complete.obs', round_digits = 2) {
+get_cor_mat_single <- function(dat, use = 'pairwise.complete.obs', round_digits = 3) {
   
   dat %>% 
     select_if(is.numeric) %>% 
@@ -363,7 +359,7 @@ get_cor_mat_single <- function(dat, use = 'pairwise.complete.obs', round_digits 
 
 
 #for a list of tibbles
-get_cor_mat <- function(df_list, use = 'pairwise.complete.obs', round_digits = 2) {
+get_cor_mat <- function(df_list, use = 'pairwise.complete.obs', round_digits = 3) {
   
   df_list %>% 
     map(., function(df)
@@ -386,6 +382,16 @@ tbl %>%
       mutate(var = map(data, get_cor_mat_single))
   }) %>%
   map(., "var", extract) 
+
+
+# produces same output as above, but year names are preserved in list headers so output is more readable
+tbl %>%
+  map(., function(df) {
+    df %>% 
+      split(use_series(., appl_year)) %>% 
+      lapply(select, -appl_year) %>%
+      lapply(get_cor_mat_single)
+} )
 
 
 ```
@@ -422,12 +428,18 @@ get_ndistinct_single <- function(dat, varname) {
 
 get_ndistinct_single(dat, appl_year)
 
+# number of distinct categories for categorical variables by application year for
+# list of tibbles
+
+# get_ndistinct <- function()
+
+
 ######################
 
 ## HELPER FUNCTIONS
 
 # creates tables for every categorical variable 
-get_cat_tables <- function(dat, varname) {
+initialize_cat_tables <- function(dat, varname) {
 
   quo_group_by <- enquo(varname)
   #print(quo_group_by)
@@ -446,7 +458,6 @@ get_cat_tables <- function(dat, varname) {
 # keep 10 largest categories for each variable
 keep10_categories <- function(table_list) {
   
-  #table_list <- get_cat_tables(dat, varname)
   names <- names(table_list) 
   
   table_list <- lapply(names, function(x) {
@@ -463,7 +474,7 @@ keep10_categories <- function(table_list) {
   return(table_list)   
 }
 
-# takes proportions instead of raw N's     
+# returns proportions instead of raw N's     
 get_table_props <- function(table_list, digits = 3) {
     table_list <- lapply(table_list, function(x) {
         round(prop.table(x, margin = 1), digits)
@@ -475,8 +486,8 @@ get_table_props <- function(table_list, digits = 3) {
 ##################
  
 
-format_cat_tables <- function(dat, varname, prop=T, digits = 3)   {
-  big_tables <- get_cat_tables(dat, appl_year)
+get_cat_tables <- function(dat, varname, prop=T, digits = 3)   {
+  big_tables <- initialize_cat_tables(dat, appl_year)
   table_list <- keep10_categories(big_tables)
   if (prop) {
     return(get_table_props(table_list, digits))
@@ -485,7 +496,7 @@ format_cat_tables <- function(dat, varname, prop=T, digits = 3)   {
   }
 }
 
-cat_tabs <- format_cat_tables(dat, appl_year, prop=T, digits=3)
+cat_tabs <- get_cat_tables(dat, appl_year, prop=T, digits=3)
 
 
 
@@ -554,6 +565,6 @@ get_basic_date_summaries <- function(df_list, varname) {
 
 get_basic_date_summaries_single(appl, appl_year)
 
-get_basic_dat_summaries(df_list = tbl, varname = appl_year)
+get_basic_date_summaries(df_list = tbl, varname = appl_year)
 
 ```
