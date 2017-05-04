@@ -7,3 +7,4 @@ data/*
 *.html
 *_cache/*
 packrat/src/
+.ipynb_checkpoints*
