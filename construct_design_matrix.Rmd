@@ -66,3 +66,7 @@ features_plus_outcome %>%
   write_to_database_single(edu_db_con, "deidentified$model_data$grades_gpa_mcat")
 ```
 
+```{r}
+disconnect_all()
+```
+

@@ -33,7 +33,9 @@ print_loaded_pkgs()
 ```{r}
 "grades" %>%
   add_tbl_prefix() %>%
-  put_tbl_to_memory(edu_db_con, .) -> grades_input
+  put_tbl_to_memory(edu_db_con, .) %>%
+  filter(not(is_in(aca_status_desc, c("High School", "Graduate")))) -> 
+  grades_input
 ```
 
 ```{r}
@@ -44,7 +46,8 @@ count_grades <- function(df) {
             b_counts = sum(amcas_grade_cd %in% c("B", "B+", "B-", "AB"), na.rm = TRUE),
             c_counts = sum(amcas_grade_cd %in% c("C", "C+", "C-", "BC"), na.rm = TRUE),
             d_counts = sum(amcas_grade_cd %in% c("D", "D+", "D-", "CD", "DE"), na.rm = TRUE),
-            f_counts = sum(amcas_grade_cd == "F", na.rm = TRUE))
+            f_counts = sum(amcas_grade_cd == "F", na.rm = TRUE)) %>%
+    replace_na(list(a_counts = 0L, b_counts = 0L, c_counts = 0L, d_counts = 0L, f_counts = 0L))
 }
 
 bcpm_grade_counts <- grades_input %>%
