@@ -31,9 +31,8 @@ print_loaded_pkgs()
 # Generate grades features from deidentified clean
 
 ```{r}
-"grades" %>%
-  add_tbl_prefix() %>%
-  put_tbl_to_memory(edu_db_con, .) %>%
+get_tbls_by_pattern(edu_db_con, "deidentified\\Wclean\\Wgrades") %>%
+  bind_rows() %>%
   filter(not(is_in(aca_status_desc, c("High School", "Graduate")))) -> 
   grades_input
 ```
@@ -71,7 +70,7 @@ nested_science %<>%
 ```{r}
 nested_science %>% 
   use_series(features) %>%
-  Reduce(left_join, ., init = bcpm_grade_counts) -> 
+  purrr::reduce(., left_join, by = "study_id", .init = bcpm_grade_counts) -> 
   all_grade_counts
 ```
 

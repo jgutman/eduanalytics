@@ -286,7 +286,6 @@ all_equal_across_row <- function(df) {
 }
 
 
-
 #' Drop columns in tibbles that have only NA values
 #'
 #' @param df a tibble to check of NA in columns

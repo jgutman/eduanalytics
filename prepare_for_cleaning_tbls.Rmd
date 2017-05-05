@@ -49,6 +49,7 @@ tbl_names %>%
 
 ```{r get_edudw_deidentified}
 pattern <- "^deidentified\\Wraw\\W[[:alpha:]].*[[:alpha:]]$"
+# pattern <- "^deidentified\\Wraw\\W(grades|gpa|old_mcat)"
 
 edu_db_con %>%
   get_tbls_by_pattern(pattern, in_memory = FALSE) -> 
@@ -61,9 +62,23 @@ edudw_deidentified %<>%
   edudw_deidentified
 ```
 
+```{r, eval = FALSE}
+filter_last_app_only <- function (df_list, min_year, max_year) 
+{
+    df_list %>% 
+        map(function(df) filter(df, appl_year >= min_year, 
+                                    appl_year <= max_year)) %>% 
+        map_if(function(df) not(tibble::is_tibble(df)), collect, n = Inf) %>% 
+        map(function(df) group_by(df, study_id)) %>% 
+        map(function(df) filter(df, appl_year == max(appl_year)))
+}
+```
+
+
 ```{r filter_edudw}
 edudw_deidentified %<>%
   filter_first_app_only(min_year = 2014, max_year = 2017) %>%
+  #filter_last_app_only(min_year = 2006, max_year = 2017) %>% 
   map(drop_empty_cols)
 ```
 
