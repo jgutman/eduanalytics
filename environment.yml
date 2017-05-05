@@ -188,4 +188,3 @@ dependencies:
   - prompt-toolkit==1.0.9
   - rope-py3k==0.9.4.post1
   - tables==3.3.0
-prefix: /Users/gutmaj03/anaconda3/envs/edu_analytics
