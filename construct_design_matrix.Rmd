@@ -35,35 +35,46 @@ generated_features <- get_tbl_names_by_stage(edu_db_con, "deidentified", "genera
 ```
 
 ```{r}
-"all_applicants" %>% 
-  add_tbl_prefix() %>%
-  put_tbl_to_memory(edu_db_con, .) %>%
-  filter(is_faculty_screened == 1) ->
-  screened_applicants
+# "all_applicants" %>% 
+#   add_tbl_prefix() %>%
+#   put_tbl_to_memory(edu_db_con, .) %>%
+#   filter(is_faculty_screened == 1) ->
+#   screened_applicants
 ```
 
 ```{r}
-outcomes <- screened_applicants %>%
-  select(study_id, is_invited_interview)
+# outcomes <- screened_applicants %>%
+#   select(study_id, is_invited_interview)
+
+```
+
+
+```{r}
+outcomes <- "aoa"
+
+outcome_data <- add_tbl_prefix(outcomes, status = "outcome") %>% 
+  put_tbl_to_memory(edu_db_con, .)
 ```
 
 ```{r}
 fetch_and_join <- function(df, tbl_name, conn, key) {
   tbl_name %>%
     put_tbl_to_memory(conn, .) %>%
+    select(-one_of("appl_year")) %>%
     left_join(df, ., by = key)
 }
 
 reduce(generated_features, fetch_and_join, 
        conn = edu_db_con, key = "study_id", 
-       .init = outcomes) %>%
-select(-starts_with("appl_year")) -> 
+       .init = outcome_data) -> 
   features_plus_outcome
 ```
 
 ```{r}
+model_run_name <- "grades_gpa_mcat_other_features"
+
 features_plus_outcome %>%
-  write_to_database_single(edu_db_con, "deidentified$model_data$grades_gpa_mcat")
+  write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
 ```
 
 ```{r}
