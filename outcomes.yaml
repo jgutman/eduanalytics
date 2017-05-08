@@ -27,7 +27,7 @@ course_clerkships_failed_count:
     min_year: 2006
     max_year: 2014
 
-#Need the total number of shelf exams for that exam in the database
+# clerkships_pass_count
 
 shelf_exam_below65_count:
     min_year: 2006
@@ -36,8 +36,6 @@ shelf_exam_below65_count:
 shelf_exam_above90_count:
     min_year: 2006
     max_year: 2014
-
-#None for 2006-2009; only 2nd year exams for 2010?
 
 school_exam_below65_count:
     min_year: 2011

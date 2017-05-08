@@ -44,7 +44,8 @@ data_dirs %>%
 
 ```{r}
 outcome_data %>%
-  .[[3]] %>%
+  str_detect("version_3") %>%
+  magrittr::extract(outcome_data, .) %>%
   fread(na.strings = "NULL") -> outcome_data
 ```
 

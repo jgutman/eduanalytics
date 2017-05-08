@@ -56,7 +56,7 @@ See detailed outline in [descriptives reporting feature requests](DescriptivesRe
 1. Construct design matrix for modeling using generated features
     - Run `construct_design_matrix.Rmd`
 1. Transform and build pipeline in scikit-learn
-    - see ipython notebook
+    - see ipython notebook `connecting_to_database_with_python.ipynb`
 
 
 ## Model evaluation
