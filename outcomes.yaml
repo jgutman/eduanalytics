@@ -41,6 +41,6 @@ school_exam_below65_count:
     min_year: 2011
     max_year: 2015
 
-school_exam_below90_count:
+school_exam_above90_count:
     min_year: 2011
     max_year: 2015

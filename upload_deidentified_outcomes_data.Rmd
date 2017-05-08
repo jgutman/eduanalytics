@@ -55,26 +55,88 @@ outcome_data %>%
 ```
 
 ```{r}
-get_outcome_valid_years <- function(outcome_name, data, year_range) {
+filter_valid_years <- function(outcome_name, data, year_range) {
+  outcome <- outcome_name[1]
+  
   data %>%
     select(one_of("study_id", "appl_year", outcome_name)) %>%
-    filter(appl_year >= year_range[[outcome_name]]$min_year,
-          appl_year <= year_range[[outcome_name]]$max_year) %>%
+    filter(appl_year >= year_range[[outcome]]$min_year,
+          appl_year <= year_range[[outcome]]$max_year)
+}
+
+get_outcome_valid_years <- function(outcome_name, data, year_range) {
+   filter_valid_years(outcome_name, data, year_range) %>%
     set_names(c(colnames(.)[-3], "outcome"))
 }
 ```
-
 
 ```{r}
 outcome_year_range <- yaml::yaml.load_file("outcomes.yaml")
 ```
 
 ```{r}
-outcome <- "aoa"
+outcomes <- c("aoa", "residency_top_25_school")
 
-outcome %>%
-  get_outcome_valid_years(outcome_data, outcome_year_range) %>%
-  replace_na(list(outcome = 0)) %>%
-  write_to_database_single(edu_db_con, add_tbl_prefix(outcome, status = "outcome"))
+outcomes %>%
+  map(function (outcome) get_outcome_valid_years(outcome, outcome_data, outcome_year_range)) %>%
+  map(function(df) replace_na(df, list(outcome = 0))) %>%
+  map2_lgl(outcomes, function (df, outcome) write_to_database_single(
+                                        df, edu_db_con, add_tbl_prefix(outcome, status = "outcome")))
+```
+
+```{r}
+outcomes <- c("step1_score", "step2_score")
+
+outcomes %>%
+  map(function (outcome) get_outcome_valid_years(outcome, outcome_data, outcome_year_range)) %>%
+  map2_lgl(outcomes, function (df, outcome) write_to_database_single(
+                                        df, edu_db_con, add_tbl_prefix(outcome, status = "outcome")))
+```
+
+```{r}
+get_percent_outcomes <- function(outcomes, data, year_range, percent_cutoff) {
+  dots <- lazyeval::interp(~ count / total, 
+                  count = as.name(outcomes[1]),
+                  total = as.name(outcomes[2]))
+  
+  outcomes %>%
+    filter_valid_years(data, year_range) %>%
+    mutate_(.dots = list(pct = dots)) %>%
+    mutate(outcome = as.numeric(pct <= percent_cutoff)) %>%
+    select(-one_of(outcomes, "pct")) 
+}
+```
+
+```{r}
+outcomes <- list(c("clerkship_honors_count", "clerkship_count"),
+                 c("shelf_exam_above90_count", "shelf_exam_count"),
+                 c("school_exam_above90_count", "school_exam_count"))
+thresholds <- list(.20, .40, .20)
+
+outcomes %>% 
+  map2(thresholds, function(outcome, threshold) get_percent_outcomes(
+              outcome, outcome_data, outcome_year_range, 
+                        percent_cutoff = threshold)) %>%
+  map2_lgl(outcomes, function (df, outcome) write_to_database_single(
+                                    df, edu_db_con, add_tbl_prefix(outcome[1], status = "outcome")))
+```
+
+```{r}
+outcomes <- c("course_clerkships_failed_count", 
+              "shelf_exam_below65_count",
+              "school_exam_below65_count")
+
+outcomes %>% 
+  map(function(outcome) get_outcome_valid_years(outcome, outcome_data, outcome_year_range)) %>%
+  map(function(df) mutate(df, outcome = outcome >= 1)) %>%
+  map2_lgl(outcomes, function (df, outcome) write_to_database_single(
+                                    df, edu_db_con, add_tbl_prefix(outcome, status = "outcome")))
+```
+
+```{r}
+outcome_data %>%
+  select(study_id, appl_year, gender, age_at_application, college_top_25, is_disadvantaged, urm, advanced_degree, 
+         race = race_text, total_num_schools_accepted_to) %>%
+  write_to_database_single(edu_db_con, add_tbl_prefix("other_features", status = "generated"))
 ```
 
