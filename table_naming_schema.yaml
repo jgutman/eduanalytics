@@ -11,6 +11,7 @@ feature_status:
     - clean
     - generated
     - outcome
+    - model_data
 
 table_name:
     - 2013_all_applicants
