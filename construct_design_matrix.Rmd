@@ -71,7 +71,8 @@ reduce(generated_features, fetch_and_join,
 ```
 
 ```{r}
-model_run_name <- "grades_gpa_mcat_other_features"
+# model_run_name <- "grades_gpa_mcat_other_features"
+model_run_name <- "grades_gpa_mcat_medschool"
 
 features_plus_outcome %>%
   write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))

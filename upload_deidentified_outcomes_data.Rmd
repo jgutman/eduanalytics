@@ -59,7 +59,7 @@ filter_valid_years <- function(outcome_name, data, year_range) {
   outcome <- outcome_name[1]
   
   data %>%
-    select(one_of("study_id", "appl_year", outcome_name)) %>%
+    select(study_id, appl_year, one_of(outcome_name)) %>%
     filter(appl_year >= year_range[[outcome]]$min_year,
           appl_year <= year_range[[outcome]]$max_year)
 }
@@ -135,8 +135,43 @@ outcomes %>%
 
 ```{r}
 outcome_data %>%
-  select(study_id, appl_year, gender, age_at_application, college_top_25, is_disadvantaged, urm, advanced_degree, 
+  select(study_id, appl_year, gender, age_at_application, college_top_25, 
+         is_disadvantaged, urm, advanced_degree, 
          race = race_text, total_num_schools_accepted_to) %>%
   write_to_database_single(edu_db_con, add_tbl_prefix("other_features", status = "generated"))
+```
+
+```{r}
+in_school_columns <- c("clerkship_honors_count", 
+                       "course_clerkships_failed_count",
+                       "shelf_exam_below65_count", 
+                       "shelf_exam_above90_count", 
+                       "school_exam_below65_count",
+                       "school_exam_above90_count")
+
+outcome_data %>%
+  select(study_id, appl_year, one_of(in_school_columns)) -> in_school_data
+
+replace_invalid_year <- function(data, outcome_name, year_range) {
+  dots <- lazyeval::interp(~ if_else(
+      (appl_year >= min_year) &
+      (appl_year <= max_year),
+    col, NA_integer_),
+    min_year = year_range[[outcome_name]]$min_year,
+    max_year = year_range[[outcome_name]]$max_year,
+    col = as.name(outcome_name))
+    
+  data %>%
+    mutate_(.dots = set_names(list(dots), outcome_name))
+}
+
+reduce(in_school_columns, replace_invalid_year, 
+       year_range = outcome_year_range,
+      .init = in_school_data) -> in_school_data
+```
+
+```{r}
+in_school_data %>%
+  write_to_database_single(edu_db_con, add_tbl_prefix("in_school_performance", status = "generated"))
 ```
 
