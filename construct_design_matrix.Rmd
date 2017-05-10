@@ -31,32 +31,25 @@ print_loaded_pkgs()
 # Extract generated features from database
 
 ```{r}
-generated_features <- get_tbl_names_by_stage(edu_db_con, "deidentified", "generated")
-```
 
-```{r}
-# "all_applicants" %>% 
-#   add_tbl_prefix() %>%
-#   put_tbl_to_memory(edu_db_con, .) %>%
-#   filter(is_faculty_screened == 1) ->
-#   screened_applicants
-```
+"%ni%" = Negate( "%in%" )
+in_school <- c("deidentified$generated$in_school_performance")
+generated_features_admissions <- get_tbl_names_by_stage(edu_db_con, "deidentified", "generated") %>% .[ . %ni% in_school ]
 
-```{r}
-# outcomes <- screened_applicants %>%
-#   select(study_id, is_invited_interview)
+  
+generated_features_admissions_inschool <- get_tbl_names_by_stage(edu_db_con, "deidentified", "generated")
+    
 
 ```
 
 
 ```{r}
-outcomes <- "aoa"
-
-outcome_data <- add_tbl_prefix(outcomes, status = "outcome") %>% 
+get_outcome_data <- function(outcome_name) {
+  add_tbl_prefix(outcome_name, status = "outcome") %>% 
   put_tbl_to_memory(edu_db_con, .)
-```
+}
 
-```{r}
+
 fetch_and_join <- function(df, tbl_name, conn, key) {
   tbl_name %>%
     put_tbl_to_memory(conn, .) %>%
@@ -64,19 +57,169 @@ fetch_and_join <- function(df, tbl_name, conn, key) {
     left_join(df, ., by = key)
 }
 
-reduce(generated_features, fetch_and_join, 
+
+create_outcome_features_data <- function (table_names, data) {
+  reduce(table_names, fetch_and_join, 
        conn = edu_db_con, key = "study_id", 
-       .init = outcome_data) -> 
-  features_plus_outcome
+       .init = data)
+}
+
+
+
 ```
+
+
+
+
+
+##AOA
 
 ```{r}
-# model_run_name <- "grades_gpa_mcat_other_features"
-model_run_name <- "grades_gpa_mcat_medschool"
+#get outcome
+aoa <- get_outcome_data("aoa")
 
-features_plus_outcome %>%
+```
+
+
+Admissions
+```{r}
+#create features and outcomes data
+aoa_admissions <- create_outcome_features_data(generated_features_admissions, aoa)
+
+#write to database
+model_run_name <- "aoa_admissions"
+
+aoa_admissions %>%
   write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
 ```
+
+
+
+Admissions and in school
+
+```{r}
+#create features and outcome data
+aoa_admissions_inschool <- create_outcome_features_data(generated_features_admissions_inschool, aoa)
+
+#wirte to database
+model_run_name <- "aoa_admissions_inschool"
+
+aoa_admissions_inschool %>%
+  write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
+```
+
+
+
+## STEP 1 
+
+
+```{r}
+#get outcomes
+step1 <- get_outcome_data("step1_score")
+```
+
+Admissions
+```{r}
+#combine features with outcomes
+step1_admissions <- create_outcome_features_data(generated_features_admissions, step1)
+
+#wrte to database
+model_run_name <- "step1_admissions"
+
+step1_admissions %>%
+  write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
+```
+
+
+Admissions and in school
+
+```{r}
+#combine features with outcomes
+step1_admissions_inschool <- create_outcome_features_data(generated_features_admissions_inschool, step1)
+
+#wrte to database
+model_run_name <- "step1_admissions_inschool"
+
+step1_admissions_inschool %>%
+  write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
+
+```
+
+
+
+## STEP 2
+
+```{r}
+#get outcomes
+step2 <- get_outcome_data("step2_score")
+```
+
+Admissions
+```{r}
+#combine features with outcomes
+step2_admissions <- create_outcome_features_data(generated_features_admissions, step2)
+
+#wrte to database
+model_run_name <- "step2_admissions"
+
+step2_admissions %>%
+  write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
+
+```
+
+
+Admissions and in schools
+```{r}
+
+#combine features with outcomes
+step2_admissions_inschool <- create_outcome_features_data(generated_features_admissions_inschool, step2)
+
+#wrte to database
+model_run_name <- "step2_admissions_inschool"
+
+step2_admissions_inschool %>%
+  write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
+
+```
+
+
+
+
+##Residency top 25
+
+```{r}
+#get outcomes
+residency_top_25 <- get_outcome_data("residency_top_25_school")
+```
+
+
+Admissions
+```{r}
+
+#combine features with outcomes
+residency_top_25_admissions <- create_outcome_features_data(generated_features_admissions, residency_top_25)
+
+#wrte to database
+model_run_name <- "residency_top_25_admissions"
+
+residency_top_25_admissions %>%
+  write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
+
+```
+
+
+Admissions and in schools
+```{r}
+#combine features with outcomes
+residency_top_25_admissions_inschool <- create_outcome_features_data(generated_features_admissions_inschool, residency_top_25)
+
+#wrte to database
+model_run_name <- "residency_top_25_admissions_inschool"
+
+residency_top_25_admissions_inschool %>%
+  write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
+```
+
 
 ```{r}
 disconnect_all()
