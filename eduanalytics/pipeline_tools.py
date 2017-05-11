@@ -53,21 +53,22 @@ def extract_model_from_pipeline(cv_pipeline):
     return model_step
 
 
-def get_transformed_columns(cv_pipeline, encoder_step, data):
+def get_transformed_columns(cv_pipeline):
     """Returns a list of column names in the transformed data after applying an
     encoder transformation to the data.
 
     Args:
         cv_pipeline (sklearn.Pipeline): a Pipeline object embedded in a
             GridSearchCV object containing a list of named steps
-        encoder_step (sklearn.Transformer): a sklearn fitted feature encoder
-            with a .fit() and .transform() method
     Returns:
         pandas.Index: an index of all column names in the transformed data
     """
-    encoder_step = extract_step_from_pipeline(cv_pipeline, encoder_step)
-    transformed_data = encoder_step.transform(data)
-    return transformed_data.columns
+    steps = describe_pipeline_steps(cv_pipeline)
+    pattern = "encoder$"
+    prog = re.compile(pattern)
+    encoder_step_name = [step for step in steps if bool(prog.search(step))]
+    encoder_step = extract_step_from_pipeline(cv_pipeline, encoder_step_name[-1])
+    return encoder_step.transformed_columns
 
 
 def build_param_grid(pipeline, grid_path):
@@ -123,4 +124,4 @@ class DummyEncoder(BaseEstimator, TransformerMixin):
         cols = transformed.apply(pd.Series.nunique)
         transformed = transformed.drop(cols[cols == 1].index, axis = 1)
         self.transformed_columns = transformed.columns
-        return transformed
+        return self

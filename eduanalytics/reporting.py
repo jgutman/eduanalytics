@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, precision_recall_curve, roc_auc_score
 import itertools
 from collections import OrderedDict
 
@@ -211,5 +211,5 @@ def plot_precision_recall_n(y_true, y_score, model_name):
 
     plt.suptitle(model_name)
     plt.title('Precision vs. Recall by Percent Identified: AUC = {:0.2f}'.format(
-        sklearn.metrics.roc_auc_score(y_true, y_score)))
+        roc_auc_score(y_true, y_score)))
     plt.show()
