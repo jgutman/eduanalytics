@@ -68,10 +68,11 @@ get_complete_cases <- function(df_list) {
 }
 
 
+# proportion of complete cases by year
 get_complete_cases_by_yr <- function(df_list, varname) {
   
   quo_group_by <- enquo(varname)
-  print(quo_group_by)
+  #print(quo_group_by)
   
   df_list %>% 
     map(., function(df)
@@ -97,8 +98,7 @@ identify_yesno <- function(dat) {
 
 # recode yes/no - this function doesn't work yet
 recode_yesno <- function(dat) {
-  dat %>% 
-    extract(identify_yesno(dat)) 
+  
 }
 
 
@@ -165,42 +165,70 @@ seventyfive_quantile <- function(a_vec,...) {
 
 
 
-# produces tibble containing summary statistics for a numeric variables
-# should this function produce one large tibble or a list of tibbles?
-# one tibble per variable would be easier to read
-get_basic_summaries_single <- function(dat, varname) {
+
+####################
+
+
+# outputs a list containing summary statistics for each variable
+# will output one tibble if instead of a list if commented sections are uncommented and last is commented
+
+# should be rewritten to avoid hardcoding appl_year position in extract()
+get_basic_num_summaries_single <- function(dat) {
   
-  quo_group_by <- enquo(varname)
-  print(quo_group_by)
+  summstats <- list()
+  num_dat <- dat %>% select_if(is.numeric)
   
-  dat %>% 
-    group_by(!!quo_group_by) %>% 
-    summarise_if(., is.numeric, funs(min, max, mean, median, twentyfive_quantile, seventyfive_quantile), na.rm = TRUE) 
-    #select(order(colnames(.)))
+  for (i in 2:ncol(num_dat)) {
+    summstats[[i-1]] <- num_dat %>% 
+      group_by(appl_year) %>% 
+      extract(c(1,i)) %>% 
+      summarise_all(funs(min, twentyfive_quantile, median, mean, 
+                         seventyfive_quantile, max, sd), na.rm = TRUE) #%>%
+    #mutate(varname = names(num_dat[i]))
+  }
+  
+  #bind_rows(summstats) %>% select(varname, everything())
+  names(summstats) <- names(num_dat[-1])
+  
+  return(summstats)
 }
 
 
-get_basic_summaries_single2 <- function(dat, varname) {
+# produces a list of lists 
+get_basic_num_summaries <- function(df_list) {
+  
+  df_list %>% 
+    map(., function(df) {
+      df %>% get_basic_summaries_single2 
+    } )
+}
+
+
+
+
+#############
+
+# produces tibble containing summary statistics for a numeric variables
+get_basic_summaries_single <- function(dat, varname) {
   
   quo_group_by <- enquo(varname)
-  print(quo_group_by)
+  #print(quo_group_by)
   
   dat %>% 
-    
     group_by(!!quo_group_by) %>% 
     summarise_if(., is.numeric, funs(min, max, mean, median, twentyfive_quantile, seventyfive_quantile), na.rm = TRUE) 
-  #select(order(colnames(.)))
+
 }
 
 
 
 # same output as above function, but works for multiple types of data
-get_basic_summaries_single2 <- function(dat, varname, data_type = is.numeric,
-            functions = funs(min, twentyfive_quantile, median, mean, seventyfive_quantile, max, sd)) {
-
+get_basic_summaries_single_alt <- function(dat, varname, data_type = is.numeric,
+                                        functions = funs(min, twentyfive_quantile, median, mean, seventyfive_quantile, max, sd)) {
+  
   quo_group_by <- enquo(varname)
-  print(quo_group_by)
-
+  #print(quo_group_by)
+  
   dat %>% 
     group_by(!!quo_group_by) %>% 
     summarise_if(., data_type, functions, na.rm = TRUE)
@@ -211,7 +239,7 @@ get_basic_summaries_single2 <- function(dat, varname, data_type = is.numeric,
 get_basic_summaries <- function(df_list, varname) {
   
   quo_group_by <- enquo(varname)
-  print(quo_group_by)
+  #print(quo_group_by)
   
   df_list %>% 
     map(., function(df) {
@@ -223,19 +251,7 @@ get_basic_summaries <- function(df_list, varname) {
 }
 
 
-#  currently won't work with additional arguments that need to get passed to get_basic_summaries_single
-get_basic_summaries2 <- function(df_list, varname, ...) {
-  
-  quo_group_by <- enquo(varname)
-  print(quo_group_by)
-  
-  df_list %>% 
-    map(., function(df) {
-      df %>% 
-        get_basic_summaries_single(!!quo_group_by, ...)
-    }
-    )
-}
+
 
 
 
@@ -269,7 +285,10 @@ get_ndistinct <- function(df_list, varname) {
 }
 
 
-# creates tables for every categorical variable in a tibble 
+######################
+
+
+# creates tables of proportions for every categorical variable in a tibble 
 initialize_cat_tables <- function(dat, varname, digits) {
   
   quo_group_by <- enquo(varname)
@@ -290,7 +309,7 @@ initialize_cat_tables <- function(dat, varname, digits) {
 }
 
 
-# keep 10 largest categories for each table 
+# keeps 10 largest categories for each table 
 get_cat_tables_single <- function(dat, varname, digits=3) {
   
   quo_group_by <- enquo(varname)
@@ -318,12 +337,19 @@ get_cat_tables_single <- function(dat, varname, digits=3) {
 get_cat_tables <- function(df_list, varname, digits=3) {
   
   quo_group_by <- enquo(varname)
-  #print(quo_group_by)
   
   df_list %>% 
     map(., function(df) {
       get_cat_tables_single(df, varname = !!quo_group_by, digits = digits)
-    } )
+    } 
+    )
   
 }
+
+
+####################
+## DATE FUNCTIONS ##
+####################
+
+
 

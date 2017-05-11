@@ -83,8 +83,6 @@ explore_missingness(tbl, plot = TRUE)
 
 
 #group a list of tibbles by application year each year and return...
-
-# produces same output as above, but year names are preserved in list headers so output is more readable
 tbl %>%
   map(., function(df) {
     df %>% 
@@ -96,12 +94,12 @@ tbl %>%
 
 
 # same output as above, but requires plyr
-tbl %>%
-  map(., function(df) {
-    df %>% 
-      plyr::dlply(.(appl_year), explore_missingness_single)
-  }
-)
+# tbl %>%
+#   map(., function(df) {
+#     df %>% 
+#       plyr::dlply(.(appl_year), explore_missingness_single)
+#   }
+# )
     
 ```
 
@@ -141,7 +139,6 @@ cats <- which(classes=="character")
 dates <- which(classes=="POSIXct")
 
 
-
 ```
 
 ### Summary statistics for continuous variables
@@ -151,36 +148,16 @@ There are `r length(continuous)` continuous numeric variables in the dataset.
 ```{r summ_stats_cont_vars}
 
 
-get_basic_summaries_single(dat, appl_year)
+get_basic_num_summaries_single(dat)
 
-get_basic_summaries(df_list = tbl, varname = appl_year)
+get_basic_num_summaries(tbl)
 
 
 ```
 
 There are `r binaries` binary variables in the dataset. 
  
-```{r binaries}
-
-if (length(binaries) > 0) {
-  
-binary_mat <- matrix(NA, nrow=length(binaries), 2, dimnames=list(c(), 
-                  c("N", "Proportion"))) 
-  
-binary_mat[i,1] <- sum(!is.na(dat[,binaries[i]]))
-binary_mat[i,2] <- mean(dat[,binaries[i]], na.rm=TRUE)
-
-row.names(binary_mat) <- names(dat)[binaries]
-
-kable(binary_mat)
-
-}
-
-```
-
-
-```{r}
-#functions for binary data
+```{r, binaries}
 
 appl %>% get_binary()
 names(appl)
@@ -203,18 +180,18 @@ table(appl$appl_type_desc, useNA = "always")
 
 kable(get_cor_mat_single(dat), type='html')
 
-kable(get_cor_mat(tbl, round_digits = 3), type='html')
+get_cor_mat(tbl, round_digits = 3)
 
 
 #group a list of tibbles by application year for each tibble and then return?
-tbl %>%
-  map(.,function(df) {
-    df %>% 
-      group_by(appl_year) %>% 
-      nest() %>%
-      mutate(var = map(data, get_cor_mat_single))
-  }) %>%
-  map(., "var", extract) 
+# tbl %>%
+#   map(.,function(df) {
+#     df %>% 
+#       group_by(appl_year) %>% 
+#       nest() %>%
+#       mutate(var = map(data, get_cor_mat_single))
+#   }) %>%
+#   map(., "var", extract) 
 
 
 # produces same output as above, but year names are preserved in list headers so output is more readable
@@ -225,6 +202,15 @@ tbl %>%
       lapply(select, -appl_year) %>%
       lapply(get_cor_mat_single)
 } )
+
+
+# or could use this plyr implementation
+# tbl %>%
+#   map(., function(df) {
+#     df %>%
+#       plyr::dlply(.(appl_year), get_cor_mat_single)
+#   }
+# )
 
 
 ```
@@ -261,7 +247,7 @@ get_ndistinct(tbl, appl_year)
 Tables of categorical variables
 ```{r categorical_tables}
 
-cat_tabs <- get_cat_tables_single(dat, appl_year, prop=T, digits=3)
+cat_tabs <- get_cat_tables_single(dat, appl_year, digits=3)
 cat_tabs
 
 get_cat_tables(tbl, appl_year)
@@ -300,8 +286,9 @@ for (i in 1:length(cats)) {
 Summary Statistics for Date Variables
 ```{r dates}
 
-get_basic_summaries_single2(appl, appl_year, is.POSIXct)
+# currently don't work 
+get_basic_date_summaries_single(appl)
 
-get_basic_summaries2(df_list = tbl, varname = appl_year, is.POSIXct)
+get_basic_summaries(df_list = tbl)
 
 ```
