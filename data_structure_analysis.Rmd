@@ -32,7 +32,9 @@ print_loaded_pkgs()
 knitr::opts_chunk$set(echo = FALSE, fig.align = 'center')
 library(VIM)
 library(xtable)
+source("descriptive_functions.R")
 ```
+
 
 ```{r credentials}
 
@@ -49,6 +51,7 @@ tbl <- dbUtilities::get_tbls_by_pattern(edu_deid_con, "\\Wclean\\Wgpa|\\Wclean\\
 #appl 
 
 appl <- dbUtilities::put_tbl_to_memory(edu_deid_con, clean_tables[1])
+
 ```
 
 
@@ -80,42 +83,39 @@ explore_missingness(tbl, plot = TRUE)
 
 
 #group a list of tibbles by application year each year and return...
-#how to return the a named list that's the app_year
-
-tbl %>%
-  map(.,function(df) {
-    df %>% 
-      group_by(appl_year) %>% 
-      nest() %>%
-      mutate(var = map(data, explore_missingness_single))
-  }) %>%
-  map(., "var", extract)
-
 
 # produces same output as above, but year names are preserved in list headers so output is more readable
 tbl %>%
-    map(., function(df) {
-      df %>% 
+  map(., function(df) {
+    df %>% 
       split(use_series(., appl_year)) %>% 
       lapply(select, -appl_year) %>%
       lapply(explore_missingness_single)
-  } ) 
+    } 
+  ) 
 
 
-
+# same output as above, but requires plyr
+tbl %>%
+  map(., function(df) {
+    df %>% 
+      plyr::dlply(.(appl_year), explore_missingness_single)
+  }
+)
+    
 ```
 
 
 ```{r complete_cases}
-# complete cases
+# percent of complete observations
 
 get_complete_cases_single(dat)
 
 tbl %>% get_complete_cases()
 
 
-#group by application year?
-
+# percent of complete observations by year
+get_complete_cases_by_yr(tbl, appl_year)
 
 ```
 
