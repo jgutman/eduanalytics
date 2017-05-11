@@ -68,6 +68,21 @@ get_complete_cases <- function(df_list) {
 }
 
 
+get_complete_cases_by_yr <- function(df_list, varname) {
+  
+  quo_group_by <- enquo(varname)
+  print(quo_group_by)
+  
+  df_list %>% 
+    map(., function(df)
+      df %>%
+        group_by(!!quo_group_by) %>%
+        summarize(pct_complete_cases = sum(complete.cases(.)/n()))
+      )
+  
+}
+
+
 
 #############################
 ## VARIABLE TYPE FUNCTIONS ##
@@ -164,6 +179,21 @@ get_basic_summaries_single <- function(dat, varname) {
     #select(order(colnames(.)))
 }
 
+
+get_basic_summaries_single2 <- function(dat, varname) {
+  
+  quo_group_by <- enquo(varname)
+  print(quo_group_by)
+  
+  dat %>% 
+    
+    group_by(!!quo_group_by) %>% 
+    summarise_if(., is.numeric, funs(min, max, mean, median, twentyfive_quantile, seventyfive_quantile), na.rm = TRUE) 
+  #select(order(colnames(.)))
+}
+
+
+
 # same output as above function, but works for multiple types of data
 get_basic_summaries_single2 <- function(dat, varname, data_type = is.numeric,
             functions = funs(min, twentyfive_quantile, median, mean, seventyfive_quantile, max, sd)) {
@@ -239,10 +269,8 @@ get_ndistinct <- function(df_list, varname) {
 }
 
 
-## HELPER FUNCTIONS 
-
 # creates tables for every categorical variable in a tibble 
-initialize_cat_tables <- function(dat, varname) {
+initialize_cat_tables <- function(dat, varname, digits) {
   
   quo_group_by <- enquo(varname)
   #print(quo_group_by)
@@ -254,13 +282,19 @@ initialize_cat_tables <- function(dat, varname) {
     apply(2, table, group_var, useNA = "ifany") %>% 
     lapply(t)
   
+  table_list <- map(table_list, function(x) 
+    round(prop.table(x, margin = 1), digits)
+    )
+  
   return(table_list)
 }
 
 
 # keep 10 largest categories for each table 
-# this function needs to be rewritten -- doesn't work anymore
-keep10_categories <- function(table_list) {
+get_cat_tables_single <- function(dat, varname, digits=3) {
+  
+  quo_group_by <- enquo(varname)
+  table_list <- initialize_cat_tables(dat, !!quo_group_by)
   
   names <- names(table_list) 
   
@@ -278,41 +312,17 @@ keep10_categories <- function(table_list) {
   return(table_list)   
 }
 
-# returns proportions instead of raw N's     
-get_table_props <- function(table_list, digits = 3) {
-  table_list <- lapply(table_list, function(x) {
-    round(prop.table(x, margin = 1), digits)
-  })
-  return(table_list)
-}
 
 
-######################
-
-# creates well formatted tables for a single tibbles 
-get_cat_tables_single <- function(dat, varname, prop=T, digits = 3)   {
-  quo_group_by <- enquo(varname)
-  #print(quo_group_by)
-  
-  big_tables <- initialize_cat_tables(dat, !!quo_group_by)
-  table_list <- keep10_categories(big_tables)
-  if (prop) {
-    return(get_table_props(table_list, digits))
-  } else {
-    return(table_list)
-  }
-}
-
-
-# tables for a list of tibbles -- something is off here
-get_cat_tables <- function(df_list, varname, prop=T, digits=3) {
+# tables for a list of tibbles
+get_cat_tables <- function(df_list, varname, digits=3) {
   
   quo_group_by <- enquo(varname)
   #print(quo_group_by)
   
   df_list %>% 
     map(., function(df) {
-      get_cat_tables_single(df, varname = !!quo_group_by, prop = prop, digits = digits)
+      get_cat_tables_single(df, varname = !!quo_group_by, digits = digits)
     } )
   
 }
