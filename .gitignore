@@ -9,3 +9,5 @@ data/*
 packrat/src/
 .ipynb_checkpoints/*
 pkls/*
+*.DS_Store
+*/bin/*
