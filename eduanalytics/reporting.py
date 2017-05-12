@@ -226,37 +226,36 @@ def output_predictions(true, predicted, X, conn, name,
     name = '{id}${status}${name}'.format(
         id = id, status = status, name = name)
     results = get_results(true, predicted, X).reset_index()
-    results.to_sql(name, conn, if_exists = 'replace')
+    results = results.join(X.appl_year)
+    results.to_sql(name, conn, if_exists = 'replace', index = False)
 
 
-def pickle_model(clf, pkl_path, outcome, feature_tag, model_tag):
+def pickle_model(clf, pkl_path, tbl_name, model_tag):
     """Write a sklearn object to disk in binary compressed format.
 
     Args:
         clf (sklearn.GridSearchCV/Estimator): the model to persist to disk
         pkl_path (str): name of the directory to store the pkl files
-        outcome (str): shortname of the outcome to tag the model with
-        feature_tag (str): shortname of the feature set to tag the model with
+        tbl_name (str): shortname of the model data to tag the model with
         model_tag (str): other info such as model type to tag the model with
     """
-    filename = '{outcome}_{feature_tag}_{model_tag}.pkl.z'.format(
-        outcome = outcome, feature_tag = feature_tag, model_tag = model_tag)
+    filename = '{tbl_name}_{model_tag}.pkl.z'.format(
+        tbl_name = tbl_name, model_tag = model_tag)
     joblib.dump(clf, os.path.join(pkl_path, filename))
     print('Written to: {} in {}'.format(filename, pkl_path))
 
 
-def load_model(pkl_path, outcome, feature_tag, model_tag):
+def load_model(pkl_path, tbl_name, model_tag):
     """Load a sklearn object from disk saved in binary compressed format.
 
     Args:
         pkl_path (str): name of the directory to store the pkl files
-        outcome (str): shortname of the outcome to tag the model with
-        feature_tag (str): shortname of the feature set to tag the model with
+        tbl_name (str): shortname of the model data to tag the model with
         model_tag (str): other info such as model type to tag the model with
     Returns:
         sklearn.GridSearchCV or Estimator: uncompressed sklearn model
     """
-    filename = '{outcome}_{feature_tag}_{model_tag}.pkl.z'.format(
-        outcome = outcome, feature_tag = feature_tag, model_tag = model_tag)
+    filename = '{tbl_name}_{model_tag}.pkl.z'.format(
+        tbl_name = tbl_name, model_tag = model_tag)
     clf = joblib.load(os.path.join(pkl_path, filename))
     return clf
