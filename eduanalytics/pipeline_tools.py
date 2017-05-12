@@ -1,8 +1,8 @@
 from sklearn.pipeline import TransformerMixin
 from sklearn.base import BaseEstimator
 import pandas as pd
-import re
-import yaml
+import re, yaml
+import time, datetime
 
 def extract_step_from_pipeline(cv_pipeline, step_name):
     """Extract the object corresponding to an explicitly named step from the
@@ -125,3 +125,24 @@ class DummyEncoder(BaseEstimator, TransformerMixin):
         transformed = transformed.drop(cols[cols == 1].index, axis = 1)
         self.transformed_columns = transformed.columns
         return self
+
+
+class Timer(object):
+    def __init__(self, name=None):
+        self.name = name
+        self.start_time = None
+        self.end_time = None
+
+    def __enter__(self):
+        self.start_time = time.time()
+        return self
+
+    def time_check(self):
+        return time.time() - self.start_time
+
+    def __exit__(self, type, value, traceback):
+        if self.name:
+            print("{}: ".format(self.name))
+        self.end_time = self.time_check()
+        print('Time elapsed: {}'.format(
+            datetime.timedelta(seconds=int(self.end_time))))

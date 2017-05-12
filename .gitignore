@@ -8,3 +8,4 @@ data/*
 *_cache/*
 packrat/src/
 .ipynb_checkpoints/*
+pkls/*

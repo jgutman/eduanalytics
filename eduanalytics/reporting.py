@@ -2,8 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, precision_recall_curve, roc_auc_score
-import itertools
+import itertools, os
 from collections import OrderedDict
+from sklearn.externals import joblib
 
 def get_results(true, predicted, X):
     """Combines true and predicted outcomes with corresponding row index.
@@ -213,3 +214,49 @@ def plot_precision_recall_n(y_true, y_score, model_name):
     plt.title('Precision vs. Recall by Percent Identified: AUC = {:0.2f}'.format(
         roc_auc_score(y_true, y_score)))
     plt.show()
+
+
+def output_predictions(true, predicted, X, conn, name,
+        id = 'deidentified', status = 'predictions'):
+    """Write the true labels and prediction scores to a table in the database.
+
+    Args:
+    Returns:
+    """
+    name = '{id}${status}${name}'.format(
+        id = id, status = status, name = name)
+    results = get_results(true, predicted, X).reset_index()
+    results.to_sql(name, conn, if_exists = 'replace')
+
+
+def pickle_model(clf, pkl_path, outcome, feature_tag, model_tag):
+    """Write a sklearn object to disk in binary compressed format.
+
+    Args:
+        clf (sklearn.GridSearchCV/Estimator): the model to persist to disk
+        pkl_path (str): name of the directory to store the pkl files
+        outcome (str): shortname of the outcome to tag the model with
+        feature_tag (str): shortname of the feature set to tag the model with
+        model_tag (str): other info such as model type to tag the model with
+    """
+    filename = '{outcome}_{feature_tag}_{model_tag}.pkl.z'.format(
+        outcome = outcome, feature_tag = feature_tag, model_tag = model_tag)
+    joblib.dump(clf, os.path.join(pkl_path, filename))
+    print('Written to: {} in {}'.format(filename, pkl_path))
+
+
+def load_model(pkl_path, outcome, feature_tag, model_tag):
+    """Load a sklearn object from disk saved in binary compressed format.
+
+    Args:
+        pkl_path (str): name of the directory to store the pkl files
+        outcome (str): shortname of the outcome to tag the model with
+        feature_tag (str): shortname of the feature set to tag the model with
+        model_tag (str): other info such as model type to tag the model with
+    Returns:
+        sklearn.GridSearchCV or Estimator: uncompressed sklearn model
+    """
+    filename = '{outcome}_{feature_tag}_{model_tag}.pkl.z'.format(
+        outcome = outcome, feature_tag = feature_tag, model_tag = model_tag)
+    clf = joblib.load(os.path.join(pkl_path, filename))
+    return clf
