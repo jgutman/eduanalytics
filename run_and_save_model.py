@@ -80,7 +80,7 @@ def main(args=None):
         write_predictions = True,
         path = args.path, group = args.group, tbl_name = args.tbl_name)
 
-    reporting.pickle_model(pipeline, pkldir, args.tbl_name, 'rf_grid')
+    reporting.pickle_model(pipeline, args.pkldir, args.tbl_name, 'rf_grid')
 
 if __name__ == '__main__':
     main()
