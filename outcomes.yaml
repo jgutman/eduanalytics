@@ -15,7 +15,13 @@ residency_top_25_school:
     min_year: 2006
     max_year: 2012
 
-residency_top_25_school_not_nyu:
+# non_competitive_residency
+
+residency_difficulty:
+    min_year: 2006
+    max_year: 2012
+
+residency_program:
     min_year: 2006
     max_year: 2012
 
@@ -23,11 +29,13 @@ clerkship_honors_count:
     min_year: 2006
     max_year: 2014
 
-course_clerkships_failed_count:
+clerkships_pass_count:
     min_year: 2006
     max_year: 2014
 
-# clerkships_pass_count
+course_clerkships_failed_count:
+    min_year: 2006
+    max_year: 2014
 
 shelf_exam_below65_count:
     min_year: 2006
