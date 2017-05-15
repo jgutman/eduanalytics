@@ -29,7 +29,7 @@ clerkship_honors_count:
     min_year: 2006
     max_year: 2014
 
-clerkships_pass_count:
+clerkship_pass_count:
     min_year: 2006
     max_year: 2014
 

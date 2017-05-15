@@ -83,13 +83,13 @@ interpolate_and_execute(query_rename, edu_db_con, commit = TRUE,
 ```
 
 ```{r}
-cols <- c("study_id", "appl_year", 
+outcome_v5_cols <- c("study_id", "appl_year", "parent_edu_score", 
   "median_income_zipcode", "likely_did_not_match", "non_top_25_noncompete")
 # select columns as features/outcomes and add in exp_* columns
 
 study_fact_application <- put_tbl_to_memory(edu_db_con, 
                           add_tbl_prefix(tbl_name, id = "identified", status = "raw")) %>%
-  select(one_of(cols), starts_with("exp_"))
+  select(one_of(outcome_v5_cols), starts_with("exp_"))
 ```
 
 ```{r}
@@ -150,7 +150,7 @@ outcomes <- c("residency_top_25_school")
 
 outcomes %>%
   map(function (outcome) get_outcome_valid_years(outcome, outcome_data, outcome_year_range)) %>%
-  map(function (df) mutate(outcome = if_else(is.na(outcome), 2, outcome))) %>%
+  map(function (df) mutate(df, outcome = if_else(is.na(outcome), 2L, outcome))) %>%
   map2_lgl(outcomes, function (df, outcome) write_to_database_single(
                                         df, edu_db_con, add_tbl_prefix(outcome, status = "outcome")))
 ```
@@ -166,24 +166,44 @@ outcomes %>%
   map(function (outcome) get_outcome_valid_years(outcome, outcome_data, outcome_year_range)) %>%
   map(function (df) filter(df, !is.na(outcome))) %>%
   map(function(df) mutate(df, percentile = percent_rank(outcome))) %>%
-  map(function(df) mutate(df, outcome = if_else(percentile <= .25, 0,
-                                        if_else(percentile <= .75, 1, 2)))) %>%
+  map(function(df) mutate(df, outcome = if_else(percentile <= .25, 0L,
+                                        if_else(percentile <= .75, 1L, 2L)))) %>%
   map(function(df) select(df, -percentile)) %>%
   map2_lgl(outcomes, function (df, outcome) write_to_database_single(
                                         df, edu_db_con, add_tbl_prefix(outcome, status = "outcome")))
 ```
 
+```{r}
+outcome_data %>% 
+  select(study_id, appl_year, residency_top_25_school, residency_difficulty) %>%
+  filter(appl_year >= 2006, appl_year <= 2012) %>%
+  filter(is.na(residency_top_25_school) | (residency_top_25_school == 1) | !is.na(residency_difficulty)) %>%
+  mutate(outcome = if_else(is.na(residency_top_25_school), 2,
+                                 if_else(residency_top_25_school == 1, 0,
+                                 if_else(residency_difficulty >= 0.6, 0, 1)))) -> outcome_non_compete
+
+outcome_non_compete %>%
+  select(-residency_difficulty, -residency_top_25_school) %>%
+  write_to_database_single(edu_db_con, 
+                           add_tbl_prefix("non_competitive_residency", status = "outcome"))
+```
+
 
 ```{r}
+outcome_v4_cols <- c("gender", "age_at_application", "college_top_25",
+                      "is_disadvantaged", "urm", "advanced_degree",
+                      "race_text", "total_accepted")
+outcome_v5_cols <- c("study_id", "appl_year", "parent_edu_score", "median_income_zipcode")
+
 outcome_data %>%
-  select(study_id, appl_year, gender, age_at_application, college_top_25, 
-         is_disadvantaged, urm, advanced_degree, 
-         race = race_text, total_num_schools_accepted_to) %>%
+  select(one_of(outcome_v5_cols), one_of(outcome_v4_cols), starts_with("exp_")) %>%
+  rename(race = race_text, num_schools_accepted_to = total_accepted) %>%
   write_to_database_single(edu_db_con, add_tbl_prefix("other_features", status = "generated"))
 ```
 
 ```{r}
-in_school_columns <- c("clerkship_honors_count", 
+in_school_columns <- c("clerkship_honors_count",
+                       "clerkship_pass_count", 
                        "course_clerkships_failed_count",
                        "shelf_exam_below65_count", 
                        "shelf_exam_above90_count", 
