@@ -3,6 +3,7 @@ import sqlalchemy
 import pandas as pd
 import os
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelBinarizer
 
 def connect_to_database(credentials_path, group,
         filename = '.my.cnf'):
@@ -83,9 +84,12 @@ def split_data(model_matrix, outcome_name = 'outcome',
         Pandas.DataFrame: testing features
         numpy.ndarray: training target labels
         numpy.ndarray: testing target labels
+        sklearn.LabelBinarizer: transforms multiclass labels into binary dummies
     """
     X, y = model_matrix.drop(outcome_name, axis = 1), model_matrix[outcome_name]
     X_train, X_test, y_train, y_test = train_test_split(X, y,
                             test_size = test_size, random_state = seed)
-    y_train, y_test = y_train.astype(int), y_test.astype(int)
-    return X_train, X_test, y_train, y_test
+    lb = LabelBinarizer().fit(y_train)
+    print(lb.classes_)
+    y_train, y_test = lb.transform(y_train), lb.transform(y_test)
+    return X_train, X_test, y_train, y_test, lb
