@@ -1,0 +1,12 @@
+fitting the grid search
+Time elapsed: 0:03:49
+Written to: aoa_admissions_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:03:49
+Written to: aoa_admissions_inschool_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:03:51
+Written to: residency_top_25_admissions_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:03:53
+Written to: residency_top_25_admissions_inschool_rf_grid.pkl.z in pkls

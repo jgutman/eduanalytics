@@ -10,11 +10,11 @@ import sklearn
 from sklearn.pipeline import make_pipeline
 from sklearn import ensemble, linear_model, metrics, preprocessing
 from sklearn.model_selection import GridSearchCV
-
 from argparse import ArgumentParser
 
+
 def fit_pipeline(model_matrix, grid_path,
-        scoring = 'roc_auc',
+        scoring = 'roc_auc', # 'f1_micro',
         write_predictions = False,
         path = None, group = None, tbl_name = None):
     pipeline = make_pipeline(pipeline_tools.DummyEncoder(),
@@ -27,7 +27,7 @@ def fit_pipeline(model_matrix, grid_path,
         param_grid = param_grid,
         scoring = scoring)
 
-    X_train, X_test, y_train, y_test = model_data.split_data(model_matrix)
+    X_train, X_test, y_train, y_test, lb = model_data.split_data(model_matrix)
 
     with pipeline_tools.Timer() as t:
         print('fitting the grid search')
@@ -35,8 +35,9 @@ def fit_pipeline(model_matrix, grid_path,
 
     if write_predictions:
         engine = model_data.connect_to_database(path, group)
-        risk_scores = grid_search.predict_proba(X_test)[:,1]
-        reporting.output_predictions(y_test, risk_scores, X_test,
+        train_results = reporting.get_results(grid_search, X_train, y_train, lb)
+        test_results = reporting.get_results(grid_search, X_test, y_test, lb)
+        reporting.output_predictions(train_results, test_results,
             engine, name = tbl_name)
 
     return grid_search

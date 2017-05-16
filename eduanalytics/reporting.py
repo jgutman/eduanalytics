@@ -6,20 +6,60 @@ import itertools, os
 from collections import OrderedDict
 from sklearn.externals import joblib
 
-def get_results(true, predicted, X):
-    """Combines true and predicted outcomes with corresponding row index.
+def get_results(clf, X, y, lb):
+    """Get a data frame with study_id, appl_year, outcome
 
     Args:
-        true (numpy.ndarray): array of true class labels
-        predicted (numpy.ndarray): array of predicted class labels/probabilities
     Returns:
-        Pandas.DataFrame: dataframe with true and predicted columns, and
-            corresponding row index (study_id) given by the feature data
     """
-    results = pd.DataFrame(list(zip(true, predicted)),
-                           columns = ["true", "predicted"],
-                           index = X.index)
-    return results
+    y_flat = lb.inverse_transform(y)
+    y_flat = pd.DataFrame(y_flat,
+        columns = ['outcome'], index = X.index)
+    raw_scores = clf.predict_proba(X)
+    if len(lb.classes_) > 2:
+        scores = convert_multiclass_predictions(raw_scores, lb, X.index)
+    else:
+        scores = convert_binary_predictions(raw_scores, lb, X.index)
+    return y_flat.join([X.appl_year, scores])
+
+
+def convert_multiclass_predictions(scores, lb, study_ids):
+    """
+
+    Args:
+    Returns:
+    """
+    scores_per_class = [p[:,1] for p in scores]
+    scores_flat = np.vstack(scores_per_class).T
+    class_names = ['predicted_{}'.format(int(p)) for p in lb.classes_]
+    scores_df = pd.DataFrame(scores_flat,
+        columns = class_names, index = study_ids)
+    return scores_df
+
+def convert_binary_predictions(scores, lb, study_ids):
+    """
+
+    Args:
+    Returns:
+    """
+    scores_df = pd.DataFrame(scores[:,1],
+        columns = ['predicted'], index = study_ids)
+    return scores_df
+
+
+def output_predictions(train_results, test_results, conn, name,
+        id = 'deidentified', status = 'predictions'):
+    """Write the true labels and prediction scores to a table in the database.
+
+    Args:
+    Returns:
+    """
+    name = '{id}${status}${name}'.format(
+        id = id, status = status, name = name)
+    train_results['set'] = 'train'
+    test_results['set'] = 'test'
+    results = pd.concat([train_results, test_results]).reset_index()
+    results.to_sql(name, conn, if_exists = 'replace', index = False)
 
 
 def build_confusion_matrix(true, predicted, class_names,
@@ -214,20 +254,6 @@ def plot_precision_recall_n(y_true, y_score, model_name):
     plt.title('Precision vs. Recall by Percent Identified: AUC = {:0.2f}'.format(
         roc_auc_score(y_true, y_score)))
     plt.show()
-
-
-def output_predictions(true, predicted, X, conn, name,
-        id = 'deidentified', status = 'predictions'):
-    """Write the true labels and prediction scores to a table in the database.
-
-    Args:
-    Returns:
-    """
-    name = '{id}${status}${name}'.format(
-        id = id, status = status, name = name)
-    results = get_results(true, predicted, X).reset_index()
-    results = results.join(X.appl_year)
-    results.to_sql(name, conn, if_exists = 'replace', index = False)
 
 
 def pickle_model(clf, pkl_path, tbl_name, model_tag):
