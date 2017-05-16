@@ -43,16 +43,77 @@ data_dirs %>%
 ```
 
 ```{r}
-outcome_data %>%
-  str_detect("version_3") %>%
+outcome_data %<>%
+  str_detect("version_4") %>%
   magrittr::extract(outcome_data, .) %>%
-  fread(na.strings = "NULL") -> outcome_data
+  fread(na.strings = "NULL")
+```
+
+# Rename raw identified outcomes table from sql dump
+
+```{r, include = FALSE}
+outcomes_dump_path <- file.path(parent_path, "outcome_data", "study_fact_application_v5.sql") %>%
+  list(dump_path = .)
+credentials <- read_lines(file.path(credentials_path, ".my.cnf"), n_max = 5, skip = 1)
+
+credentials %<>%
+  str_split(pattern = " = ") %>% 
+  transpose() %>% 
+  {set_names(.[[2]], .[[1]])} %>%
+  append(outcomes_dump_path)
+
+"mysql --user=${user} --password=${password} --host ${host} --port ${port} ${database} < ${dump_path}" %>%
+  str_interp(credentials) %>%
+  system()
+
+rm(credentials)
 ```
 
 ```{r}
-outcome_data %>%
-  write_to_database_single(edu_db_con, "deidentified$outcome$outcomes_plus_features")
+drop_tbl <- "drop table if exists ${new_name};"
+query_rename <- "rename table ${old_name} to ${new_name};"
+tbl_name <- "study_fact_application"
+
+interpolate_and_execute(drop_tbl, edu_db_con, commit = TRUE,
+                        new_name = add_tbl_prefix(tbl_name, id = "identified", status = "raw"))
+
+interpolate_and_execute(query_rename, edu_db_con, commit = TRUE,
+                        old_name = tbl_name, 
+                        new_name = add_tbl_prefix(tbl_name, id = "identified", status = "raw"))
 ```
+
+```{r}
+outcome_v5_cols <- c("study_id", "appl_year", "parent_edu_score", 
+  "median_income_zipcode", "likely_did_not_match", "non_top_25_noncompete")
+# select columns as features/outcomes and add in exp_* columns
+
+study_fact_application <- put_tbl_to_memory(edu_db_con, 
+                          add_tbl_prefix(tbl_name, id = "identified", status = "raw")) %>%
+  select(one_of(outcome_v5_cols), starts_with("exp_"))
+```
+
+```{r}
+outcome_data %<>%
+  left_join(study_fact_application, by = c("study_id", "appl_year")) 
+```
+
+```{r}
+outcome_tbl_name <- "outcomes_plus_features" %>%
+  add_tbl_prefix(status = "outcome")
+
+outcome_data %>%
+  write_to_database_single(edu_db_con, outcome_tbl_name)
+```
+
+# Pull out outcomes and features from outcome data
+
+```{r}
+# Remove from all outcome data students in MD/PhD program
+# Most outcomes will be delayed several years
+outcome_data %<>%
+  filter(program_name != 'Combined Medical Degree/Ph.D')
+```
+
 
 ```{r}
 filter_valid_years <- function(outcome_name, data, year_range) {
@@ -75,7 +136,7 @@ outcome_year_range <- yaml::yaml.load_file("outcomes.yaml")
 ```
 
 ```{r}
-outcomes <- c("aoa", "residency_top_25_school")
+outcomes <- c("aoa")
 
 outcomes %>%
   map(function (outcome) get_outcome_valid_years(outcome, outcome_data, outcome_year_range)) %>%
@@ -85,64 +146,64 @@ outcomes %>%
 ```
 
 ```{r}
-outcomes <- c("step1_score", "step2_score")
+outcomes <- c("residency_top_25_school")
 
 outcomes %>%
   map(function (outcome) get_outcome_valid_years(outcome, outcome_data, outcome_year_range)) %>%
+  map(function (df) mutate(df, outcome = if_else(is.na(outcome), 2L, outcome))) %>%
   map2_lgl(outcomes, function (df, outcome) write_to_database_single(
                                         df, edu_db_con, add_tbl_prefix(outcome, status = "outcome")))
 ```
 
 ```{r}
-get_percent_outcomes <- function(outcomes, data, year_range, percent_cutoff) {
-  dots <- lazyeval::interp(~ count / total, 
-                  count = as.name(outcomes[1]),
-                  total = as.name(outcomes[2]))
-  
-  outcomes %>%
-    filter_valid_years(data, year_range) %>%
-    mutate_(.dots = list(pct = dots)) %>%
-    mutate(outcome = as.numeric(pct <= percent_cutoff)) %>%
-    select(-one_of(outcomes, "pct")) 
-}
-```
+outcomes <- c("step1_score", "step2_score")
+# if step 1/2 score is missing: no prediction, remove from outcome data
+# if step 1/2 score is in bottom 25% percentile, outcome = 0
+# if step 1/2 score is in middle 25%-75% percentile, outcome = 1
+# if step 1/2 score is in top 75% percentile, outcome = 2
 
-```{r}
-outcomes <- list(c("clerkship_honors_count", "clerkship_count"),
-                 c("shelf_exam_above90_count", "shelf_exam_count"),
-                 c("school_exam_above90_count", "school_exam_count"))
-thresholds <- list(.20, .40, .20)
-
-outcomes %>% 
-  map2(thresholds, function(outcome, threshold) get_percent_outcomes(
-              outcome, outcome_data, outcome_year_range, 
-                        percent_cutoff = threshold)) %>%
+outcomes %>%
+  map(function (outcome) get_outcome_valid_years(outcome, outcome_data, outcome_year_range)) %>%
+  map(function (df) filter(df, !is.na(outcome))) %>%
+  map(function(df) mutate(df, percentile = percent_rank(outcome))) %>%
+  map(function(df) mutate(df, outcome = if_else(percentile <= .25, 0L,
+                                        if_else(percentile <= .75, 1L, 2L)))) %>%
+  map(function(df) select(df, -percentile)) %>%
   map2_lgl(outcomes, function (df, outcome) write_to_database_single(
-                                    df, edu_db_con, add_tbl_prefix(outcome[1], status = "outcome")))
+                                        df, edu_db_con, add_tbl_prefix(outcome, status = "outcome")))
 ```
 
 ```{r}
-outcomes <- c("course_clerkships_failed_count", 
-              "shelf_exam_below65_count",
-              "school_exam_below65_count")
+outcome_data %>% 
+  select(study_id, appl_year, residency_top_25_school, residency_difficulty) %>%
+  filter(appl_year >= 2006, appl_year <= 2012) %>%
+  filter(is.na(residency_top_25_school) | (residency_top_25_school == 1) | !is.na(residency_difficulty)) %>%
+  mutate(outcome = if_else(is.na(residency_top_25_school), 2,
+                                 if_else(residency_top_25_school == 1, 0,
+                                 if_else(residency_difficulty >= 0.6, 0, 1)))) -> outcome_non_compete
 
-outcomes %>% 
-  map(function(outcome) get_outcome_valid_years(outcome, outcome_data, outcome_year_range)) %>%
-  map(function(df) mutate(df, outcome = outcome >= 1)) %>%
-  map2_lgl(outcomes, function (df, outcome) write_to_database_single(
-                                    df, edu_db_con, add_tbl_prefix(outcome, status = "outcome")))
+outcome_non_compete %>%
+  select(-residency_difficulty, -residency_top_25_school) %>%
+  write_to_database_single(edu_db_con, 
+                           add_tbl_prefix("non_competitive_residency", status = "outcome"))
 ```
 
+
 ```{r}
+outcome_v4_cols <- c("gender", "age_at_application", "college_top_25",
+                      "is_disadvantaged", "urm", "advanced_degree",
+                      "race_text", "total_accepted")
+outcome_v5_cols <- c("study_id", "appl_year", "parent_edu_score", "median_income_zipcode")
+
 outcome_data %>%
-  select(study_id, appl_year, gender, age_at_application, college_top_25, 
-         is_disadvantaged, urm, advanced_degree, 
-         race = race_text, total_num_schools_accepted_to) %>%
+  select(one_of(outcome_v5_cols), one_of(outcome_v4_cols), starts_with("exp_")) %>%
+  rename(race = race_text, num_schools_accepted_to = total_accepted) %>%
   write_to_database_single(edu_db_con, add_tbl_prefix("other_features", status = "generated"))
 ```
 
 ```{r}
-in_school_columns <- c("clerkship_honors_count", 
+in_school_columns <- c("clerkship_honors_count",
+                       "clerkship_pass_count", 
                        "course_clerkships_failed_count",
                        "shelf_exam_below65_count", 
                        "shelf_exam_above90_count", 

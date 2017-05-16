@@ -34,9 +34,9 @@ print_loaded_pkgs()
 
 "%ni%" = Negate( "%in%" )
 in_school <- c("deidentified$generated$in_school_performance")
-generated_features_admissions <- get_tbl_names_by_stage(edu_db_con, "deidentified", "generated") %>% .[ . %ni% in_school ]
+generated_features_admissions <- get_tbl_names_by_stage(edu_db_con, "deidentified", "generated") %>% 
+  .[ . %ni% in_school ]
 
-  
 generated_features_admissions_inschool <- get_tbl_names_by_stage(edu_db_con, "deidentified", "generated")
     
 
@@ -63,14 +63,7 @@ create_outcome_features_data <- function (table_names, data) {
        conn = edu_db_con, key = "study_id", 
        .init = data)
 }
-
-
-
 ```
-
-
-
-
 
 ##AOA
 
@@ -101,14 +94,12 @@ Admissions and in school
 #create features and outcome data
 aoa_admissions_inschool <- create_outcome_features_data(generated_features_admissions_inschool, aoa)
 
-#wirte to database
+#write to database
 model_run_name <- "aoa_admissions_inschool"
 
 aoa_admissions_inschool %>%
   write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
 ```
-
-
 
 ## STEP 1 
 
@@ -123,7 +114,7 @@ Admissions
 #combine features with outcomes
 step1_admissions <- create_outcome_features_data(generated_features_admissions, step1)
 
-#wrte to database
+#write to database
 model_run_name <- "step1_admissions"
 
 step1_admissions %>%
@@ -137,7 +128,7 @@ Admissions and in school
 #combine features with outcomes
 step1_admissions_inschool <- create_outcome_features_data(generated_features_admissions_inschool, step1)
 
-#wrte to database
+#write to database
 model_run_name <- "step1_admissions_inschool"
 
 step1_admissions_inschool %>%
@@ -182,9 +173,6 @@ step2_admissions_inschool %>%
 
 ```
 
-
-
-
 ##Residency top 25
 
 ```{r}
@@ -199,7 +187,7 @@ Admissions
 #combine features with outcomes
 residency_top_25_admissions <- create_outcome_features_data(generated_features_admissions, residency_top_25)
 
-#wrte to database
+#write to database
 model_run_name <- "residency_top_25_admissions"
 
 residency_top_25_admissions %>%
