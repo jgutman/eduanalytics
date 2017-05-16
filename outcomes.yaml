@@ -11,11 +11,17 @@ step2_score:
     min_year: 2006
     max_year: 2013
 
+worry_score_school_outcomes: 
+    min_year: 2006
+    max_year: 2013
+
 residency_top_25_school:
     min_year: 2006
     max_year: 2012
 
-# non_competitive_residency
+non_competitive_residency:
+    min_year: 2006
+    max_year: 2012
 
 residency_difficulty:
     min_year: 2006
