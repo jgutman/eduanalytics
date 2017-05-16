@@ -226,9 +226,13 @@ outcome_v4_cols <- c("gender", "age_at_application", "college_top_25",
                       "race_text", "total_accepted")
 outcome_v5_cols <- c("study_id", "appl_year", "parent_edu_score", "median_income_zipcode")
 
+exp_list <- outcome_inc_md_phd %>% select(starts_with("exp")) %>% colnames()
+exp_list <- rep(0, length(exp_list)) %>% set_names(exp_list) %>% as.list()
+
 outcome_inc_md_phd %>%
   select(one_of(outcome_v5_cols), one_of(outcome_v4_cols), starts_with("exp_")) %>%
   rename(race = race_text, num_schools_accepted_to = total_accepted) %>%
+  replace_na(exp_list) %>%
   write_to_database_single(edu_db_con, add_tbl_prefix("other_features", status = "generated"))
 ```
 
