@@ -70,7 +70,7 @@ def convert_categorical(data):
 
 
 def split_data(model_matrix, outcome_name = 'outcome',
-        seed = 1100, test_size = .20):
+        seed = 1100, test_size = .33):
     """Splits a data set into training and test and separates features (X)
     from target variable (y).
 
@@ -88,7 +88,7 @@ def split_data(model_matrix, outcome_name = 'outcome',
     """
     X, y = model_matrix.drop(outcome_name, axis = 1), model_matrix[outcome_name]
     X_train, X_test, y_train, y_test = train_test_split(X, y,
-                            test_size = test_size, random_state = seed)
+            test_size = test_size, random_state = seed, stratify = y)
     lb = LabelBinarizer().fit(y_train)
     if len(lb.classes_) > 2:
         y_train, y_test = lb.transform(y_train), lb.transform(y_test)

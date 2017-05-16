@@ -8,6 +8,7 @@ screener_scores_admissions
 worry_score_admissions
 "
 
+source activate edu_analytics
 for tbl_name in $tbl_model_data
 do
   python run_and_save_model.py --tbl $tbl_name
