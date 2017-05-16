@@ -1,13 +1,11 @@
-tbl_model_data="residency_noncompete_admissions
+tbl_model_data="aoa_admissions
+aoa_admissions_inschool
+residency_noncompete_admissions
 residency_noncompete_admissions_inschool
 residency_top_25_admissions
 residency_top_25_admissions_inschool
-aoa_admissions
-aoa_admissions_inschool
-step1_admissions
-step1_admissions_inschool
-step2_admissions
-step2_admissions_inschool
+screener_scores_admissions
+worry_score_admissions
 "
 
 for tbl_name in $tbl_model_data
