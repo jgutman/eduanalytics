@@ -104,13 +104,13 @@ aoa_admissions_inschool %>%
 ## STEP 1 
 
 
-```{r}
+```{r, eval = FALSE}
 #get outcomes
 step1 <- get_outcome_data("step1_score")
 ```
 
 Admissions
-```{r}
+```{r, eval = FALSE}
 #combine features with outcomes
 step1_admissions <- create_outcome_features_data(generated_features_admissions, step1)
 
@@ -124,7 +124,7 @@ step1_admissions %>%
 
 Admissions and in school
 
-```{r}
+```{r, eval = FALSE}
 #combine features with outcomes
 step1_admissions_inschool <- create_outcome_features_data(generated_features_admissions_inschool, step1)
 
@@ -140,13 +140,13 @@ step1_admissions_inschool %>%
 
 ## STEP 2
 
-```{r}
+```{r, eval = FALSE}
 #get outcomes
 step2 <- get_outcome_data("step2_score")
 ```
 
 Admissions
-```{r}
+```{r, eval = FALSE}
 #combine features with outcomes
 step2_admissions <- create_outcome_features_data(generated_features_admissions, step2)
 
@@ -160,7 +160,7 @@ step2_admissions %>%
 
 
 Admissions and in schools
-```{r}
+```{r, eval = FALSE}
 
 #combine features with outcomes
 step2_admissions_inschool <- create_outcome_features_data(generated_features_admissions_inschool, step2)
@@ -177,7 +177,7 @@ step2_admissions_inschool %>%
 
 ```{r}
 #get outcomes
-residency_top_25 <- get_outcome_data("residency_top_25_school")
+residency_top_25 <- get_outcome_data("residency_top25")
 ```
 
 
@@ -188,7 +188,7 @@ Admissions
 residency_top_25_admissions <- create_outcome_features_data(generated_features_admissions, residency_top_25)
 
 #write to database
-model_run_name <- "residency_top_25_admissions"
+model_run_name <- "residency_top25_admissions"
 
 residency_top_25_admissions %>%
   write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
@@ -202,11 +202,92 @@ Admissions and in schools
 residency_top_25_admissions_inschool <- create_outcome_features_data(generated_features_admissions_inschool, residency_top_25)
 
 #wrte to database
-model_run_name <- "residency_top_25_admissions_inschool"
+model_run_name <- "residency_top25_admissions_inschool"
 
 residency_top_25_admissions_inschool %>%
   write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
 ```
+
+
+
+
+#Residency non top 25 and noncompete
+
+```{r}
+residency_noncompete <- get_outcome_data("residency_noncompete")
+```
+
+Admissions
+```{r}
+
+#combine features with outcomes
+residency_noncompete_admissions <- create_outcome_features_data(generated_features_admissions, residency_noncompete)
+
+#write to database
+model_run_name <- "residency_noncompete_admissions"
+
+residency_noncompete_admissions %>%
+  write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
+
+```
+
+
+Admissions and in schools
+```{r}
+#combine features with outcomes
+residency_noncompete_admissions_inschool <- create_outcome_features_data(generated_features_admissions_inschool, residency_noncompete)
+
+#wrte to database
+model_run_name <- "residency_noncompete_admissions_inschool"
+
+residency_noncompete_admissions_inschool %>%
+  write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
+```
+
+
+
+#Worry score school outcomes
+
+```{r}
+worry_score <- get_outcome_data("worry_score_school_outcomes")
+```
+
+Admissions
+```{r}
+
+#combine features with outcomes
+worry_score_admissions <- create_outcome_features_data(generated_features_admissions, worry_score)
+
+#write to database
+model_run_name <- "worry_score_admissions"
+
+worry_score_admissions %>%
+  write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
+
+```
+
+
+#screeners
+
+```{r}
+screener_scores <- get_outcome_data("screened_apps")
+```
+
+Admissions
+```{r}
+
+#combine features with outcomes
+screener_scores_admissions <- create_outcome_features_data(generated_features_admissions, screener_scores) %>% 
+  select(-num_schools_accepted_to)
+
+#write to database
+model_run_name <- "screener_scores_admissions"
+
+screener_scores_admissions %>%
+  write_to_database_single(edu_db_con, add_tbl_prefix(model_run_name, status = "model_data"))
+
+```
+
 
 
 ```{r}
