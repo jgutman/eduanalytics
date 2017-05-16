@@ -185,14 +185,13 @@ split_screener_score <- . %>%
                        if_else(screener_sd == 0, "2_2", "1_3"), 
                        screener_a_b)) %>%
   separate(screener_a_b, c("screener_a", "screener_b")) %>%
-  mutate(screener_a = int(screener_a),
-         screener_b = int(screener_b),
-         screener_total = int(screener_total))
+  mutate(screener_a = as.integer(screener_a),
+         screener_b = as.integer(screener_b),
+         screener_total = screener_a + screener_b)
 
 applicant_data %<>%
   split_screener_score() %>%
-  select(-screener_sd, -committee_sd) %>%
-  rename(screener_total = scr_dec)
+  select(-screener_sd, -committee_sd, -scr_dec)
 ```
 
 ```{r add_indicator_cols}

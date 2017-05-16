@@ -110,8 +110,6 @@ outcome_data %>%
   write_to_database_single(edu_db_con, outcome_tbl_name)
 ```
 
-
-
 # Pull out outcomes and features from outcome data
 
 ```{r}
@@ -123,6 +121,7 @@ outcome_data %<>%
   filter(program_name != 'Combined Medical Degree/Ph.D')
 ```
 
+## Functions for filtering out invalid application year students
 
 ```{r}
 filter_valid_years <- function(outcome_name, data, year_range) {
@@ -144,6 +143,9 @@ get_outcome_valid_years <- function(outcome_name, data, year_range) {
 outcome_year_range <- yaml::yaml.load_file("outcomes.yaml")
 ```
 
+# Outcome creation
+## AOA
+
 ```{r}
 outcomes <- c("aoa")
 
@@ -153,6 +155,8 @@ outcomes %>%
   map2_lgl(outcomes, function (df, outcome) write_to_database_single(
                                         df, edu_db_con, add_tbl_prefix(outcome, status = "outcome")))
 ```
+
+## Residency top 25 (NYU or other)
 
 ```{r}
 years <- outcome_year_range$residency_top_25_school
@@ -169,6 +173,8 @@ outcome_top_25 %>%
   write_to_database_single(edu_db_con, 
                            add_tbl_prefix("residency_top25", status = "outcome"))
 ```
+
+## Step 1 and Step 2 scores (categorical)
 
 ```{r, eval = FALSE}
 outcomes <- c("step1_score", "step2_score")
@@ -188,6 +194,8 @@ outcomes %>%
                                         df, edu_db_con, add_tbl_prefix(outcome, status = "outcome")))
 ```
 
+## Non-competitive Residency Match
+
 ```{r}
 years <- outcome_year_range$residency_top_25_school
 
@@ -204,6 +212,22 @@ outcome_non_compete %>%
                            add_tbl_prefix("residency_noncompete", status = "outcome"))
 ```
 
+## Screening success/failures
+
+```{r}
+put_tbl_to_memory(edu_db_con, add_tbl_prefix('all_applicants')) %>%
+  select(study_id, appl_year, screener_total, is_invited_interview) %>%
+  filter(!is.na(screener_total)) -> applicants_screened
+
+applicants_screened %>%
+  mutate(outcome = recode(screener_total, `2` = 0, `3` = 1, `4` = 1, `5` = 2, `6` = 2)) %>%
+  select(-screener_total, -is_invited_interview) %>%
+  write_to_database_single(edu_db_con, 
+                           add_tbl_prefix("screened_apps", status = "outcome"))
+```
+
+
+## Composite In-School Worry Score 
 
 ```{r}
 
@@ -217,6 +241,7 @@ outcomes %>%
   
 ```
 
+# Additional feature generation
 
 ```{r}
 outcome_v4_cols <- c("gender", "age_at_application", "college_top_25",
@@ -233,6 +258,8 @@ outcome_inc_md_phd %>%
   replace_na(exp_list) %>%
   write_to_database_single(edu_db_con, add_tbl_prefix("other_features", status = "generated"))
 ```
+
+## In-school performance as features
 
 ```{r}
 in_school_columns <- c("clerkship_honors_count",
