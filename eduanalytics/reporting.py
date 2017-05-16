@@ -16,11 +16,12 @@ def get_results(clf, X, y, lb):
     y_flat = pd.DataFrame(y_flat,
         columns = ['outcome'], index = X.index)
     raw_scores = clf.predict_proba(X)
+    appl_year = pd.DataFrame(X.appl_year)
     if len(lb.classes_) > 2:
         scores = convert_multiclass_predictions(raw_scores, lb, X.index)
     else:
         scores = convert_binary_predictions(raw_scores, lb, X.index)
-    return y_flat.join([X.appl_year, scores])
+    return y_flat.join([appl_year, scores])
 
 
 def convert_multiclass_predictions(scores, lb, study_ids):

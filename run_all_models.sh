@@ -1,9 +1,9 @@
 tbl_model_data="aoa_admissions
 aoa_admissions_inschool
-residency_noncompete_admissions
-residency_noncompete_admissions_inschool
-residency_top_25_admissions
-residency_top_25_admissions_inschool
+residency_noncompete_admit
+residency_noncompete_admit_inschool
+residency_top25_admissions
+residency_top25_admissions_inschool
 screener_scores_admissions
 worry_score_admissions
 "
