@@ -84,7 +84,7 @@ interpolate_and_execute(query_rename, edu_db_con, commit = TRUE,
 
 ```{r}
 outcome_v5_cols <- c("study_id", "appl_year", "parent_edu_score", 
-  "median_income_zipcode", "likely_did_not_match", "non_top_25_noncompete")
+  "median_income_zipcode", "worry_score_school_outcomes")
 # select columns as features/outcomes and add in exp_* columns
 
 study_fact_application <- put_tbl_to_memory(edu_db_con, 
@@ -150,7 +150,6 @@ outcomes <- c("residency_top_25_school")
 
 outcomes %>%
   map(function (outcome) get_outcome_valid_years(outcome, outcome_data, outcome_year_range)) %>%
-  map(function (df) mutate(df, outcome = if_else(is.na(outcome), 2L, outcome))) %>%
   map2_lgl(outcomes, function (df, outcome) write_to_database_single(
                                         df, edu_db_con, add_tbl_prefix(outcome, status = "outcome")))
 ```
