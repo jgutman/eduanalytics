@@ -90,6 +90,8 @@ def split_data(model_matrix, outcome_name = 'outcome',
     X_train, X_test, y_train, y_test = train_test_split(X, y,
                             test_size = test_size, random_state = seed)
     lb = LabelBinarizer().fit(y_train)
-    print(lb.classes_)
-    y_train, y_test = lb.transform(y_train), lb.transform(y_test)
+    if len(lb.classes_) > 2:
+        y_train, y_test = lb.transform(y_train), lb.transform(y_test)
+    else:
+        y_train, y_test = y_train.astype(int), y_test.astype(int)
     return X_train, X_test, y_train, y_test, lb
