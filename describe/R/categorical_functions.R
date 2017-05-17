@@ -106,7 +106,6 @@ get_cat_tables_single <- function(dat, varname, digits = 3, n = 10) {
 
 
 
-
 #' Displays a table showing the proportion of observations in the N largest categories for each categorical variable in 
 #' a list of tibbles or data frames
 #'
@@ -116,14 +115,14 @@ get_cat_tables_single <- function(dat, varname, digits = 3, n = 10) {
 #'
 #' @return a list of lists, each containing a table
 #' @export
-#'
-get_cat_tables <- function(df_list, varname, digits=3) {
+#' 
+get_cat_tables <- function(df_list, varname, digits = 3, n = 10) {
   
   quo_group_by <- enquo(varname)
   
   df_list %>% 
     map(., function(df) {
-      get_cat_tables_single(df, varname = !!quo_group_by, digits = digits)
+      get_cat_tables_single(df, varname = !!quo_group_by, digits = digits, n = n)
     } 
     )
   

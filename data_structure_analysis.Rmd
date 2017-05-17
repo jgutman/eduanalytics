@@ -32,7 +32,6 @@ print_loaded_pkgs()
 knitr::opts_chunk$set(echo = FALSE, fig.align = 'center')
 library(VIM)
 library(xtable)
-source("descriptive_functions.R")
 ```
 
 
@@ -148,9 +147,9 @@ There are `r length(continuous)` continuous numeric variables in the dataset.
 ```{r summ_stats_cont_vars}
 
 
-get_basic_num_summaries_single(dat)
+get_basic_num_summaries_single(dat, appl_year)
 
-get_basic_num_summaries(tbl)
+get_basic_num_summaries(tbl, appl_year)
 
 
 ```
@@ -216,7 +215,7 @@ tbl %>%
 ```
 
 
-```{r histograms}
+```{r histograms, eval=FALSE}
 
 # rewrite this
 
@@ -254,7 +253,7 @@ get_cat_tables(tbl, appl_year)
 
 # format tables for nice display 
 categorical_kables <- lapply(names(cat_tabs), function(x) kable(cat_tabs[[x]], caption = x, type='html'))
-# categorical_kables
+categorical_kables
 
 ```
 
@@ -287,8 +286,8 @@ Summary Statistics for Date Variables
 ```{r dates}
 
 # currently don't work 
-get_basic_date_summaries_single(appl)
+get_basic_summaries_single(appl, appl_year, is.POSIXct)
 
-get_basic_summaries(df_list = tbl)
+get_basic_summaries(df_list = tbl, appl_year, is.POSIXct)
 
 ```

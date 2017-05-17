@@ -71,7 +71,7 @@ seventyfive_quantile <- function(a_vec,...) {
 #'
 #' @param dat a tibble or data frame
 #' @param varname variable to group by (generally appl_year)
-#' @param data_type class of variables to summarize. should be is.numeric or is.POSIXt
+#' @param data_type class of variables to summarize. should be is.numeric or is.POSIXct
 #'
 #' @return a list containing summary statistics for each variable
 #' @export
@@ -81,6 +81,10 @@ get_basic_summaries_single <- function(dat, varname, data_type = is.numeric) {
   quo_group_by <- enquo(varname)
   
   num_dat <- dat %>% select_if(data_type)
+  
+  # stopping execution of no variables exist with given data type
+  #if (ncol(num_dat)==0) stop("No variables of that data type in data frame.")
+  
   
   # making sure the grouping variable (probably appl_year) is included
   # necessary when grouping variable is a different class than vars to summarize
@@ -93,18 +97,23 @@ get_basic_summaries_single <- function(dat, varname, data_type = is.numeric) {
   num_dat %<>% select(!!quo_group_by, everything()) 
   
   summstats <- list()
-  for (i in 2:ncol(num_dat)) {
-    summstats[[i-1]] <- num_dat %>% 
-      group_by(!!quo_group_by) %>% 
-      extract(c(1,i)) %>% 
-      summarise_all(funs(min, twentyfive_quantile, median, mean, 
-                         seventyfive_quantile, max, sd), na.rm = TRUE) %>%
-      as.data.frame()
-  }
+  tryCatch( 
+    {for (i in 2:ncol(num_dat)) {
+      summstats[[i-1]] <- num_dat %>% 
+        group_by(!!quo_group_by) %>% 
+        extract(c(1,i)) %>% 
+        summarise_all(funs(min, twentyfive_quantile, median, mean, 
+                      seventyfive_quantile, max, sd), na.rm = TRUE) %>%
+        as.data.frame()
+      }
+    }, error = function(x) print("There are no variables of specified data type in data frame"))
+  )
   names(summstats) <- names(num_dat[-1]) 
   
   return(summstats)
 }
+
+
 
 
 #' Function to get summary statistics for numeric or date variables from a list of tibbles or
@@ -116,13 +125,13 @@ get_basic_summaries_single <- function(dat, varname, data_type = is.numeric) {
 #' @return a list of lists each consisting of a data frame of summary statistics
 #' @export
 #'
-get_basic_summaries <- function(df_list, varname) {
+get_basic_summaries <- function(df_list, varname, data_type = is.numeric) {
   
   quo_group_by <- enquo(varname)
   
   df_list %>% 
     map(., function(df) {
-      df %>% get_basic_num_summaries_single(varname = !!quo_group_by) 
+      df %>% get_basic_summaries_single(varname = !!quo_group_by, data_type = data_type) 
     } )
 }
 
