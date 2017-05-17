@@ -1,0 +1,80 @@
+---
+title: "Model results exploration"
+author: "Jacqueline Gutman, Suvam Paul"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_document:
+    toc: yes
+    toc_depth: '4'
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+---
+
+# Setup
+## Load packages
+## Read in database credentials and open connection
+
+```{r setup, message=FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook.R")
+```
+
+```{r setup_notebook}
+```
+
+```{r show_pkgs, echo = FALSE}
+print_loaded_pkgs()
+```
+
+
+```{r get_data}
+
+screener_predictions <- "deidentified$predictions$screener_scores_admissions" %>% 
+  dbUtilities::put_tbl_to_memory(edu_db_con, .) %>% 
+  select(-outcome)
+
+screener_scores_model_data <- dbUtilities::put_tbl_to_memory(edu_db_con, "deidentified$model_data$screener_scores_admissions")
+
+all_applicants <- "deidentified$clean$all_applicants" %>% 
+  dbUtilities::put_tbl_to_memory(edu_db_con, .)
+
+
+
+all_applicants_select <- "deidentified$clean$all_applicants" %>% 
+  dbUtilities::put_tbl_to_memory(edu_db_con, .) %>% 
+  mutate(is_matriculated = if_else(!is.na(deposit_date),1,0)) %>%
+  select(study_id, appl_year, is_faculty_screened, is_invited_interview, is_interviewed, is_committee_reviewed, is_offered_admission, is_matriculated) 
+
+
+#004e86bc527ab20237b89442de796122
+
+
+```
+
+
+
+```{r join_data}
+
+pred_features_admin_decision <- screener_predictions %>% 
+  left_join(., screener_scores_model_data, by = c("study_id", "appl_year")) %>% 
+  left_join(., all_applicants_select, by = c("study_id", "appl_year"))
+
+
+names(pred_features_admin_decision)
+  
+```
+
+
+```{r}
+
+pred_features_admin_decision %>% 
+  group_by(outcome) %>% 
+  summarise(num_interview = sum(is_interviewed, na.rm = TRUE))
+
+
+pred_features_admin_decision %>% filter(study_id == "004e86bc527ab20237b89442de796122")
+
+```
+
