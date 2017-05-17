@@ -169,39 +169,53 @@ seventyfive_quantile <- function(a_vec,...) {
 ####################
 
 
-# outputs a list containing summary statistics for each variable
-# will output one tibble if instead of a list if commented sections are uncommented and last is commented
+# outputs a list containing summary statistics for each variable of class data_type
+# grouped by another variable (generally application year)
+# works for numeric (is.numeric) and date (is.POSIXt) varialbes
+# should theoretically work for any variable type that can be summarized numerically
+get_basic_num_summaries_single <- function(dat, varname, data_type = is.numeric) {
+  
+  quo_group_by <- enquo(varname)
 
-# should be rewritten to avoid hardcoding appl_year position in extract()
-get_basic_num_summaries_single <- function(dat) {
+  num_dat <- dat %>% select_if(data_type)
   
-  summstats <- list()
-  num_dat <- dat %>% select_if(is.numeric)
-  
-  for (i in 2:ncol(num_dat)) {
-    summstats[[i-1]] <- num_dat %>% 
-      group_by(appl_year) %>% 
-      extract(c(1,i)) %>% 
-      summarise_all(funs(min, twentyfive_quantile, median, mean, 
-                         seventyfive_quantile, max, sd), na.rm = TRUE) #%>%
-    #mutate(varname = names(num_dat[i]))
+  # making sure the grouping variable (probably appl_year) is included
+  # necessary when grouping variable is a different class than vars to summarize
+  group_var <- dat %>% select(!!quo_group_by)
+  if (names(group_var) %in% names(num_dat)==FALSE) {
+    num_dat %<>% bind_cols(group_var, num_dat)
   }
   
-  #bind_rows(summstats) %>% select(varname, everything())
-  names(summstats) <- names(num_dat[-1])
+  # makes sure grouping var is first the first column in the dataframe
+  num_dat %<>% select(!!quo_group_by, everything()) 
+  
+  summstats <- list()
+  for (i in 2:ncol(num_dat)) {
+    summstats[[i-1]] <- num_dat %>% 
+      group_by(!!quo_group_by) %>% 
+      extract(c(1,i)) %>% 
+      summarise_all(funs(min, twentyfive_quantile, median, mean, 
+                         seventyfive_quantile, max, sd), na.rm = TRUE) %>%
+      as.data.frame()
+  }
+  names(summstats) <- names(num_dat[-1]) 
   
   return(summstats)
 }
 
 
 # produces a list of lists 
-get_basic_num_summaries <- function(df_list) {
+get_basic_num_summaries <- function(df_list, varname) {
+  
+  quo_group_by <- enquo(varname)
   
   df_list %>% 
     map(., function(df) {
-      df %>% get_basic_summaries_single2 
+      df %>% get_basic_num_summaries_single(varname = !!quo_group_by) 
     } )
 }
+
+
 
 
 
@@ -217,14 +231,14 @@ get_basic_summaries_single <- function(dat, varname) {
   dat %>% 
     group_by(!!quo_group_by) %>% 
     summarise_if(., is.numeric, funs(min, max, mean, median, twentyfive_quantile, seventyfive_quantile), na.rm = TRUE) 
-
+  
 }
 
 
 
 # same output as above function, but works for multiple types of data
 get_basic_summaries_single_alt <- function(dat, varname, data_type = is.numeric,
-                                        functions = funs(min, twentyfive_quantile, median, mean, seventyfive_quantile, max, sd)) {
+                                           functions = funs(min, twentyfive_quantile, median, mean, seventyfive_quantile, max, sd)) {
   
   quo_group_by <- enquo(varname)
   #print(quo_group_by)
@@ -249,10 +263,6 @@ get_basic_summaries <- function(df_list, varname) {
     }
     )
 }
-
-
-
-
 
 
 
@@ -345,11 +355,6 @@ get_cat_tables <- function(df_list, varname, digits=3) {
     )
   
 }
-
-
-####################
-## DATE FUNCTIONS ##
-####################
 
 
 
