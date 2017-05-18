@@ -53,14 +53,13 @@ get_outcome_data <- function(outcome_name) {
 fetch_and_join <- function(df, tbl_name, conn, key) {
   tbl_name %>%
     put_tbl_to_memory(conn, .) %>%
-    select(-one_of("appl_year")) %>%
     left_join(df, ., by = key)
 }
 
 
 create_outcome_features_data <- function (table_names, data) {
   reduce(table_names, fetch_and_join, 
-       conn = edu_db_con, key = "study_id", 
+       conn = edu_db_con, key = c("study_id", "appl_year"), 
        .init = data)
 }
 ```
@@ -237,8 +236,12 @@ Admissions and in schools
 residency_noncompete_admissions_inschool <- create_outcome_features_data(
   generated_features_admissions_inschool, residency_noncompete)
 
+<<<<<<< HEAD
 
 #wrte to database
+=======
+#write to database
+>>>>>>> master
 model_run_name <- "residency_noncompete_admit_inschool"
 
 residency_noncompete_admissions_inschool %>%

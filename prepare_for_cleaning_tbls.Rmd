@@ -154,9 +154,9 @@ app_data_deidentified %<>%
 
 ```{r clean_app_data}
 app_data_deidentified %>% 
-  names() %>% 
-  str_detect("201[3-7]") %>%
-  magrittr::extract(app_data_deidentified, .) %>%
+  #names() %>% 
+  #str_detect("201[3-7]") %>%
+  #magrittr::extract(app_data_deidentified, .) %>%
   do.call(bind_rows, .) %>%
   select(study_id, appl_year, one_of(tracking_columns), everything()) ->
   applicant_data
@@ -172,7 +172,10 @@ filter_applications <- . %>%
   filter(!is.na(appl_submit_date) & !is.na(appl_complete_date))
 
 applicant_data %<>% 
-  filter_applications() %>% 
+  filter_applications() %>%
+  list() %>%
+  filter_first_app_only(min_year = 2013, max_year = 2017) %>%
+  flatten_df() %>%
   drop_empty_cols() %>%
   select(-mstp, -mstp_to_md)
 ```

@@ -40,7 +40,7 @@ get_tbls_by_pattern(edu_db_con, "deidentified\\Wclean\\Wgrades") %>%
 ```{r}
 count_grades <- function(df) {
   df %>%
-    group_by(study_id) %>%
+    group_by(study_id, appl_year) %>%
     summarize(a_counts = sum(amcas_grade_cd %in% c("A", "A-"), na.rm = TRUE),
             b_counts = sum(amcas_grade_cd %in% c("B", "B+", "B-", "AB"), na.rm = TRUE),
             c_counts = sum(amcas_grade_cd %in% c("C", "C+", "C-", "BC"), na.rm = TRUE),
@@ -70,7 +70,7 @@ nested_science %<>%
 ```{r}
 nested_science %>% 
   use_series(features) %>%
-  purrr::reduce(., left_join, by = "study_id", .init = bcpm_grade_counts) -> 
+  purrr::reduce(., left_join, by = c("study_id", "appl_year"), .init = bcpm_grade_counts) -> 
   all_grade_counts
 ```
 
