@@ -23,10 +23,12 @@ get_yesno <- function(dat) {
 #' @export
 #'
 recode_yesno <- function(df) {
-  df %>%
+  yesno_df <- df %>%
     select(one_of(get_yesno(.)))  %>%
     mutate_all(funs(recode(., Y = "1", N="0"))) %>%
     mutate_all(funs(as.numeric)) 
+  other_cols <- df %>% select(-one_of(get_yesno(.)))
+  bind_cols(other_cols, yesno_df)
 }
 
 
