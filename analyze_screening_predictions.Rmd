@@ -31,24 +31,61 @@ print_loaded_pkgs()
 
 ```{r get_data}
 
+other_features <- "deidentified$generated$other_features" %>% 
+  dbUtilities::put_tbl_to_memory(edu_db_con, .)
+
+
+other_features %>% 
+  group_by(study_id) %>% 
+  summarise(count = n()) %>% 
+  filter(count > 1) 
+
+other_features %>% filter(study_id == "0015fb2aad410d3dc985353d77ec0f79")
+
+names(other_features)
+
+
+
+
 screener_predictions <- "deidentified$predictions$screener_scores_admissions" %>% 
   dbUtilities::put_tbl_to_memory(edu_db_con, .) %>% 
   select(-outcome)
 
-screener_scores_model_data <- dbUtilities::put_tbl_to_memory(edu_db_con, "deidentified$model_data$screener_scores_admissions")
 
-all_applicants <- "deidentified$clean$all_applicants" %>% 
+screener_predictions %>% 
+  group_by(study_id) %>% 
+  summarise(count = n()) %>% 
+  filter(count > 1) %>% 
+  dim()
+
+screener_predictions %>% filter(study_id == "0015fb2aad410d3dc985353d77ec0f79")
+
+
+
+screener_scores_model_data <- "deidentified$model_data$screener_scores_admissions" %>% 
   dbUtilities::put_tbl_to_memory(edu_db_con, .)
+
+screener_scores_model_data %>% 
+  group_by(study_id) %>% 
+  summarise(count = n()) %>% 
+  filter(count > 1) %>% 
+  dim()
+
+screener_scores_model_data %>% filter(study_id == "0015fb2aad410d3dc985353d77ec0f79")
+
+
+
+
 
 
 
 all_applicants_select <- "deidentified$clean$all_applicants" %>% 
   dbUtilities::put_tbl_to_memory(edu_db_con, .) %>% 
   mutate(is_matriculated = if_else(!is.na(deposit_date),1,0)) %>%
-  select(study_id, appl_year, is_faculty_screened, is_invited_interview, is_interviewed, is_committee_reviewed, is_offered_admission, is_matriculated) 
+  select(study_id, appl_year, is_faculty_screened, is_invited_interview, is_interviewed, is_committee_reviewed, ... =   is_offered_admission, is_matriculated) 
 
 
-#004e86bc527ab20237b89442de796122
+all_applicants_select %>% filter(study_id == "0015fb2aad410d3dc985353d77ec0f79")
 
 
 ```
@@ -61,20 +98,23 @@ pred_features_admin_decision <- screener_predictions %>%
   left_join(., screener_scores_model_data, by = c("study_id", "appl_year")) %>% 
   left_join(., all_applicants_select, by = c("study_id", "appl_year"))
 
-
-names(pred_features_admin_decision)
   
 ```
 
 
 ```{r}
+table(pred_features_admin_decision$is_interviewed)
 
 pred_features_admin_decision %>% 
-  group_by(outcome) %>% 
-  summarise(num_interview = sum(is_interviewed, na.rm = TRUE))
+  group_by(outcome) %>%
+  summarise(num_interview = sum(is_interviewed, na.rm = TRUE), 
+            pct_interviewed = num_interview/ (n() - sum(is.na(is_interviewed))),
+            num_accepted = 
+            
+            
+            )
 
 
-pred_features_admin_decision %>% filter(study_id == "004e86bc527ab20237b89442de796122")
 
 ```
 
