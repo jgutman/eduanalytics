@@ -6,12 +6,12 @@
 #'
 #' @param dat tibble or data frame 
 #' @param varname grouping variable
-#' @param round number of digits for rounding
+#' @param round_digits number of digits for rounding
 #'
 #' @return a matrix 
 #' @export
 #'
-pct_miss_table_single <- function(dat, varname, round=1) {
+pct_miss_table_single <- function(dat, varname, round_digits = 1) {
   
   quo_group_by <- enquo(varname)
   colname <- dat %>% select(!!quo_group_by) %>% colnames()
@@ -20,7 +20,7 @@ pct_miss_table_single <- function(dat, varname, round=1) {
     group_by(!!quo_group_by) %>%
     summarize_all(funs(pct_missing = mean(is.na(.)))) %>%
     column_to_rownames(colname) %>%
-    t() %>% multiply_by(100) %>% round(round)
+    t() %>% multiply_by(100) %>% round(round_digits)
 }
 
 
@@ -35,7 +35,7 @@ pct_miss_table_single <- function(dat, varname, round=1) {
 #' @return a list of matrices
 #' @export
 #'
-pct_miss_table <- function(df_list, varname, round=1) {
+pct_miss_table <- function(df_list, varname, round_digits = 1) {
   
   quo_group_by <- enquo(varname)
 

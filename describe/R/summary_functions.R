@@ -37,6 +37,53 @@ get_cor_mat <- function(df_list, use = 'pairwise.complete.obs', round_digits = 3
 
 
 
+# Can't figure out how to specify grouping variable in function call rather than hard coding appl_year in function body 
+
+#' Get correlation matrices by year for a list of tibbles or data frames
+#'
+#' @param df_list a list of tibbles or data frames
+#'
+#' @return a list of correlation matrices
+#' @export
+#'
+get_cor_mat_by_year <- function(df_list) {
+ 
+  df_list %>%
+    map(., function(df) {
+      df %>% 
+        split(use_series(., appl_year)) %>% 
+        lapply(select, -appl_year) %>%
+        lapply(get_cor_mat_single)
+    } 
+  )
+}
+
+
+
+# slightly faster but doesn't maintain variable labels 
+# tbl %>%
+#   map(.,function(df) {
+#     df %>% 
+#       group_by(appl_year) %>% 
+#       nest() %>%
+#       mutate(var = map(data, get_cor_mat_single))
+#   }) %>%
+#   map(., "var", extract) 
+#
+#
+# or could use this plyr implementation
+# tbl %>%
+#   map(., function(df) {
+#     df %>%
+#       plyr::dlply(.(appl_year), get_cor_mat_single)
+#   }
+# )
+
+
+
+
+
+
 
 
 ## SUMMARY STATISTIC FUNCTIONS FOR NUMERIC AND DATE VARIABLES
@@ -82,10 +129,6 @@ get_basic_summaries_single <- function(dat, varname, data_type = is.numeric) {
   
   num_dat <- dat %>% select_if(data_type)
   
-  # stopping execution of no variables exist with given data type
-  #if (ncol(num_dat)==0) stop("No variables of that data type in data frame.")
-  
-  
   # making sure the grouping variable (probably appl_year) is included
   # necessary when grouping variable is a different class than vars to summarize
   group_var <- dat %>% select(!!quo_group_by)
@@ -97,7 +140,9 @@ get_basic_summaries_single <- function(dat, varname, data_type = is.numeric) {
   num_dat %<>% select(!!quo_group_by, everything()) 
   
   summstats <- list()
+  
   tryCatch( 
+    
     {for (i in 2:ncol(num_dat)) {
       summstats[[i-1]] <- num_dat %>% 
         group_by(!!quo_group_by) %>% 
@@ -106,11 +151,12 @@ get_basic_summaries_single <- function(dat, varname, data_type = is.numeric) {
                       seventyfive_quantile, max, sd), na.rm = TRUE) %>%
         as.data.frame()
       }
-    }, error = function(x) print("There are no variables of specified data type in data frame"))
-  )
-  names(summstats) <- names(num_dat[-1]) 
   
-  return(summstats)
+    names(summstats) <- names(num_dat[-1])
+    return(summstats)
+  
+    } , error = function(x) print("There are no variables of specified data type in data frame")
+  )
 }
 
 
