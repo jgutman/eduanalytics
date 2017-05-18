@@ -50,7 +50,7 @@ get_ndistinct <- function(df_list, varname) {
 #' @return a list of tables each containing the proportion of observations in each category grouped
 #'  by the grouping variable
 #'
-initialize_cat_tables <- function(dat, varname, digits) {
+initialize_cat_tables <- function(dat, varname, digits = 3) {
   
   quo_group_by <- enquo(varname)
   #print(quo_group_by)
@@ -85,7 +85,7 @@ initialize_cat_tables <- function(dat, varname, digits) {
 get_cat_tables_single <- function(dat, varname, digits = 3, n = 10) {
   
   quo_group_by <- enquo(varname)
-  table_list <- initialize_cat_tables(dat, !!quo_group_by)
+  table_list <- initialize_cat_tables(dat, !!quo_group_by, digits = digits)
   
   names <- names(table_list) 
   

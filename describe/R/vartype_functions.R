@@ -64,3 +64,36 @@ get_binary_cols <- function(df) {
 } 
 
 
+
+### these change date to character --- fix to keep date variables as dates
+
+#' Removes time stamp from date variables in a data frame or tibble for better readability 
+#'
+#' @param df a tibble or data frame 
+#'
+#' @return a tibble with date variables in %m-%d-%y format
+#' @export
+#' 
+format_dates_single <- function(df) {
+  df %>% 
+    mutate_if(is.POSIXct, funs(format(., "%m-%d-%y")))
+}
+
+
+
+#' Removes time stamp from date variables in a list of tibbles or data frame for better readability
+#'
+#' @param df_list a list of tibbles or data frames
+#'
+#' @return a list of tibbles with date variables in %m-%d-%y format
+#' @export 
+#'
+#' @examples
+format_dates <- function(df_list) {
+  df_list %>% 
+    map(., function(df) 
+      df %>% format_dates_single()
+    )
+}
+
+

@@ -3,6 +3,9 @@ title: "Descriptive reporting template"
 author: "Dana Weisenfeld, Suvam Paul"
 date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
 output:
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
   html_notebook:
     highlight: tango
     theme: cosmo
@@ -54,9 +57,16 @@ appl <- dbUtilities::put_tbl_to_memory(edu_deid_con, clean_tables[1])
 ```
 
 
+# Missing Data
+
+Percent of observations with missing values for each variable by application year
 ```{r miss_table, warning=FALSE}
 
-kable(pct_miss_table(dat, appl_year), type='html', caption="Percent missing in each variable by year")
+pct_miss_table_single(dat, appl_year)
+
+pct_miss_table(tbl, appl_year)
+
+#kable(pct_miss_table(dat, appl_year), type='html', caption="Percent missing in each variable by year")
 
 ```
 
@@ -104,62 +114,49 @@ tbl %>%
 
 
 ```{r complete_cases}
-# percent of complete observations
-
-get_complete_cases_single(dat)
-
-tbl %>% get_complete_cases()
-
-
 # percent of complete observations by year
-get_complete_cases_by_yr(tbl, appl_year)
+
+get_complete_cases_single(dat, appl_year)
+
+tbl %>% get_complete_cases(appl_year)
+
 
 ```
 
 
 ```{r class_identification}
 
-# converting application year to character so it doesn't get summarized with numerics
-dat$appl_year <- as.character(dat$appl_year)
-
-
 # converting study_id to factor so it is ignored during summaries
 dat$study_id <- as.factor(dat$study_id)
 
+# recoding yes/no variables
+appl_r <- recode_yesno(appl)
 
-classes <- dat %>% map(class) %>% unlist %>% unname
+
+binaries <- get_binary(appl_r)
 
 
-nums <- which(classes=="numeric")
-binaries <- nums[apply(dat[nums], 2, function(x) { all(na.omit(x) %in% 0:1) })]
-continuous <- setdiff(nums, binaries)
-  
-cats <- which(classes=="character")
-dates <- which(classes=="POSIXct")
+# cleaning date variables
+dat %<>% format_dates_single()
+tbl %<>% format_dates()
 
 
 ```
 
-### Summary statistics for continuous variables
-
-There are `r length(continuous)` continuous numeric variables in the dataset.
+# Summary statistics for continuous variables
 
 ```{r summ_stats_cont_vars}
 
+get_basic_summaries_single(dat, appl_year, is.numeric)
+get_basic_summaries_single(appl, appl_year)
 
-get_basic_num_summaries_single(dat, appl_year)
-
-get_basic_num_summaries(tbl, appl_year)
-
+get_basic_summaries(tbl, appl_year, is.numeric)
 
 ```
 
-There are `r binaries` binary variables in the dataset. 
- 
 ```{r, binaries}
 
-appl %>% get_binary()
-names(appl)
+appl_r %>% get_binary()
 
 
 table(appl$ses, useNA = "always")
@@ -173,43 +170,18 @@ table(appl$appl_type_desc, useNA = "always")
 
 
 
-###Correlation Matrix
+## Correlation Matrix
 
 ```{r corr_matrix}
 
 kable(get_cor_mat_single(dat), type='html')
 
-get_cor_mat(tbl, round_digits = 3)
+
+get_cor_mat_single(appl)
+get_cor_mat(tbl, round_digits = 2)
 
 
-#group a list of tibbles by application year for each tibble and then return?
-# tbl %>%
-#   map(.,function(df) {
-#     df %>% 
-#       group_by(appl_year) %>% 
-#       nest() %>%
-#       mutate(var = map(data, get_cor_mat_single))
-#   }) %>%
-#   map(., "var", extract) 
-
-
-# produces same output as above, but year names are preserved in list headers so output is more readable
-tbl %>%
-  map(., function(df) {
-    df %>% 
-      split(use_series(., appl_year)) %>% 
-      lapply(select, -appl_year) %>%
-      lapply(get_cor_mat_single)
-} )
-
-
-# or could use this plyr implementation
-# tbl %>%
-#   map(., function(df) {
-#     df %>%
-#       plyr::dlply(.(appl_year), get_cor_mat_single)
-#   }
-# )
+get_cor_mat_by_year(tbl)
 
 
 ```
@@ -219,17 +191,23 @@ tbl %>%
 
 # rewrite this
 
-# setting par settings so histograms display in a grid
-par_rows <- length(continuous) %% 4 + 1
-par(mfrow=c(par_rows, 4)) # add more par settings for better display
+# histograms should be for continunous variables (numeric but not binary)
+# classes_dat <- dat %>% map(class) %>% unlist %>% unname
+# classes_appl <- appl_r %>% map(class) %>% unlist %>% unname
+# 
+# nums <- which(classes_dat=="numeric")
+# bins <- which(sapply(dat, function(x) all(x %in% 0:1)))
+# continuous <- setdiff(nums, bins)
+# 
+# # setting par settings so histograms display in a grid
+# par_rows <- length(continuous) %% 4 + 1
+# par(mfrow=c(par_rows, 4)) # add more par settings for better display
 
-for (i in 1:par_rows) {
-  hist(dat_cont[,i], main=names(dat_cont)[i], xlab="")
-}
 
 ```
 
 
+# Categorical variables 
 
 Number of distinct categories for each categorical variable (character vector) by year
 ```{r distinct_categories, results='asis'}
@@ -246,48 +224,34 @@ get_ndistinct(tbl, appl_year)
 Tables of categorical variables
 ```{r categorical_tables}
 
-cat_tabs <- get_cat_tables_single(dat, appl_year, digits=3)
-cat_tabs
+get_ndistinct_single(dat, appl_year) 
+get_ndistinct_single(appl_r, appl_year) 
+get_ndistinct(tbl, appl_year) 
+
+
+get_cat_tables_single(dat, appl_year, digits=3)
+get_cat_tables_single(appl_r, appl_year, digits=3)
+
 
 get_cat_tables(tbl, appl_year)
 
 # format tables for nice display 
-categorical_kables <- lapply(names(cat_tabs), function(x) kable(cat_tabs[[x]], caption = x, type='html'))
-categorical_kables
+# categorical_kables <- lapply(names(cat_tabs), function(x) kable(cat_tabs[[x]], caption = x, type='html'))
+# categorical_kables
 
 ```
 
-
-```{r props_across_years, eval=FALSE}
-
-# Provides N and proportin in each category across years
-for (i in 1:length(cats)) {
-  rawN <- sort(as.numeric(table(dat[,cats[i]])), decreasing=TRUE)
-  prop <- sort(round(as.numeric(prop.table(table(dat[,cats[i]]))),2), decreasing=TRUE)
-
-  col_names <- names(table(dat[,cats[i]]))
-  
-  if (length(rawN) > 10) {
-    rawN <- rawN[1:10]
-    prop <- prop[1:10]
-    col_names <- names(table(dat[,cats[i]]))[1:10]
-    }
-  
-  cells <- paste0(rawN, " (", prop, ")")
-  names(cells) <- col_names
-  #cells <- as.matrix(cells, ncol=4, dimnames = list(c(), col_names))
-
-  print(kable(t(cells)), caption = names(dat[cats[i]]))
-}
-
-```
+# Date Variables
 
 Summary Statistics for Date Variables
 ```{r dates}
 
-# currently don't work 
-get_basic_summaries_single(appl, appl_year, is.POSIXct)
+# format to remove time stamp from date summaries
 
-get_basic_summaries(df_list = tbl, appl_year, is.POSIXct)
+get_basic_summaries_single(dat, appl_year, is.POSIXct) # no date variables so should return informative message
+
+get_basic_summaries_single(appl_r, appl_year, is.POSIXct) 
+
+get_basic_summaries(tbl, appl_year, is.POSIXct)
 
 ```
