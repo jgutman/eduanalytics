@@ -77,8 +77,8 @@ filter_last_app_only <- function (df_list, min_year, max_year)
 
 ```{r filter_edudw}
 edudw_deidentified %<>%
-  filter_first_app_only(min_year = 2013, max_year = 2017) %>%
-  #filter_last_app_only(min_year = 2006, max_year = 2017) %>% 
+  #filter_first_app_only(min_year = 2013, max_year = 2017) %>%
+  filter_first_app_only(min_year = 2006, max_year = 2017) %>% 
   map(drop_empty_cols)
 ```
 

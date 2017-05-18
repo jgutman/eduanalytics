@@ -98,9 +98,6 @@ gpa_post_bac <- gpa %>% select(-ao_gpa, -ao_hours, -appl_year) %>%
   filter(aca_status_desc == "Postbaccalaureate Undergraduate")
 names(gpa_post_bac) <- find_and_replace(gpa_post_bac, "bcpm_gpa|total_gpa|bcpm_hours|total_hours", "postbac")
 
-#remove those less than 12 total_post_back_hours
-#gpa_post_bac <- gpa_post_bac %>% mutate(did_postbac = ifelse(total_hours_postbac > 12, 1,0))
-
 gpa_post_bac <- gpa_post_bac %>% select(-aca_status_desc)
 
 ```
@@ -115,9 +112,6 @@ gpa_grad <- gpa %>%
 names(gpa_grad) <- find_and_replace(gpa_grad, "total_hours", "grad")
 
 gpa_grad <- gpa_grad %>% select(-aca_status_desc)
-  
-#  mutate(graduate_school_attended = map_dbl(total_hours, recode_function)) %>% 
-#  select(study_id, graduate_school_attended)
   
 ```
 
@@ -141,9 +135,9 @@ bcmp_gpa_trend <- gpa %>%
   filter(aca_status_desc == "Freshman" | aca_status_desc == "Sophomore" | aca_status_desc == "Junior" | aca_status_desc == "Senior") %>%
   select(study_id, aca_status_desc, bcpm_gpa) %>% 
   spread(aca_status_desc, bcpm_gpa) %>% 
-  mutate(bcmp_gpa_soph_higher = as.numeric(Sophomore > Freshman),
-         bcmp_gpa_juni_higher = as.numeric(Junior > Freshman),
-         bcmp_gpa_seni_higher = as.numeric(Senior > Junior)) %>% 
+  mutate(bcpm_gpa_soph_higher = as.numeric(Sophomore > Freshman),
+         bcpm_gpa_juni_higher = as.numeric(Junior > Freshman),
+         bcpm_gpa_seni_higher = as.numeric(Senior > Junior)) %>% 
   select(-Freshman, -Sophomore, -Junior, -Senior) 
 
 
