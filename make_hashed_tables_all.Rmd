@@ -1,6 +1,16 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Add hashed study ID for deidentification"
+author: "Jacqueline Gutman, Suvam Paul"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+  html_document:
+    toc: yes
+    toc_depth: '4'
 ---
 
 # Setup

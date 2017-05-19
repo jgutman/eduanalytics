@@ -1,0 +1,257 @@
+---
+title: "Descriptive reporting template"
+author: "Dana Weisenfeld, Suvam Paul"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+  html_document:
+    toc: yes
+    toc_depth: '4'
+---
+
+# Setup
+## Load packages
+## Read in database credentials and open connection
+
+```{r setup, message = FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook_dana.R")
+```
+
+```{r setup_notebook}
+```
+
+```{r echo = FALSE}
+print_loaded_pkgs()
+```
+
+```{r addl_setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.align = 'center')
+library(VIM)
+library(xtable)
+```
+
+
+```{r credentials}
+
+tables_list <- dbListTables(edu_deid_con)
+
+clean_tables <-  get_tbl_names_by_stage(edu_deid_con, "deidentified", "clean")
+
+# gpa
+dat <- dbUtilities::put_tbl_to_memory(edu_deid_con, clean_tables[4])
+
+#list of tibbles
+tbl <- dbUtilities::get_tbls_by_pattern(edu_deid_con, "\\Wclean\\Wgpa|\\Wclean\\Wexperiences")
+
+#appl 
+
+appl <- dbUtilities::put_tbl_to_memory(edu_deid_con, clean_tables[1])
+
+```
+
+
+# Missing Data
+
+Percent of observations with missing values for each variable by application year
+```{r miss_table, warning=FALSE}
+
+pct_miss_table_single(dat, appl_year)
+
+pct_miss_table(tbl, appl_year)
+
+#kable(pct_miss_table(dat, appl_year), type='html', caption="Percent missing in each variable by year")
+
+```
+
+
+
+```{r missing_plots}
+
+#what does aggr return?
+miss_obj <- aggr(dat, bars = FALSE, sortVars = TRUE, numbers = TRUE, plot = TRUE, cex.axis=.8)
+
+aggr(dat, sortVars=TRUE, numbers=FALSE, prop=c(TRUE, TRUE), plot=TRUE, cex.axis=.8)
+
+print(miss_obj)
+summary(miss_obj)
+
+
+######## refactor of code to explore a single tibble and a list of tibbles#######
+
+
+summary(explore_missingness_single(dat, plot = TRUE))
+explore_missingness(tbl, plot = TRUE)
+
+
+
+#group a list of tibbles by application year each year and return...
+tbl %>%
+  map(., function(df) {
+    df %>% 
+      split(use_series(., appl_year)) %>% 
+      lapply(select, -appl_year) %>%
+      lapply(explore_missingness_single)
+    } 
+  ) 
+
+
+# same output as above, but requires plyr
+# tbl %>%
+#   map(., function(df) {
+#     df %>% 
+#       plyr::dlply(.(appl_year), explore_missingness_single)
+#   }
+# )
+    
+```
+
+
+```{r complete_cases}
+# percent of complete observations by year
+
+get_complete_cases_single(dat, appl_year)
+
+tbl %>% get_complete_cases(appl_year)
+
+
+```
+
+
+```{r class_identification}
+
+# converting study_id to factor so it is ignored during summaries
+dat$study_id <- as.factor(dat$study_id)
+
+# recoding yes/no variables
+appl_r <- recode_yesno(appl)
+
+
+binaries <- get_binary(appl_r)
+
+
+# cleaning date variables
+dat %<>% format_dates_single()
+tbl %<>% format_dates()
+
+
+```
+
+# Summary statistics for continuous variables
+
+```{r summ_stats_cont_vars}
+
+get_basic_summaries_single(dat, appl_year, is.numeric)
+get_basic_summaries_single(appl, appl_year)
+
+get_basic_summaries(tbl, appl_year, is.numeric)
+
+```
+
+```{r, binaries}
+
+appl_r %>% get_binary()
+
+
+table(appl$ses, useNA = "always")
+table(appl$dual_degree_applicant, useNA = "always")
+table(appl$appl_type_desc, useNA = "always")
+
+
+```
+
+
+
+
+
+## Correlation Matrix
+
+```{r corr_matrix}
+
+kable(get_cor_mat_single(dat), type='html')
+
+
+get_cor_mat_single(appl)
+get_cor_mat(tbl, round_digits = 2)
+
+
+get_cor_mat_by_year(tbl)
+
+
+```
+
+
+```{r histograms, eval=FALSE}
+
+# rewrite this
+
+# histograms should be for continunous variables (numeric but not binary)
+# classes_dat <- dat %>% map(class) %>% unlist %>% unname
+# classes_appl <- appl_r %>% map(class) %>% unlist %>% unname
+# 
+# nums <- which(classes_dat=="numeric")
+# bins <- which(sapply(dat, function(x) all(x %in% 0:1)))
+# continuous <- setdiff(nums, bins)
+# 
+# # setting par settings so histograms display in a grid
+# par_rows <- length(continuous) %% 4 + 1
+# par(mfrow=c(par_rows, 4)) # add more par settings for better display
+
+
+```
+
+
+# Categorical variables 
+
+Number of distinct categories for each categorical variable (character vector) by year
+```{r distinct_categories, results='asis'}
+
+
+get_ndistinct_single(dat, appl_year) 
+
+get_ndistinct(tbl, appl_year)
+
+
+```
+
+
+Tables of categorical variables
+```{r categorical_tables}
+
+get_ndistinct_single(dat, appl_year) 
+get_ndistinct_single(appl_r, appl_year) 
+get_ndistinct(tbl, appl_year) 
+
+
+get_cat_tables_single(dat, appl_year, digits=3)
+get_cat_tables_single(appl_r, appl_year, digits=3)
+
+
+get_cat_tables(tbl, appl_year)
+
+# format tables for nice display 
+# categorical_kables <- lapply(names(cat_tabs), function(x) kable(cat_tabs[[x]], caption = x, type='html'))
+# categorical_kables
+
+```
+
+# Date Variables
+
+Summary Statistics for Date Variables
+```{r dates}
+
+# format to remove time stamp from date summaries
+
+get_basic_summaries_single(dat, appl_year, is.POSIXct) # no date variables so should return informative message
+
+get_basic_summaries_single(appl_r, appl_year, is.POSIXct) 
+
+get_basic_summaries(tbl, appl_year, is.POSIXct)
+
+```
