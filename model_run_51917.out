@@ -1,20 +1,25 @@
-Traceback (most recent call last):
-  File "/Users/gutmaj03/anaconda/envs/edu_analytics/lib/python3.6/configparser.py", line 1135, in _unify_values
-    sectiondict = self._sections[section]
-KeyError: 'edu_db_owner'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "run_and_save_model.py", line 87, in <module>
-    main()
-  File "run_and_save_model.py", line 69, in main
-    engine = model_data.connect_to_database(args.path, args.group)
-  File "/Users/gutmaj03/Desktop/admissions/eduanalytics/model_data.py", line 23, in connect_to_database
-    user = reader.get(group, 'user'),
-  File "/Users/gutmaj03/anaconda/envs/edu_analytics/lib/python3.6/configparser.py", line 778, in get
-    d = self._unify_values(section, vars)
-  File "/Users/gutmaj03/anaconda/envs/edu_analytics/lib/python3.6/configparser.py", line 1138, in _unify_values
-    raise NoSectionError(section)
-configparser.NoSectionError: No section: 'edu_db_owner'
 fitting the grid search
+Time elapsed: 0:03:48
+Written to: aoa_admissions_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:03:47
+Written to: aoa_admissions_inschool_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:03:37
+Written to: residency_noncompete_admit_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:03:36
+Written to: residency_noncompete_admit_inschool_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:04:32
+Written to: residency_top25_admissions_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:04:37
+Written to: residency_top25_admissions_inschool_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:03:55
+Written to: worry_score_admissions_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:29:47
+Written to: screener_scores_admissions_rf_grid.pkl.z in pkls
+pkls copied to shared drive
