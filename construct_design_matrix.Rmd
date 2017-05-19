@@ -237,6 +237,7 @@ residency_noncompete_admissions_inschool <- create_outcome_features_data(
   generated_features_admissions_inschool, residency_noncompete)
 
 #write to database
+
 model_run_name <- "residency_noncompete_admit_inschool"
 
 residency_noncompete_admissions_inschool %>%
