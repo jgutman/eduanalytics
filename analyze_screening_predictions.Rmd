@@ -31,34 +31,16 @@ print_loaded_pkgs()
 
 ```{r get_data}
 
-other_features <- "deidentified$generated$other_features" %>% 
-  dbUtilities::put_tbl_to_memory(edu_db_con, .)
-
-
-other_features %>% 
-  group_by(study_id) %>% 
-  summarise(count = n()) %>% 
-  filter(count > 1) 
-
-other_features %>% filter(study_id == "0015fb2aad410d3dc985353d77ec0f79")
-
-names(other_features)
-
-
-
 
 screener_predictions <- "deidentified$predictions$screener_scores_admissions" %>% 
   dbUtilities::put_tbl_to_memory(edu_db_con, .) %>% 
   select(-outcome)
-
 
 screener_predictions %>% 
   group_by(study_id) %>% 
   summarise(count = n()) %>% 
   filter(count > 1) %>% 
   dim()
-
-screener_predictions %>% filter(study_id == "0015fb2aad410d3dc985353d77ec0f79")
 
 
 
@@ -71,23 +53,30 @@ screener_scores_model_data %>%
   filter(count > 1) %>% 
   dim()
 
-screener_scores_model_data %>% filter(study_id == "0015fb2aad410d3dc985353d77ec0f79")
-
-
-
-
-
 
 
 all_applicants_select <- "deidentified$clean$all_applicants" %>% 
   dbUtilities::put_tbl_to_memory(edu_db_con, .) %>% 
   mutate(is_matriculated = if_else(!is.na(deposit_date),1,0)) %>%
-  select(study_id, appl_year, is_faculty_screened, is_invited_interview, is_interviewed, is_committee_reviewed, ... =   is_offered_admission, is_matriculated) 
+  select(study_id, appl_year, is_faculty_screened, is_invited_interview, is_interviewed, is_committee_reviewed, is_offered_admission, is_matriculated) 
 
 
-all_applicants_select %>% filter(study_id == "0015fb2aad410d3dc985353d77ec0f79")
+all_applicants_select %>% 
+  group_by(study_id) %>% 
+  summarise(count = n()) %>% 
+  filter(count > 1) %>% 
+  dim()
 
 
+
+outcome_screened_apps <- "deidentified$outcome$screened_apps" %>% 
+  dbUtilities::put_tbl_to_memory(edu_db_con, .)
+
+outcome_screened_apps %>% 
+  group_by(study_id) %>% 
+  summarise(count = n()) %>% 
+  filter(count > 1) %>% 
+  dim()
 ```
 
 
