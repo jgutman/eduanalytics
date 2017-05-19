@@ -74,7 +74,7 @@ pred_features_admin_decision <- screener_predictions %>%
 
 
 pred_features_admin_decision %>% 
-  filter(appl_year != 2017) %>% 
+#  filter(appl_year != 2017) %>% 
   mutate(risk_bucket = ntile(predicted_0 - predicted_2, 15))  -> pred_features_admin_decision
 
 pred_features_admin_decision %>%
