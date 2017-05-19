@@ -75,6 +75,30 @@ nested_science %>%
 ```
 
 ```{r}
+
+#replace NA with 0's
+
+all_grade_counts %>% 
+  is.na() %>%
+  colSums()
+
+exp_list <- colnames(all_grade_counts) %>% 
+  str_detect("counts") %>% 
+  map2(colnames(all_grade_counts), ., magrittr::extract) %>% 
+  unlist()
+exp_list <- rep(0, length(exp_list)) %>% set_names(exp_list) %>% as.list()
+
+all_grade_counts %>% 
+  replace_na(exp_list) -> all_grade_counts
+
+all_grade_counts %>% 
+  is.na() %>%
+  colSums()
+  
+  
+```
+
+```{r}
 "grades" %>%
   add_tbl_prefix(status = "generated") %>%
   write_to_database_single(all_grade_counts, edu_db_con, .)

@@ -94,7 +94,7 @@ gpa_cumulative <- gpa_cumulative %>% select(-aca_status_desc)
 
 ```{r post_bac}
 
-gpa_post_bac <- gpa %>% select(-ao_gpa, -ao_hours, -appl_year) %>%  
+gpa_post_bac <- gpa %>% select(-ao_gpa, -ao_hours) %>%  
   filter(aca_status_desc == "Postbaccalaureate Undergraduate")
 names(gpa_post_bac) <- find_and_replace(gpa_post_bac, "bcpm_gpa|total_gpa|bcpm_hours|total_hours", "postbac")
 
@@ -106,7 +106,7 @@ gpa_post_bac <- gpa_post_bac %>% select(-aca_status_desc)
 ```{r attended_grad_schools}
 
 gpa_grad <- gpa %>% 
-  select(study_id, aca_status_desc, total_hours) %>%  
+  select(study_id, appl_year, aca_status_desc, total_hours) %>%  
   filter(aca_status_desc == "Graduate")  
 
 names(gpa_grad) <- find_and_replace(gpa_grad, "total_hours", "grad")
@@ -120,9 +120,9 @@ gpa_grad <- gpa_grad %>% select(-aca_status_desc)
 
 
 #total gpa
-totat_gpa_trend <- gpa %>% 
+total_gpa_trend <- gpa %>% 
   filter(aca_status_desc == "Freshman" | aca_status_desc == "Sophomore" | aca_status_desc == "Junior" | aca_status_desc == "Senior") %>%
-  select(study_id, aca_status_desc, total_gpa) %>% 
+  select(study_id, appl_year, aca_status_desc, total_gpa) %>% 
   spread(aca_status_desc, total_gpa) %>% 
   mutate(total_gpa_soph_higher = as.numeric(Sophomore > Freshman),
          total_gpa_juni_higher = as.numeric(Junior > Freshman),
@@ -131,9 +131,9 @@ totat_gpa_trend <- gpa %>%
  
 
 #science gpa
-bcmp_gpa_trend <- gpa %>% 
+bcpm_gpa_trend <- gpa %>% 
   filter(aca_status_desc == "Freshman" | aca_status_desc == "Sophomore" | aca_status_desc == "Junior" | aca_status_desc == "Senior") %>%
-  select(study_id, aca_status_desc, bcpm_gpa) %>% 
+  select(study_id, appl_year, aca_status_desc, bcpm_gpa) %>% 
   spread(aca_status_desc, bcpm_gpa) %>% 
   mutate(bcpm_gpa_soph_higher = as.numeric(Sophomore > Freshman),
          bcpm_gpa_juni_higher = as.numeric(Junior > Freshman),
@@ -149,10 +149,10 @@ bcmp_gpa_trend <- gpa %>%
 ```{r gpa_ready}
 
 gpa_generated <- gpa_cumulative %>% 
-  left_join(.,gpa_post_bac, by = "study_id") %>% 
-  left_join(.,gpa_grad, by = "study_id") %>% 
-  left_join(.,totat_gpa_trend, by = "study_id") %>% 
-  left_join(., bcmp_gpa_trend, by = "study_id")
+  left_join(.,gpa_post_bac, by =c("study_id", "appl_year")) %>% 
+  left_join(.,gpa_grad, by = c("study_id", "appl_year")) %>% 
+  left_join(.,total_gpa_trend, by = c("study_id", "appl_year")) %>% 
+  left_join(., bcpm_gpa_trend, by = c("study_id", "appl_year"))
 
 ```
 
@@ -161,8 +161,10 @@ gpa_generated <- gpa_cumulative %>%
 gpa_generated <- gpa_generated %>% 
   mutate(did_postbac = total_hours_postbac >= 12, 
          attended_grad_school = total_hours_grad >= 12) %>%
-  replace_na(list(did_postbac = 0, attended_grad_school = 0)) %>% 
+  replace_na(list(did_postbac = 0, attended_grad_school = 0, 
+                  bcpm_hours_postbac = 0)) %>% 
   select(-total_hours_grad, -total_hours_postbac)
+
 
 ```
 
