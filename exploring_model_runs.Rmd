@@ -1,0 +1,73 @@
+---
+title: "Model results exploration"
+author: "Jacqueline Gutman, Suvam Paul"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_document:
+    toc: yes
+    toc_depth: '4'
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+---
+
+# Setup
+## Load packages
+## Read in database credentials and open connection
+
+```{r setup, message=FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook.R")
+```
+
+```{r setup_notebook}
+```
+
+```{r show_pkgs, echo = FALSE}
+print_loaded_pkgs()
+```
+
+```{r}
+
+residency_noncompete_admit_risk <- "deidentified$predictions$residency_noncompete_admit" %>% 
+  dbUtilities::put_tbl_to_memory(edu_db_con, .) %>% 
+  rename(predicted_risk_admit = predicted)
+
+
+residency_noncompete_admit_inschool_risk <- "deidentified$predictions$residency_noncompete_admit_inschool" %>%
+  dbUtilities::put_tbl_to_memory(edu_db_con, .) %>% 
+  rename(predicted_risk_admit_inschool = predicted) %>% 
+  select(-outcome, -set)
+  
+```
+
+
+```{r}
+
+risk_scores_all <- residency_noncompete_admit_risk %>% 
+  left_join(., residency_noncompete_admit_inschool_risk, by = c("study_id", "appl_year")) 
+
+names(risk_scores_all)
+```
+
+
+```{r}
+library(hexbin)
+
+names(risk_scores_all)
+
+ggplot(risk_scores_all, aes(x = predicted_risk_admit, y = predicted_risk_admit_inschool)) + 
+  stat_binhex(geom = "hex") +
+  scale_fill_gradient(low = "lightblue", high = "red", 
+                      breaks = c(0, 20, 40, 60, 80, 100, 120), 
+                      limits = c(0, 120)) + 
+  stat_smooth(method = loess, colour = "black") + 
+  labs(list
+       (title = "Non Top 25 and Non Competitive Risk Scores Correlation Plot", 
+        x = "Risk scores - ADMISSIONS DATA", 
+        y = "Risk scores - ADMISSIONS DATA and IN-SCHOOL DATA"))
+  
+
+```
+
