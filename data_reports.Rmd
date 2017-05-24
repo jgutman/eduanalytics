@@ -1,0 +1,186 @@
+---
+title: "Descriptive Statistics"
+author: "Dana Weisenfeld"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_notebook: default
+  html_document: default
+---
+
+```{r setup, message = FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook_dana.R")
+
+# Creates an html notebook containing descriptive statistics for a single table
+
+```
+
+```{r setup_notebook, echo=FALSE}
+```
+
+```{r packages, echo = FALSE, eval=FALSE}
+print_loaded_pkgs()
+```
+
+```{r addl_setup, include=FALSE, eval=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, fig.align = 'center')
+devtools::load_all("describe")
+
+```
+
+
+```{r credentials}
+
+tables_list <- dbListTables(edu_deid_con)
+
+tables <-  get_tbl_names_by_stage(edu_deid_con, "deidentified", "model_data")
+
+tab <- "deidentified$model_data$worry_score_admissions"
+
+# "deidentified$model_data$aoa_admissions"
+# "deidentified$model_data$aoa_admissions_inschool"            
+# "deidentified$model_data$residency_noncompete_admit"         
+# "deidentified$model_data$residency_noncompete_admit_inschool"
+# "deidentified$model_data$residency_top25_admissions"         
+# "deidentified$model_data$residency_top25_admissions_inschool"
+# "deidentified$model_data$screener_scores_admissions"         
+# "deidentified$model_data$worry_score_admissions"  
+
+
+dat <- dbUtilities::put_tbl_to_memory(edu_deid_con, tab)
+
+current_table <- gsub("\\$", "\\\\$", tab)
+
+```
+
+
+\
+
+
+
+# Basic information
+Dataset: `r current_table`  
+Number of observations: `r dim(dat)[1]`    
+Number of variables: `r dim(dat)[2]` 
+
+```{r reformatting_vars}
+
+ 
+# converting study_id to factor so it is ignored during summaries
+dat$study_id <- as.factor(dat$study_id)
+
+
+# recoding yes/no variables
+dat <- recode_yesno_single(dat)
+
+binaries <- get_binary(dat)
+
+
+# reformatting date variables 
+dat %<>% format_dates_single()
+
+```
+
+\
+
+
+
+# Missing Data
+
+*Percent of observations with missing values for each variable by application year*
+```{r miss_table, warning=FALSE, message=FALSE}
+
+kable(pct_miss_table_single(dat, appl_year), type='html')
+
+```
+
+*Percent of observations with no missing data by application year* 
+```{r complete_cases}
+# proportion of complete observations by year
+
+com_cases <- get_complete_cases_single(dat, appl_year)
+
+kable(com_cases, type='html', digits = 1)
+
+```
+
+\
+
+
+
+# Numeric variables
+
+### Summary statistics for continuous and discrete variables by application year 
+```{r summ_stats_cont_vars}
+
+dat_cont <- dat %>% select(-one_of(binaries))
+
+get_basic_summaries_single(dat_cont, appl_year, is.numeric, digits = 2)
+
+```
+
+\
+
+
+### Tables of binary variables by application year
+
+```{r binaries}
+
+bin_tables <- apply(get_binary_num_cols(dat), 2, table, dat$appl_year, useNA = 'ifany')
+
+lapply(bin_tables[-1], function(x) 
+  kable(prop.table(x, margin = 2), digits = 3))
+
+```
+
+
+### Correlation matrix 
+
+Contains all numeric variables. 
+```{r correlations, warning=FALSE}
+
+kable(get_cor_mat_single(dat), type='html', digits = 2)
+
+```
+
+\
+
+
+
+# Categorical variables 
+
+*Number of distinct categories for each categorical variable by year* 
+```{r distinct_categories}
+
+kable(get_ndistinct_single(dat, appl_year), type='html') 
+
+```
+
+
+*Tables of categorical variables* 
+
+For variables with more than 10 categories, only the 10 largest categories are displayed.
+Some of the categorical variables included below may also be binary variables. 
+```{r categorical_tables}
+
+cat_tabs <- get_cat_tables_single(dat, appl_year, digits=3)
+
+categorical_kables <- lapply(names(cat_tabs), function(x) kable(cat_tabs[[x]], caption = x, type='html'))
+names(categorical_kables) <- names(cat_tabs)
+categorical_kables
+
+```
+
+\
+
+
+
+
+# Summary statistics for date variables
+```{r dates}
+
+get_basic_summaries_single(dat, appl_year, is.POSIXct) 
+# if no date variables so should return informative message
+
+
+```
