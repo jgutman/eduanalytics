@@ -105,8 +105,8 @@ get_complete_cases_single <- function(dat, varname) {
   quo_group_by <- enquo(varname)
   
   dat %>% group_by(!!quo_group_by) %>%
-    summarize(pct_complete = sum(complete.cases(.)/n())) %>%
-    as.data.frame()
+    summarize(pct_complete = sum(complete.cases(.)/n() * 100)) %>%
+    as.data.frame() 
 }
 
 
