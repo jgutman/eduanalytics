@@ -123,7 +123,7 @@ seventyfive_quantile <- function(a_vec,...) {
 #' @return a list containing summary statistics for each variable
 #' @export
 #'
-get_basic_summaries_single <- function(dat, varname, data_type = is.numeric) {
+get_basic_summaries_single <- function(dat, varname, data_type = is.numeric, digits = 2) {
   
   quo_group_by <- enquo(varname)
   
@@ -148,9 +148,10 @@ get_basic_summaries_single <- function(dat, varname, data_type = is.numeric) {
         group_by(!!quo_group_by) %>% 
         extract(c(1,i)) %>% 
         summarise_all(funs(min, twentyfive_quantile, median, mean, 
-                      seventyfive_quantile, max, sd), na.rm = TRUE) %>%
-        as.data.frame()
-      }
+                           seventyfive_quantile, max, sd), na.rm = TRUE) %>%
+        as.data.frame() %>%
+        round(digits)
+    }
   
     names(summstats) <- names(num_dat[-1])
     return(summstats)
@@ -171,13 +172,13 @@ get_basic_summaries_single <- function(dat, varname, data_type = is.numeric) {
 #' @return a list of lists each consisting of a data frame of summary statistics
 #' @export
 #'
-get_basic_summaries <- function(df_list, varname, data_type = is.numeric) {
+get_basic_summaries <- function(df_list, varname, data_type = is.numeric, digits = 2) {
   
   quo_group_by <- enquo(varname)
   
   df_list %>% 
     map(., function(df) {
-      df %>% get_basic_summaries_single(varname = !!quo_group_by, data_type = data_type) 
+      df %>% get_basic_summaries_single(varname = !!quo_group_by, data_type = data_type, digits = digits) 
     } )
 }
 
