@@ -123,7 +123,7 @@ seventyfive_quantile <- function(a_vec,...) {
 #' @return a list containing summary statistics for each variable
 #' @export
 #'
-get_basic_summaries_single <- function(dat, varname, data_type = is.numeric, digits = 2) {
+get_basic_summaries_single <- function(dat, varname, data_type = is.numeric, digits = 3) {
   
   quo_group_by <- enquo(varname)
   
@@ -156,7 +156,7 @@ get_basic_summaries_single <- function(dat, varname, data_type = is.numeric, dig
     names(summstats) <- names(num_dat[-1])
     return(summstats)
   
-    } , error = function(x) print("There are no variables of specified data type in data frame")
+    } , error = function(x) print("There are no variables of specified data type.")
   )
 }
 
@@ -183,3 +183,10 @@ get_basic_summaries <- function(df_list, varname, data_type = is.numeric, digits
 }
 
 
+
+
+
+
+get_binary_summaries <- function(df) {
+  
+}

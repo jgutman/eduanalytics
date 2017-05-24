@@ -22,7 +22,7 @@ get_yesno <- function(dat) {
 #' @return a tibble or data frame containing only recoded columns
 #' @export
 #'
-recode_yesno <- function(df) {
+recode_yesno_single <- function(df) {
   yesno_df <- df %>%
     select(one_of(get_yesno(.)))  %>%
     mutate_all(funs(recode(., Y = "1", N="0"))) %>%
@@ -30,6 +30,8 @@ recode_yesno <- function(df) {
   other_cols <- df %>% select(-one_of(get_yesno(.)))
   bind_cols(other_cols, yesno_df)
 }
+
+
 
 
 
@@ -71,6 +73,7 @@ get_binary_cols <- function(df) {
 #' @param df a data frame or tibble 
 #'
 #' @return tibble containing binary numeric variables
+#' @export
 #'
 get_binary_num_cols <- function(df) {
   df %>%
