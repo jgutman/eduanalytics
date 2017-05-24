@@ -65,7 +65,6 @@ get_binary_cols <- function(df) {
 
 
 
-### these change date to character --- fix to keep date variables as dates
 
 #' Removes time stamp from date variables in a data frame or tibble for better readability 
 #'
@@ -76,7 +75,7 @@ get_binary_cols <- function(df) {
 #' 
 format_dates_single <- function(df) {
   df %>% 
-    mutate_if(is.POSIXct, funs(format(., "%m-%d-%y")))
+    mutate_if(is.POSIXct, funs(format(as.POSIXct(., tz = "America/New_York", "%m-%d-%y"))))
 }
 
 
