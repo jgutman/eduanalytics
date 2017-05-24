@@ -50,6 +50,7 @@ get_binary <- function(df) {
 }
 
 
+
 #' Get the binary columns in a data frame plus appl_year and study_id 
 #'
 #' @param df a data frame or tibble 
@@ -64,6 +65,19 @@ get_binary_cols <- function(df) {
 } 
 
 
+
+#' Get the binary numeric columns in a data frame plus appl_year and study_id 
+#'
+#' @param df a data frame or tibble 
+#'
+#' @return tibble containing binary numeric variables
+#'
+get_binary_num_cols <- function(df) {
+  df %>%
+    get_binary() %>%
+    {select(df, study_id, appl_year, one_of(.))} %>%
+    select_if(is.numeric)
+}
 
 
 #' Removes time stamp from date variables in a data frame or tibble for better readability 
