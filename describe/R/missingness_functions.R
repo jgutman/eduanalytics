@@ -18,7 +18,7 @@ pct_miss_table_single <- function(dat, varname, round_digits = 1) {
   
   dat %>%
     group_by(!!quo_group_by) %>%
-    summarize_all(funs(pct_missing = mean(is.na(.)))) %>%
+    summarize_all(funs(mean(is.na(.)))) %>%
     column_to_rownames(colname) %>%
     t() %>% multiply_by(100) %>% round(round_digits)
 }
