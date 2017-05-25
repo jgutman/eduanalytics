@@ -111,7 +111,6 @@ get_complete_cases_single <- function(dat, varname) {
 
 
 
-# proportion of complete cases by year
 
 #' Function to get the proportion of complete observations for each tibble in a
 #' list of tibbles or data frames

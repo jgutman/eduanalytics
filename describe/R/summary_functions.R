@@ -37,8 +37,6 @@ get_cor_mat <- function(df_list, use = 'pairwise.complete.obs', round_digits = 3
 
 
 
-# Can't figure out how to specify grouping variable in function call rather than hard coding appl_year in function body 
-
 #' Get correlation matrices by year for a list of tibbles or data frames
 #'
 #' @param df_list a list of tibbles or data frames
@@ -46,13 +44,17 @@ get_cor_mat <- function(df_list, use = 'pairwise.complete.obs', round_digits = 3
 #' @return a list of correlation matrices
 #' @export
 #'
-get_cor_mat_by_year <- function(df_list) {
- 
+get_cor_mat_by_year <- function(df_list, varname) {
+
+  quo_group_by <- enquo(varname)
+  
   df_list %>%
     map(., function(df) {
+      group_var <- df %>% select(!!quo_group_by) %>% pull()
+      
       df %>% 
-        split(use_series(., appl_year)) %>% 
-        lapply(select, -appl_year) %>%
+        split(group_var) %>% 
+        lapply(select, -!!quo_group_by) %>%
         lapply(get_cor_mat_single)
     } 
   )
@@ -96,7 +98,7 @@ seventyfive_quantile <- function(a_vec,...) {
 #' @param varname variable to group by (generally appl_year)
 #' @param data_type class of variables to summarize. should be is.numeric or is.POSIXct
 #'
-#' @return a list containing summary statistics for each variable
+#' @return a list containing summary statistics for each variable stored in a df
 #' @export
 #'
 get_basic_summaries_single <- function(dat, varname, data_type = is.numeric, digits = 3) {
@@ -105,21 +107,20 @@ get_basic_summaries_single <- function(dat, varname, data_type = is.numeric, dig
   
   num_dat <- dat %>% select_if(data_type)
   
-  if (ncol(num_dat)==0) {
-    return("There are no variables of specified data type.")
-  }
+  if (ncol(num_dat)==0) return("There are no variables of specified data type.")
   
   else {
-    # making sure the grouping variable (probably appl_year) is included
+    # make sure the grouping variable (probably appl_year) is included
     # necessary when grouping variable is a different class than vars to summarize
     group_var <- dat %>% select(!!quo_group_by)
     if (names(group_var) %in% names(num_dat)==FALSE) {
       num_dat %<>% bind_cols(group_var, num_dat)
     }
   
-    # makes sure grouping var is first the first column in the dataframe
+    # make sure grouping var is first the first column in the dataframe
     num_dat %<>% select(!!quo_group_by, everything()) 
-  
+    
+    # empty list for summary statistics
     summstats <- list()
   
     for (i in 2:ncol(num_dat)) {
