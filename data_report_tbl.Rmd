@@ -3,8 +3,10 @@ title: "Descriptive Statistics"
 author: "Dana Weisenfeld"
 date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
 output:
-  html_notebook: default
+  html_notebook: 
+    toc: yes
   html_document: default
+  
 ---
 
 ```{r setup, message = FALSE, echo = FALSE}
@@ -58,7 +60,7 @@ tbl_names <- names(tbl)
 
 # Basic information
 This document contains descriptive statistics for the following tables:
-`r tbl_names'
+`r tbl_names`
 
 
 ```{r reformatting_vars}
@@ -154,12 +156,14 @@ get_basic_summaries(tbl_cont, appl_year, is.numeric, digits = 2)
 
 ```{r binaries}
 
+tbl_bin_nums <- lapply(tbl, get_binary_num_cols)
 
-# currently doesn't work for a list of tibbles
-bin_tables <- apply(get_binary_num_cols(dat), 2, table, dat$appl_year, useNA = 'ifany')
+bin_tables <- lapply(tbl_bin_nums, function(df)
+  apply(df, 2, table, df$appl_year, useNA = 'ifany'))
 
-lapply(bin_tables[-1], function(x) 
-  kable(prop.table(x, margin = 2), digits = 3))
+lapply(bin_tables, function(t)
+  lapply(t[-1], function(x) 
+      kable(prop.table(x, margin = 2), digits = 3)))
 
 ```
 

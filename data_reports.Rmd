@@ -3,11 +3,13 @@ title: "Descriptive Statistics"
 author: "Dana Weisenfeld"
 date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
 output:
-  html_notebook: default
+  html_notebook:
+    toc: yes
   html_document: default
 ---
 
 ```{r setup, message = FALSE, echo = FALSE}
+
 knitr::read_chunk("setup_notebook_dana.R")
 
 # Creates an html notebook containing descriptive statistics for a single table
@@ -84,6 +86,25 @@ dat %<>% format_dates_single()
 \
 
 
+*Variable types* 
+
+The following table displays the class type of every variable in the table as 
+well as whether the variable is binary. For these purposes, binary variables are
+classified as all variables containing at most two distinct values, excluding 
+NA's, regardless of whether the variable is numeric or string. Variables that 
+that were originally coded as Yes/No were recoded to numeric. Additionally, some of the 
+variables classified as binary might not be true binary variables. Study_id was
+recoded from character to factor. 
+```{r var_type}
+
+# print class of each variable
+kable(get_var_types_single(dat), type='html')
+
+```
+
+\
+
+
 
 # Missing Data
 
@@ -125,6 +146,8 @@ get_basic_summaries_single(dat_cont, appl_year, is.numeric, digits = 2)
 ### Tables of binary variables by application year
 
 ```{r binaries}
+
+# should probably be put into a function
 
 bin_tables <- apply(get_binary_num_cols(dat), 2, table, dat$appl_year, useNA = 'ifany')
 
