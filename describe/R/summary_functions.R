@@ -60,30 +60,6 @@ get_cor_mat_by_year <- function(df_list) {
 
 
 
-# slightly faster but doesn't maintain variable labels 
-# tbl %>%
-#   map(.,function(df) {
-#     df %>% 
-#       group_by(appl_year) %>% 
-#       nest() %>%
-#       mutate(var = map(data, get_cor_mat_single))
-#   }) %>%
-#   map(., "var", extract) 
-#
-#
-# or could use this plyr implementation
-# tbl %>%
-#   map(., function(df) {
-#     df %>%
-#       plyr::dlply(.(appl_year), get_cor_mat_single)
-#   }
-# )
-
-
-
-
-
-
 
 
 ## SUMMARY STATISTIC FUNCTIONS FOR NUMERIC AND DATE VARIABLES
@@ -129,21 +105,24 @@ get_basic_summaries_single <- function(dat, varname, data_type = is.numeric, dig
   
   num_dat <- dat %>% select_if(data_type)
   
-  # making sure the grouping variable (probably appl_year) is included
-  # necessary when grouping variable is a different class than vars to summarize
-  group_var <- dat %>% select(!!quo_group_by)
-  if (names(group_var) %in% names(num_dat)==FALSE) {
-    num_dat %<>% bind_cols(group_var, num_dat)
+  if (ncol(num_dat)==0) {
+    return("There are no variables of specified data type.")
   }
   
-  # makes sure grouping var is first the first column in the dataframe
-  num_dat %<>% select(!!quo_group_by, everything()) 
+  else {
+    # making sure the grouping variable (probably appl_year) is included
+    # necessary when grouping variable is a different class than vars to summarize
+    group_var <- dat %>% select(!!quo_group_by)
+    if (names(group_var) %in% names(num_dat)==FALSE) {
+      num_dat %<>% bind_cols(group_var, num_dat)
+    }
   
-  summstats <- list()
+    # makes sure grouping var is first the first column in the dataframe
+    num_dat %<>% select(!!quo_group_by, everything()) 
   
-  tryCatch( 
-    
-    {for (i in 2:ncol(num_dat)) {
+    summstats <- list()
+  
+    for (i in 2:ncol(num_dat)) {
       summstats[[i-1]] <- num_dat %>% 
         group_by(!!quo_group_by) %>% 
         extract(c(1,i)) %>% 
@@ -152,14 +131,10 @@ get_basic_summaries_single <- function(dat, varname, data_type = is.numeric, dig
         as.data.frame() %>%
         round(digits)
     }
-  
     names(summstats) <- names(num_dat[-1])
     return(summstats)
-  
-    } , error = function(x) print("There are no variables of specified data type.")
-  )
+  }
 }
-
 
 
 
@@ -176,17 +151,5 @@ get_basic_summaries <- function(df_list, varname, data_type = is.numeric, digits
   
   quo_group_by <- enquo(varname)
   
-  df_list %>% 
-    map(., function(df) {
-      df %>% get_basic_summaries_single(varname = !!quo_group_by, data_type = data_type, digits = digits) 
-    } )
-}
-
-
-
-
-
-
-get_binary_summaries <- function(df) {
-  
+  lapply(df_list, get_basic_summaries_single, varname = !!quo_group_by, data_type = data_type, digits = digits)
 }
