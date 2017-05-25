@@ -15,7 +15,7 @@ get_yesno <- function(dat) {
 }
 
 
-#' Recodes Y/N/NA vars to 1/0/NA and converts to numeric
+#' Recodes Y/N/NA vars to 1/0/NA and converts to numeric for a single tibble/data frame
 #'
 #' @param df a data frame or tibble
 #'
@@ -33,6 +33,16 @@ recode_yesno_single <- function(df) {
 
 
 
+#' Recodes Y/N/NA vars to 1/0/NA and converts to numeric for a list of tibbles
+#'
+#' @param df_list a list of tibbles or data frames 
+#'
+#' @return A list of tibbles with Yes/No variables recoded to 1/0
+#' @export 
+#'
+recode_yesno <- function(df_list) {
+  lapply(df_list, recode_yesno_single)
+}
 
 
 #' Get names of columns that are binary (have two distinct values, excluding NAs) for a data frame
@@ -83,6 +93,10 @@ get_binary_num_cols <- function(df) {
 }
 
 
+
+## Functions to better display dates
+
+
 #' Removes time stamp from date variables in a data frame or tibble for better readability 
 #'
 #' @param df a tibble or data frame 
@@ -115,17 +129,19 @@ format_dates <- function(df_list) {
 
 
 
+## Functions for displaying variable type 
+
 
 #' Prints a table containing the class of all variables in the data set along
 #' with whether the variable is binary or not. In this case, binary means that 
 #' there are at most two distinct values for the variable, ignoring NA. 
 #'
-#' @param df a data frame 
+#' @param df a data frame or tibble
 #'
 #' @return a data frame with two columns
 #' @export 
 #'
-get_var_types <- function(df) {
+get_var_types_single <- function(df) {
   classes <- lapply(df, class)
   classes <- as.data.frame(sapply(classes, function(x) x[1]))
   ndistinct <- df %>% summarize_all(n_distinct) %>% t() %>% as.data.frame() 
@@ -134,6 +150,21 @@ get_var_types <- function(df) {
   colnames(classes) <- c("Variable Type", "Binary")
   return(classes)
 }
+
+
+
+#' Gets variable type information for each tibble in a list of tibbles
+#'
+#' @param df_list a list of data frames or tibbles
+#'
+#' @return a list of data frames, each containing two columns 
+#' @export
+#'
+#' @examples
+get_var_types <- function(df_list) {
+  lapply(df_list, get_var_types_single)
+}
+  
 
 
 
