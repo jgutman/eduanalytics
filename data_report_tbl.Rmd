@@ -1,0 +1,227 @@
+---
+title: "Descriptive Statistics"
+author: "Dana Weisenfeld"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_notebook: default
+  html_document: default
+---
+
+```{r setup, message = FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook_dana.R")
+
+# creates an r notebook with descriptive statistics for a list of tables
+
+```
+
+```{r setup_notebook, echo=FALSE}
+```
+
+```{r packages, echo = FALSE, eval=FALSE}
+print_loaded_pkgs()
+```
+
+```{r addl_setup, include=FALSE, eval=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, fig.align = 'center')
+devtools::load_all("describe")
+
+```
+
+
+```{r credentials}
+
+tables_list <- dbListTables(edu_deid_con)
+
+tables <-  get_tbl_names_by_stage(edu_deid_con, "deidentified", "model_data")
+
+# "deidentified$model_data$aoa_admissions"
+# "deidentified$model_data$aoa_admissions_inschool"            
+# "deidentified$model_data$residency_noncompete_admit"         
+# "deidentified$model_data$residency_noncompete_admit_inschool"
+# "deidentified$model_data$residency_top25_admissions"         
+# "deidentified$model_data$residency_top25_admissions_inschool"
+# "deidentified$model_data$screener_scores_admissions"         
+# "deidentified$model_data$worry_score_admissions"  
+
+tbl <- dbUtilities::get_tbls_by_pattern(edu_deid_con, "\\Wmodel_data")
+tbl[8:11] <- NULL
+
+tbl_names <- names(tbl)
+
+```
+
+
+\
+
+
+
+# Basic information
+This document contains descriptive statistics for the following tables:
+`r tbl_names'
+
+
+```{r reformatting_vars}
+
+# converting study_id to factor so it is ignored during summaries
+tbl <- lapply(tbl, function(df) 
+  df %>% mutate(study_id = as.factor(study_id))
+)
+
+
+# recoding yes/no variables
+tbl <- recode_yesno(tbl)
+
+
+# getting binary variables
+binaries <- lapply(tbl, get_binary)
+
+
+# reformatting date variables 
+tbl %<>% format_dates()
+
+
+```
+
+\
+
+
+*Variable types* 
+
+The following table displays the class type of every variable in the table as 
+well as whether the variable is binary. For these purposes, binary variables are
+classified as all variables containing at most two distinct values, excluding 
+NA's, regardless of whether the variable is numeric or string. Variables that 
+that were originally coded as Yes/No were recoded to numeric. Additionally, some of the 
+variables classified as binary might not be true binary variables. Study_id was
+recoded from character to factor. 
+```{r var_type}
+
+# print class of each variable
+lapply(get_var_types(tbl), function(x) kable(x, type='html'))
+
+```
+
+\
+
+
+
+# Missing Data
+
+*Percent of observations with missing values for each variable by application year*
+```{r miss_table, warning=FALSE, message=FALSE}
+
+
+lapply(pct_miss_table(tbl, appl_year), function(x)
+  kable(x, type='html'))
+
+
+```
+
+*Percent of observations with no missing data by application year* 
+```{r complete_cases}
+# proportion of complete observations by year
+
+com_cases <- get_complete_cases(tbl, appl_year)
+
+lapply(com_cases, function(x) kable(x, type='html', digits = 1))
+
+```
+
+\
+
+
+
+# Numeric variables
+
+### Summary statistics for continuous and discrete variables by application year 
+```{r summ_stats_cont_vars}
+# fix this 
+tbl_cont <- lapply(tbl, function(df) {
+  binary <- get_binary(df)
+  df %>% select(-one_of(binary)) %>% select_if(is.numeric)
+  }
+)
+
+get_basic_summaries(tbl_cont, appl_year, is.numeric, digits = 2)
+
+```
+
+\
+
+
+### Tables of binary variables by application year
+
+```{r binaries}
+
+
+# currently doesn't work for a list of tibbles
+bin_tables <- apply(get_binary_num_cols(dat), 2, table, dat$appl_year, useNA = 'ifany')
+
+lapply(bin_tables[-1], function(x) 
+  kable(prop.table(x, margin = 2), digits = 3))
+
+```
+
+
+### Correlation matrix 
+
+Contains all numeric variables. 
+```{r correlations, warning=FALSE}
+
+
+corr_mats <- get_cor_mat(tbl)
+
+kable_corr_mats <- lapply(corr_mats, function(x) 
+  kable(x, type='html', digits = 2))
+names(kable_corr_mats) <- names(corr_mats)
+kable_corr_mats
+
+```
+
+\
+
+
+
+# Categorical variables 
+
+*Number of distinct categories for each categorical variable by year* 
+```{r distinct_categories}
+
+distinct_vals <- get_ndistinct(tbl, appl_year)
+
+kable_ndistinct <- lapply(distinct_vals, function(x) 
+  kable(x, type='html')) 
+names(kable_ndistinct) <- names(distinct_vals)
+kable_ndistinct
+
+```
+
+
+*Tables of categorical variables* 
+
+For variables with more than 10 categories, only the 10 largest categories are displayed.
+Some of the categorical variables included below may also be binary variables. 
+```{r categorical_tables}
+
+cat_tabs <- get_cat_tables(tbl, appl_year, digits=3)
+
+categorical_kables <- lapply(cat_tabs, function(x) 
+  lapply(x, function(t) kable(t, type='html')))
+names(categorical_kables) <- names(cat_tabs)
+categorical_kables
+
+```
+
+\
+
+
+
+
+# Summary statistics for date variables
+```{r dates}
+
+get_basic_summaries(tbl, appl_year, is.POSIXct) 
+# if no date variables so should return informative message
+
+```
