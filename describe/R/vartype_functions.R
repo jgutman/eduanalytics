@@ -113,3 +113,27 @@ format_dates <- function(df_list) {
 }
 
 
+
+
+
+#' Prints a table containing the class of all variables in the data set along
+#' with whether the variable is binary or not. In this case, binary means that 
+#' there are at most two distinct values for the variable, ignoring NA. 
+#'
+#' @param df a data frame 
+#'
+#' @return a data frame with two columns
+#' @export 
+#'
+get_var_types <- function(df) {
+  classes <- lapply(df, class)
+  classes <- as.data.frame(sapply(classes, function(x) x[1]))
+  ndistinct <- df %>% summarize_all(n_distinct) %>% t() %>% as.data.frame() 
+  binary <- (ndistinct<=2) + 0
+  classes <- cbind(classes, binary)
+  colnames(classes) <- c("Variable Type", "Binary")
+  return(classes)
+}
+
+
+
