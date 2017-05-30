@@ -32,6 +32,11 @@
 1. Get `deidentified` versions of all datasets
     - Run `deidentify_data.Rmd`
     - Can read in column names to drop or keep from `.yaml` file
+1. Upload deidentified outcomes data and new features
+    - Run `upload_deidentified_outcomes_data.Rmd`
+    - Outcomes can be read in from `outcomes.yaml` file
+
+
 
 ## Cleaning
 1. Prepare `clean` versions of tables with basic applicant filtering and formatting fixes
@@ -41,7 +46,7 @@
 
 ## Descriptives
 See detailed outline in [descriptives reporting feature requests](DescriptivesReporting.md)
-1. Run `data_structure_analysis.Rmd`
+1. Run `data_Reports.Rmd` to get reports on features and outcomes variables
 
 
 ## Feature generation
@@ -55,10 +60,14 @@ See detailed outline in [descriptives reporting feature requests](DescriptivesRe
 ## Model building
 1. Construct design matrix for modeling using generated features
     - Run `construct_design_matrix.Rmd`
-1. Transform and build pipeline in scikit-learn
-    - see ipython notebook `connecting_to_database_with_python.ipynb`
+1. Run models 
+    - Run script `run_all_models.sh" to save model runs in `pkls` folder and database
 
 
 ## Model evaluation
+1. Run `explore_predictions.ipynb` for looking at overall predictions by outcomes
 
 ## Reporting
+1. Run `analyze_screening_predictions.Rmd` for analysis of predictions for screening
+1. Run `explore_predictions.ipynb` for looking at overall predictions by outcomes
+1. Run `Lime explanations.ipynb` for looking at individualized predictions

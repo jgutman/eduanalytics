@@ -36,47 +36,26 @@ screener_predictions <- "deidentified$predictions$screener_scores_admissions" %>
   dbUtilities::put_tbl_to_memory(edu_db_con, .) %>% 
   select(-outcome)
 
-screener_predictions %>% 
-  group_by(study_id) %>% 
-  summarise(count = n()) %>% 
-  filter(count > 1) %>% 
-  dim()
-
-
+screener_predictions$appl_year <- as.numeric(screener_predictions$appl_year)
 
 screener_scores_model_data <- "deidentified$model_data$screener_scores_admissions" %>% 
   dbUtilities::put_tbl_to_memory(edu_db_con, .)
 
-screener_scores_model_data %>% 
-  group_by(study_id) %>% 
-  summarise(count = n()) %>% 
-  filter(count > 1) %>% 
-  dim()
 
+outcomes_matriculated_non_mdphd <- "deidentified$outcome$outcomes_matriculated_non_mdphd" %>% 
+  put_tbl_to_memory(edu_db_con,.) %>% 
+  select(study_id, appl_year) %>% 
+  filter(appl_year >= 2013) %>% 
+  mutate(is_matriculated = 1)
 
 
 all_applicants_select <- "deidentified$clean$all_applicants" %>% 
   dbUtilities::put_tbl_to_memory(edu_db_con, .) %>% 
-  mutate(is_matriculated = if_else(!is.na(deposit_date),1,0)) %>%
+  left_join(., outcomes_matriculated_non_mdphd, by = c("study_id", "appl_year")) %>% 
+  replace_na(list(is_matriculated = 0)) %>% 
   select(study_id, appl_year, is_faculty_screened, is_invited_interview, is_interviewed, is_committee_reviewed, is_offered_admission, is_matriculated) 
 
 
-all_applicants_select %>% 
-  group_by(study_id) %>% 
-  summarise(count = n()) %>% 
-  filter(count > 1) %>% 
-  dim()
-
-
-
-outcome_screened_apps <- "deidentified$outcome$screened_apps" %>% 
-  dbUtilities::put_tbl_to_memory(edu_db_con, .)
-
-outcome_screened_apps %>% 
-  group_by(study_id) %>% 
-  summarise(count = n()) %>% 
-  filter(count > 1) %>% 
-  dim()
 ```
 
 
@@ -92,16 +71,44 @@ pred_features_admin_decision <- screener_predictions %>%
 
 
 ```{r}
-table(pred_features_admin_decision$is_interviewed)
+
 
 pred_features_admin_decision %>% 
-  group_by(outcome) %>%
-  summarise(num_interview = sum(is_interviewed, na.rm = TRUE), 
-            pct_interviewed = num_interview/ (n() - sum(is.na(is_interviewed))),
-            num_accepted = 
-            
-            
-            )
+#  filter(appl_year != 2017) %>% 
+  mutate(risk_bucket = ntile(predicted_0 - predicted_2, 15))  -> pred_features_admin_decision
+
+pred_features_admin_decision %>%
+  write_to_database_single(edu_db_con, add_tbl_prefix("screening_features_with_risk_bucket", status = "predictions"))
+
+  # select(study_id, predicted_0:predicted_2, risk_bucket) %>% 
+  # group_by(risk_bucket) %>% 
+  # sample_n(10) %>% 
+  # arrange(risk_bucket)
+
+pred_features_admin_decision %>% colnames()
+```
+
+
+```{r}
+
+
+pred_features_admin_decision %>% 
+  group_by(risk_bucket) %>% 
+  summarise(p.25_predicted_2 = round(quantile(predicted_0, .25),2),
+            p.75_predicted_2 = round(quantile(predicted_0, .75),2),
+            p.25_predicted_3or4 = round(quantile(predicted_1, .25),2),
+            p.75_predicted_3or4 = round(quantile(predicted_1, .75),2),
+            p.25_predicted_5or6 = round(quantile(predicted_2, .25),2),
+            p.75_predicted_5or6 = round(quantile(predicted_2, .75),2),
+            total = n(),
+            num_interviewed = sum(is_interviewed),
+            pct_interviewed = scales::percent(mean(is_interviewed)), 
+            num_accepted = sum(is_offered_admission),
+            pct_accepted = scales::percent(mean(is_offered_admission)),
+            num_matriculated = sum(is_matriculated), 
+            pct_matriculated = scales::percent(mean(is_matriculated))
+            ) %>% 
+  write_csv(., "admissions_screening.csv")
 
 
 
