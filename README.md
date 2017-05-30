@@ -32,6 +32,11 @@
 1. Get `deidentified` versions of all datasets
     - Run `deidentify_data.Rmd`
     - Can read in column names to drop or keep from `.yaml` file
+1. Upload deidentified outcomes data and new features
+    - Run `upload_deidentified_outcomes_data.Rmd`
+    - Outcomes can be read in from `outcomes.yaml` file
+
+
 
 ## Cleaning
 1. Prepare `clean` versions of tables with basic applicant filtering and formatting fixes
@@ -62,3 +67,4 @@ See detailed outline in [descriptives reporting feature requests](DescriptivesRe
 ## Model evaluation
 
 ## Reporting
+1. Run `Lime explanations.ipynb`
