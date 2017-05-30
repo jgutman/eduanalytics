@@ -1,0 +1,381 @@
+---
+title: "Descriptive reporting template"
+author: "Dana Weisenfeld, Suvam Paul"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+  html_document:
+    toc: yes
+    toc_depth: '4'
+---
+
+# Setup
+## Load packages
+## Read in database credentials and open connection
+
+```{r setup, message = FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook_dana.R")
+```
+
+```{r setup_notebook}
+```
+
+```{r echo = FALSE}
+print_loaded_pkgs()
+```
+
+```{r addl_setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.align = 'center')
+library(VIM)
+library(xtable)
+```
+
+
+```{r credentials}
+tables_list <- dbListTables(edu_deid_con)
+
+clean_tables <- get_tbl_names_by_stage(edu_deid_con, "deidentified", "clean")
+
+dat_name <- clean_tables[5]
+
+dat <- dbUtilities::put_tbl_to_memory(edu_deid_con, dat_name)
+```
+
+Dataset name: `r cat(dat_name)`
+
+```{r data_cleaning}
+
+# recoding categorical binary (Yes/No, Y/N, Y/N/NA) variables to 1/0
+
+
+
+```
+
+## Descriptives
+
+```{r basic_descriptives}
+
+# dim
+dims <- dim(dat)
+
+# complete cases
+complete.obs <- (sum(complete.cases(dat)) / nrow(dat)) * 100
+
+```
+
+This data contains `r dims[1]` observations and `r dims[2]` variables. 
+`r round(complete.obs, 2)`% of the observations in the data are complete. 
+
+
+## Missing Data
+
+
+```{r missings, warning=FALSE}
+
+# percent missing in each numeric var
+pct_miss <- dat %>%
+  dplyr::group_by(appl_year) %>%
+  summarize_all(funs(pct_missing = mean(is.na(.)))) %>%
+  column_to_rownames("appl_year") %>%
+  t() %>%
+  multiply_by(100) %>%
+  round(., 2)
+
+kable(pct_miss, caption="Percent missing by year")
+
+```
+
+
+```{r miss_plot, fig.width=9.5, fig.height = 7}
+
+# visually display missings
+aggr(dat, bars=FALSE, numbers=TRUE, sortVars=TRUE, cex.axis=.7)
+
+```
+
+
+###Correlation Matrix for Missingness
+
+```{r missingness_correlation}
+
+# which rows have missings?
+miss_rows <- !complete.cases(t(dat))
+
+miss_mat <- is.na(dat[miss_rows])+0
+kable(round(cor(miss_mat),2))
+
+```
+
+
+
+```{r classes}
+
+# converting application year to character
+dat$appl_year <- as.character(dat$appl_year)
+
+# converting study_id to factor so it is ignored
+dat$study_id <- as.factor(dat$study_id)
+
+# separating variables by type
+classes <- dat %>% map(class) %>% map(extract, 1)
+names(classes) <- NULL
+
+nums <- which(classes=="numeric")
+binaries <- nums[apply(dat[nums],2,function(x) { all(na.omit(x) %in% 0:1) })]
+continuous <- setdiff(nums, binaries)
+  
+cats <- which(classes=="character")
+dates <- which(classes=="POSIXct")
+
+dat_nums <- dat[,nums]
+dat_bins <- dat[,binaries]
+dat_cont <- dat[,continuous]
+dat_cats <- dat[,cats]
+dat_dates <- dat[,dates]
+
+```
+
+
+
+## Summary Statistics 
+
+###Table of summary statistics for continuous variables
+
+There are `r length(continuous)` continuous numeric variables in the dataset.
+
+```{r summarize_continuous_vars}
+
+# one large table containining summary statistics for each continuous variable by year
+
+if (length(continuous)>0) {
+
+dat_cont <- as.data.frame(dat_cont)
+  
+sumstats <- matrix(NA, nrow=length(continuous)*4, 9, dimnames=list(c(), 
+                  c("Year", "N", "Min", "Q1", "Median", "Mean", "Q3", "Max", "SD")))
+
+years <- sort(unique(dat$appl_year))
+j = 1
+for (i in 1:length(continuous)) {
+  for (y in years) {
+    sumstats[j,1] <- as.numeric(y)
+    sumstats[j,2] <- sum(!is.na(dat_cont[dat$appl_year==y,i]))
+    sumstats[j,3] <- min(dat_cont[dat$appl_year==y,i], na.rm=TRUE)
+    sumstats[j,4] <- quantile(dat_cont[dat$appl_year==y,i], .25, na.rm=TRUE)
+    sumstats[j,5] <- median(dat_cont[dat$appl_year==y,i], na.rm=TRUE)
+    sumstats[j,6] <- mean(dat_cont[dat$appl_year==y,i], na.rm=TRUE)
+    sumstats[j,7] <- quantile(dat_cont[dat$appl_year==y,i], .75, na.rm=TRUE)
+    sumstats[j,8] <- max(dat_cont[dat$appl_year==y,i], na.rm=TRUE)
+    sumstats[j,9] <- sd(dat_cont[dat$appl_year==y,i], na.rm=TRUE)
+    j = j + 1
+  }
+}
+
+# row names
+new_seq <- seq(1, to = nrow(sumstats), by = 4)
+row_names <- rep("", nrow(sumstats))
+row_names[new_seq] <- names(dat)[continuous]
+rownames(sumstats) <- row_names
+
+kable(round(sumstats,2))
+      
+}
+
+```
+
+
+```{r summarize_continuous_vars2}
+
+# separate tables containing summary statistics for each continuous variable
+
+splits <- apply(dat_cont, 2, split, dat$appl_year)
+stats_by_var <- lapply(splits, sapply, summary)  
+
+```
+
+
+###Histograms of Continuous Variables
+
+```{r histograms, fig.height=3.5, fig.width=9}
+
+
+par_rows <- length(continuous) %% 4 + 1
+par(mfrow=c(par_rows, 4))
+# hists <- apply(dat_cont, 2, hist, plot=FALSE)
+# lapply(names(hists), function(x) plot(hists[[x]], main=x, xlab="")) # this produces unnecessary output 
+# 
+
+for (i in 1:length(continuous)) {
+  hist(dat_cont[,i], main=names(dat_cont)[i], xlab="")
+}
+
+```
+
+
+
+###Summary statistics for binary variables
+
+There are `r length(binaries)` binary variables in the dataset. The table 
+below contains the proportions of 1's for each binary variable. 
+ 
+```{r binaries}
+
+if (length(binaries) > 0) {
+  
+dat_bins <- as.data.frame(dat_bins)  
+  
+binary_mat <- matrix(NA, nrow=length(binaries), 2, dimnames=list(c(), 
+                  c("N", "Proportion"))) 
+
+for (i in 1:length(binaries)) {
+  binary_mat[i,1] <- sum(!is.na(dat_bins[,i]))
+  binary_mat[i,2] <- mean(dat_bins[,i], na.rm=TRUE)
+}
+
+row.names(binary_mat) <- names(dat)[binaries]
+
+kable(round(binary_mat,2))
+
+}
+
+
+```
+
+###Correlation Matrix containing all numeric variables
+
+```{r corr_matrix}
+
+cor_mat <- round(cor(dat_nums, use = 'pairwise.complete.obs'),2)
+
+kable(cor_mat)
+
+```
+
+
+###Tables of Categorical Variables
+
+There are `r length(cats)` categorical variables in the dataset. 
+Tables of the numer of observations in each category by year are shown below.
+For variables with more than 10 categories, only the 10 largest categories are
+included. 
+
+
+```{r tables2, results= 'asis'}
+
+# tables of categorical variables by year
+
+dat_cats <- as.data.frame(dat_cats)
+
+# first column is probably appl_year and can be exluded, but is it always?
+# should NA's be included?
+cat_tabs <- apply(dat_cats, 2, table, dat$appl_year, useNA = "ifany")
+cat_tabs <- lapply(cat_tabs, t)
+
+cat_tabs <- lapply(names(cat_tabs), function(x) {
+  if (ncol(cat_tabs[[x]]) > 10) {
+    new_table <- sort(table(dat[[x]]), decreasing=TRUE)[1:10]
+    cat_tabs[[x]] <- cat_tabs[[x]][,names(new_table)]
+  } else {
+    cat_tabs[[x]] <- cat_tabs[[x]]
+  }
+})
+
+names(cat_tabs) <- names(dat_cats)
+
+
+new_kables <- lapply(names(cat_tabs), function(x) kable(cat_tabs[[x]], caption = x, type='html'))
+
+new_kables 
+
+
+
+# cat_tabs contains number of observations in each category by year
+# if proportions of people in each category are prefered, use this:
+proportion_cat_tables <- lapply(cat_tabs, prop.table, margin = 1)
+
+# ideally will combine N's and proportions and display both in one table
+
+
+# also need include number of unique categories for each variable
+num_cats <- dat_cats %>% summarize_all(n_distinct)
+
+
+# for (i in 2:length(cats)) {
+#   tab <- with(dat, prop.table(table(appl_year, dat_cats[,i], useNA = "ifany")))
+#   xtab <- xtable(as.matrix(tab), caption = names(dat_cats[,2]), digits=2, auto=TRUE)
+#   print(xtab, type='html', caption = names(dat_cats[,2]), caption.placement = "top")
+# }
+
+```
+
+
+```{r categorical_tables, results='asis', eval=FALSE}
+
+tables of categorical variables across years
+
+# Want N's and proportions in each category
+for (i in 1:length(cats)) {
+  rawN <- sort(as.numeric(table(dat_cats[i]), decreasing=TRUE))
+  prop <- sort(round(as.numeric(prop.table(table(dat[,cats[i]]))),2), decreasing=TRUE)
+
+  col_names <- names(sort(table(dat[,cats[i]]), decreasing=TRUE))
+
+  if (length(rawN) > 10) {
+    rawN <- rawN[1:10]
+    prop <- prop[1:10]
+    col_names <- col_names[1:10]
+    }
+
+  cells <- paste0(rawN, " (", prop, ")")
+  names(cells) <- col_names
+  #cells <- as.matrix(cells, ncol=4, dimnames = list(c(), col_names))
+
+  tables <- xtable(t(cells), caption = names(dat[cats[i]]))
+  print(tables, type='html', include.rownames=FALSE, caption.placement = "top")
+}
+
+```
+
+
+###Table of summary statistics for date variables
+
+```{r dates}
+
+if (length(dates)>0) {
+
+dat <- as.data.frame(dat)
+  
+datestats <- data.frame()
+
+
+j = 1
+for (i in 2:ncol(dat_dates)) {
+  for (y in unique(dat$appl_year)) {
+    datestats[j,1] <- as.numeric(y)
+    datestats[j,2] <- sum(!is.na(dat_dates[dat$appl_year==y,i]))
+    datestats[j,3] <- format(min(dat_dates[dat$appl_year==y,i], na.rm=TRUE), "%D")
+    datestats[j,4] <- format(quantile(dat_dates[dat$appl_year==y,i], .25, na.rm=TRUE), "%D")
+    datestats[j,5] <- format(median(dat_dates[dat$appl_year==y,i], na.rm=TRUE), "%D")
+    datestats[j,6] <- format(quantile(dat_dates[dat$appl_year==y,i], .75, na.rm=TRUE), "%D")
+    datestats[j,7] <- format(max(dat_dates[dat$appl_year==y,i], na.rm=TRUE), "%D")
+    j = j + 1
+  }
+}
+
+# colnames
+colnames(datestats) <- c("Year", "N", "Min", "Q1", "Median", "Q3", "Max")
+
+# row names
+rownames(datestats) <- rep(names(dat_dates), each=4)
+
+kable(datestats)
+}
+
+```
+
+
+

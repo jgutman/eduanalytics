@@ -1,0 +1,25 @@
+fitting the grid search
+Time elapsed: 0:03:48
+Written to: aoa_admissions_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:03:47
+Written to: aoa_admissions_inschool_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:03:37
+Written to: residency_noncompete_admit_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:03:36
+Written to: residency_noncompete_admit_inschool_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:04:32
+Written to: residency_top25_admissions_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:04:37
+Written to: residency_top25_admissions_inschool_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:03:55
+Written to: worry_score_admissions_rf_grid.pkl.z in pkls
+fitting the grid search
+Time elapsed: 0:29:47
+Written to: screener_scores_admissions_rf_grid.pkl.z in pkls
+pkls copied to shared drive
