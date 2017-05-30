@@ -154,3 +154,30 @@ get_basic_summaries <- function(df_list, varname, data_type = is.numeric, digits
   
   lapply(df_list, get_basic_summaries_single, varname = !!quo_group_by, data_type = data_type, digits = digits)
 }
+
+
+
+
+
+
+#' Tables of binary variables by year
+#'
+#' @param dat a data frame or tibble
+#' @param varname a grouping variable
+#'
+#' @return a list of tables
+#' @export 
+#'
+get_binary_tables <- function(dat, varname) {
+  # this function is very slow
+  if (length(get_binary(dat))==0) return("No binary variables in table.")
+  
+  else {
+    quo_group_by = enquo(varname)
+    
+    group_var <- dat %>% select(!!quo_group_by) %>% pull()
+    bin_tables <- apply(get_binary_num_cols(dat)[-1], 2, table, group_var, useNA = 'ifany')
+    
+    lapply(bin_tables, function(x) prop.table(x, margin = 2))
+  }
+}
