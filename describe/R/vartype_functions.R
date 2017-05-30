@@ -15,14 +15,14 @@ get_yesno <- function(dat) {
 }
 
 
-#' Recodes Y/N/NA vars to 1/0/NA and converts to numeric
+#' Recodes Y/N/NA vars to 1/0/NA and converts to numeric for a single tibble/data frame
 #'
 #' @param df a data frame or tibble
 #'
 #' @return a tibble or data frame containing only recoded columns
 #' @export
 #'
-recode_yesno <- function(df) {
+recode_yesno_single <- function(df) {
   yesno_df <- df %>%
     select(one_of(get_yesno(.)))  %>%
     mutate_all(funs(recode(., Y = "1", N="0"))) %>%
@@ -31,6 +31,18 @@ recode_yesno <- function(df) {
   bind_cols(other_cols, yesno_df)
 }
 
+
+
+#' Recodes Y/N/NA vars to 1/0/NA and converts to numeric for a list of tibbles
+#'
+#' @param df_list a list of tibbles or data frames 
+#'
+#' @return A list of tibbles with Yes/No variables recoded to 1/0
+#' @export 
+#'
+recode_yesno <- function(df_list) {
+  lapply(df_list, recode_yesno_single)
+}
 
 
 #' Get names of columns that are binary (have two distinct values, excluding NAs) for a data frame
@@ -50,6 +62,7 @@ get_binary <- function(df) {
 }
 
 
+
 #' Get the binary columns in a data frame plus appl_year and study_id 
 #'
 #' @param df a data frame or tibble 
@@ -65,7 +78,24 @@ get_binary_cols <- function(df) {
 
 
 
-### these change date to character --- fix to keep date variables as dates
+#' Get the binary numeric columns in a data frame plus appl_year and study_id 
+#'
+#' @param df a data frame or tibble 
+#'
+#' @return tibble containing binary numeric variables
+#' @export
+#'
+get_binary_num_cols <- function(df) {
+  df %>%
+    get_binary() %>%
+    {select(df, study_id, appl_year, one_of(.))} %>%
+    select_if(is.numeric)
+}
+
+
+
+## Functions to better display dates
+
 
 #' Removes time stamp from date variables in a data frame or tibble for better readability 
 #'
@@ -76,7 +106,7 @@ get_binary_cols <- function(df) {
 #' 
 format_dates_single <- function(df) {
   df %>% 
-    mutate_if(is.POSIXct, funs(format(., "%m-%d-%y")))
+    mutate_if(is.POSIXct, funs(format(as.POSIXct(., tz = "America/New_York", "%m-%d-%y"))))
 }
 
 
@@ -95,5 +125,46 @@ format_dates <- function(df_list) {
       df %>% format_dates_single()
     )
 }
+
+
+
+
+## Functions for displaying variable type 
+
+
+#' Prints a table containing the class of all variables in the data set along
+#' with whether the variable is binary or not. In this case, binary means that 
+#' there are at most two distinct values for the variable, ignoring NA. 
+#'
+#' @param df a data frame or tibble
+#'
+#' @return a data frame with two columns
+#' @export 
+#'
+get_var_types_single <- function(df) {
+  classes <- lapply(df, class)
+  classes <- as.data.frame(sapply(classes, function(x) x[1]))
+  ndistinct <- df %>% summarize_all(n_distinct) %>% t() %>% as.data.frame() 
+  binary <- (ndistinct<=2) + 0
+  classes <- cbind(classes, binary)
+  colnames(classes) <- c("Variable Type", "Binary")
+  return(classes)
+}
+
+
+
+#' Gets variable type information for each tibble in a list of tibbles
+#'
+#' @param df_list a list of data frames or tibbles
+#'
+#' @return a list of data frames, each containing two columns 
+#' @export
+#'
+#' @examples
+get_var_types <- function(df_list) {
+  lapply(df_list, get_var_types_single)
+}
+  
+
 
 

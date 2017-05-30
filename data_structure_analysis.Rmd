@@ -3,9 +3,6 @@ title: "Descriptive reporting template"
 author: "Dana Weisenfeld, Suvam Paul"
 date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
 output:
-  pdf_document:
-    toc: yes
-    toc_depth: '4'
   html_notebook:
     highlight: tango
     theme: cosmo
@@ -32,9 +29,12 @@ print_loaded_pkgs()
 ```
 
 ```{r addl_setup, include=FALSE}
+
 knitr::opts_chunk$set(echo = FALSE, fig.align = 'center')
 library(VIM)
 library(xtable)
+devtools::load_all("describe")
+
 ```
 
 
@@ -138,8 +138,8 @@ binaries <- get_binary(appl_r)
 
 # cleaning date variables
 dat %<>% format_dates_single()
+appl %<>% format_dates_single()
 tbl %<>% format_dates()
-
 
 ```
 

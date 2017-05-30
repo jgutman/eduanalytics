@@ -18,7 +18,7 @@ pct_miss_table_single <- function(dat, varname, round_digits = 1) {
   
   dat %>%
     group_by(!!quo_group_by) %>%
-    summarize_all(funs(pct_missing = mean(is.na(.)))) %>%
+    summarize_all(funs(mean(is.na(.)))) %>%
     column_to_rownames(colname) %>%
     t() %>% multiply_by(100) %>% round(round_digits)
 }
@@ -104,14 +104,14 @@ get_complete_cases_single <- function(dat, varname) {
   
   quo_group_by <- enquo(varname)
   
-  dat %>% group_by(!!quo_group_by) %>%
-    summarize(pct_complete = sum(complete.cases(.)/n())) %>%
+  dat %>% mutate(complete = complete.cases(.)) %>% 
+    group_by(appl_year) %>% 
+    summarize(n = n(), c = sum(complete), pct_complete = c/n * 100) %>%
+    select(appl_year, pct_complete) %>%
     as.data.frame()
+
 }
 
-
-
-# proportion of complete cases by year
 
 #' Function to get the proportion of complete observations for each tibble in a
 #' list of tibbles or data frames
@@ -130,9 +130,8 @@ get_complete_cases <- function(df_list, varname) {
   df_list %>% 
     map(., function(df)
       df %>%
-        group_by(!!quo_group_by) %>%
-        summarize(pct_complete = sum(complete.cases(.)/n())) %>%
-        as.data.frame
+        get_complete_cases_single(varname = !!quo_group_by) %>%
+        as.data.frame()
     )
 }
 
