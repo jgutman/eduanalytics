@@ -104,12 +104,13 @@ get_complete_cases_single <- function(dat, varname) {
   
   quo_group_by <- enquo(varname)
   
-  dat %>% group_by(!!quo_group_by) %>%
-    summarize(pct_complete = sum(complete.cases(.)/n() * 100)) %>%
-    as.data.frame() 
+  dat %>% mutate(complete = complete.cases(.)) %>% 
+    group_by(appl_year) %>% 
+    summarize(n = n(), c = sum(complete), pct_complete = c/n * 100) %>%
+    select(appl_year, pct_complete) %>%
+    as.data.frame()
+
 }
-
-
 
 
 #' Function to get the proportion of complete observations for each tibble in a
@@ -129,9 +130,8 @@ get_complete_cases <- function(df_list, varname) {
   df_list %>% 
     map(., function(df)
       df %>%
-        group_by(!!quo_group_by) %>%
-        summarize(pct_complete = sum(complete.cases(.)/n())) %>%
-        as.data.frame
+        get_complete_cases_single(varname = !!quo_group_by) %>%
+        as.data.frame()
     )
 }
 
