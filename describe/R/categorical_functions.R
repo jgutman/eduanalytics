@@ -15,7 +15,7 @@ get_ndistinct_single <- function(dat, varname) {
   
   dat %>% 
     group_by(!!quo_group_by) %>% 
-    summarise_if(., is.character, funs(n_distinct))
+    summarise_if(., is.character, funs(n_distinct(., na.rm = TRUE)))
 }
 
 
@@ -76,8 +76,8 @@ initialize_cat_tables <- function(dat, varname, digits = 3) {
 #' 
 #' @param dat tibble or data frame
 #' @param varname grouping variable (generally appl_year)
-#' @param digits number of digits for rounding the tables
-#' @param n number of categories to 
+#' @param digits number of digits for rounding the tables. default is 3.
+#' @param n number of distinct categories to dispaly. default is 10. 
 #'
 #' @return a list of tables 
 #' @export
@@ -106,8 +106,8 @@ get_cat_tables_single <- function(dat, varname, digits = 3, n = 10) {
 
 
 
-#' Displays a table showing the proportion of observations in the N largest categories for each categorical variable in 
-#' a list of tibbles or data frames
+#' Displays a table showing the proportion of observations in the N largest 
+#' categories for each categorical variable in a list of tibbles or data frames
 #'
 #' @param df_list a list of tibbles or data frames
 #' @param varname grouping variable (generally appl_year)

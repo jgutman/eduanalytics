@@ -178,7 +178,8 @@ kable(get_cor_mat_single(dat), type='html', digits = 2)
 
 # Categorical variables 
 
-*Number of distinct categories for each categorical variable by year* 
+The following table displays the number of distinct categories for each 
+categorical variable by year, excluding NAs. 
 ```{r distinct_categories}
 
 kable(get_ndistinct_single(dat, appl_year), type='html') 
