@@ -4,15 +4,19 @@ author: "Dana Weisenfeld"
 date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
 output:
   html_notebook:
+    highlight: tango
+    theme: cosmo
     toc: yes
   html_document: default
 ---
 
 ```{r setup, message = FALSE, echo = FALSE}
 
+rm(list=ls())
+
 knitr::read_chunk("setup_notebook_dana.R")
 
-# Creates an html notebook containing descriptive statistics for a single table
+# Creates an html file containing descriptive statistics for a single table
 
 ```
 
@@ -37,7 +41,7 @@ tables_list <- dbListTables(edu_deid_con)
 
 tables <-  get_tbl_names_by_stage(edu_deid_con, "deidentified", "model_data")
 
-tab <- "deidentified$model_data$worry_score_admissions"
+tab <- "deidentified$model_data$aoa_admissions"
 
 # "deidentified$model_data$aoa_admissions"
 # "deidentified$model_data$aoa_admissions_inschool"            
@@ -50,6 +54,7 @@ tab <- "deidentified$model_data$worry_score_admissions"
 
 
 dat <- dbUtilities::put_tbl_to_memory(edu_deid_con, tab)
+
 
 current_table <- gsub("\\$", "\\\\$", tab)
 
@@ -147,12 +152,13 @@ get_basic_summaries_single(dat_cont, appl_year, is.numeric, digits = 2)
 
 ```{r binaries}
 
-# should probably be put into a function
+bin_tables <- get_binary_tables(dat, appl_year)
 
-bin_tables <- apply(get_binary_num_cols(dat), 2, table, dat$appl_year, useNA = 'ifany')
-
-lapply(bin_tables[-1], function(x) 
-  kable(prop.table(x, margin = 2), digits = 3))
+if (class(bin_tables)=="list") {
+  lapply(bin_tables, function(x) kable(x, digits = 3, type='html'))
+} else {
+  bin_tables
+}
 
 ```
 
@@ -203,7 +209,7 @@ categorical_kables
 ```{r dates}
 
 get_basic_summaries_single(dat, appl_year, is.POSIXct) 
-# if no date variables so should return informative message
+# if no date variables in table should return informative message
 
 
 ```
