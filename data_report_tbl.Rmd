@@ -177,6 +177,10 @@ bin_kables
 ```
 
 
+\
+
+
+
 ### Correlation matrix 
 
 Contains all numeric variables. 
@@ -197,7 +201,7 @@ kable_corr_mats
 
 # Categorical variables 
 
-*Number of distinct categories for each categorical variable by year* 
+The following tables display the number of distinct categories for each categorical variable by year. NAs are excluded.  
 ```{r distinct_categories}
 
 distinct_vals <- get_ndistinct(tbl, appl_year)
