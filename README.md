@@ -65,6 +65,9 @@ See detailed outline in [descriptives reporting feature requests](DescriptivesRe
 
 
 ## Model evaluation
+1. Run `explore_predictions.ipynb` for looking at overall predictions by outcomes
 
 ## Reporting
-1. Run `Lime explanations.ipynb`
+1. Run `analyze_screening_predictions.Rmd` for analysis of predictions for screening
+1. Run `explore_predictions.ipynb` for looking at overall predictions by outcomes
+1. Run `Lime explanations.ipynb` for looking at individualized predictions
