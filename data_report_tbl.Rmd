@@ -3,7 +3,9 @@ title: "Descriptive Statistics"
 author: "Dana Weisenfeld"
 date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
 output:
-  html_notebook: 
+  html_notebook:
+    highlight: tango
+    theme: cosmo
     toc: yes
   html_document: default
   
@@ -138,10 +140,10 @@ lapply(com_cases, function(x) kable(x, type='html', digits = 1))
 
 ### Summary statistics for continuous and discrete variables by application year 
 ```{r summ_stats_cont_vars}
-# fix this 
+
 tbl_cont <- lapply(tbl, function(df) {
   binary <- get_binary(df)
-  df %>% select(-one_of(binary)) %>% select_if(is.numeric)
+  df %>% select(-one_of(binary)) %>% select_if(is.numeric) 
   }
 )
 
@@ -156,14 +158,21 @@ get_basic_summaries(tbl_cont, appl_year, is.numeric, digits = 2)
 
 ```{r binaries}
 
-tbl_bin_nums <- lapply(tbl, get_binary_num_cols)
+# This may be buggy
 
-bin_tables <- lapply(tbl_bin_nums, function(df)
-  apply(df, 2, table, df$appl_year, useNA = 'ifany'))
+bin_tables <- lapply(tbl, function(df) get_binary_tables(df, appl_year))
+bin_kables <- lapply(bin_tables, function(t) {
+  if (class(t)=="list") {
+    lapply(t, function(x) kable(x, digits = 3, type='html'))
+  } else {
+    t
+  }
+}
+)
 
-lapply(bin_tables, function(t)
-  lapply(t[-1], function(x) 
-      kable(prop.table(x, margin = 2), digits = 3)))
+names(bin_kables) <- names(tbl)
+bin_kables
+
 
 ```
 
@@ -172,7 +181,6 @@ lapply(bin_tables, function(t)
 
 Contains all numeric variables. 
 ```{r correlations, warning=FALSE}
-
 
 corr_mats <- get_cor_mat(tbl)
 
