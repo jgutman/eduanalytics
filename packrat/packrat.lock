@@ -1,10 +1,10 @@
 PackratFormat: 1.4
 PackratVersion: 0.4.8.1
 RVersion: 3.3.1
-Repos: BioCsoft=https://bioconductor.org/packages/3.4/bioc,
-    BioCann=https://bioconductor.org/packages/3.4/data/annotation,
-    BioCexp=https://bioconductor.org/packages/3.4/data/experiment,
-    BioCextra=https://bioconductor.org/packages/3.4/extra,
+Repos: BioCsoft=https://bioconductor.org/packages/3.3/bioc,
+    BioCann=https://bioconductor.org/packages/3.3/data/annotation,
+    BioCexp=https://bioconductor.org/packages/3.3/data/experiment,
+    BioCextra=https://bioconductor.org/packages/3.3/extra,
     CRAN=https://cran.rstudio.com/
 
 Package: BH
@@ -265,6 +265,7 @@ Requires: BH, Rcpp, hms, readr, tibble
 Package: hexbin
 Source: CRAN
 Version: 1.27.1
+Hash: 9f94c576cc4b9e83fd714ae8387272e6
 
 Package: highr
 Source: CRAN
