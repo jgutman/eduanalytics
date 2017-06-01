@@ -60,8 +60,8 @@ See detailed outline in [descriptives reporting feature requests](DescriptivesRe
 ## Model building
 1. Construct design matrix for modeling using generated features
     - Run `construct_design_matrix.Rmd`
-1. Run models 
-    - Run script `run_all_models.sh" to save model runs in `pkls` folder and database
+1. Run models
+    - Run script `run_all_models.sh` to save model runs in `pkls` folder and database
 
 
 ## Model evaluation
