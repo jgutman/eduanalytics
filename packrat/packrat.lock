@@ -160,9 +160,9 @@ Hash: 3be20bb55823803066dce2a38d52cafb
 Package: dbUtilities
 Source: source
 Version: 0.1.0
-Hash: 6ca974ed483590d36b70138cd0621193
-Requires: DBI, RMySQL, dplyr, knitr, lubridate, magrittr, purrr, readr,
-    readxl, stringr, tibble, tidyverse, yaml
+Hash: 43cd191bfd0727e9b4ac2b256cd3a340
+Requires: DBI, RMySQL, dplyr, knitr, lubridate, magrittr, purrr,
+    purrrlyr, readr, readxl, stringr, tibble, tidyverse, yaml
 SourcePath: ./dbUtilities
 
 Package: dbplyr
@@ -265,6 +265,7 @@ Requires: BH, Rcpp, hms, readr, tibble
 Package: hexbin
 Source: CRAN
 Version: 1.27.1
+Hash: 9f94c576cc4b9e83fd714ae8387272e6
 
 Package: highr
 Source: CRAN
@@ -431,9 +432,15 @@ Requires: mnormt
 
 Package: purrr
 Source: CRAN
-Version: 0.2.2
-Hash: b9adddc5ccf7579f636d77d9cbceecab
-Requires: BH, Rcpp, dplyr, lazyeval, magrittr
+Version: 0.2.2.2
+Hash: faada139260184912fea03f3fea13842
+Requires: Rcpp, lazyeval, magrittr, tibble
+
+Package: purrrlyr
+Source: CRAN
+Version: 0.0.2
+Hash: 59130743d7914c2c1e6d1cc025288a66
+Requires: BH, Rcpp, dplyr, lazyeval, magrittr, purrr
 
 Package: quantreg
 Source: CRAN
