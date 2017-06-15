@@ -3,7 +3,7 @@
 \name{get_var_types_single}
 \alias{get_var_types_single}
 \title{Prints a table containing the class of all variables in the data set along
-with whether the variable is binary or not. In this case, binary means that 
+with whether the variable is binary or not. In this case, binary means that
 there are at most two distinct values for the variable, ignoring NA.}
 \usage{
 get_var_types_single(df)
@@ -16,6 +16,6 @@ a data frame with two columns
 }
 \description{
 Prints a table containing the class of all variables in the data set along
-with whether the variable is binary or not. In this case, binary means that 
+with whether the variable is binary or not. In this case, binary means that
 there are at most two distinct values for the variable, ignoring NA.
 }

@@ -8,6 +8,8 @@ get_complete_cases_single(dat, varname)
 }
 \arguments{
 \item{dat}{a tibble or data frame}
+
+\item{varname}{an optional grouping variable}
 }
 \value{
 a data frame. if varname is not specified data frame contains 1 observation. otherwise a two

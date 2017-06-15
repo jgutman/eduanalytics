@@ -2,7 +2,7 @@
 % Please edit documentation in R/missingness_functions.R
 \name{pct_miss_table_single}
 \alias{pct_miss_table_single}
-\title{Function to create a matrix with the percent of observations missing in each variable 
+\title{Function to create a matrix with the percent of observations missing in each variable
 in a data frame or tibble grouped by another variable (generally appl_year)}
 \usage{
 pct_miss_table_single(dat, varname, round_digits = 1)
@@ -18,6 +18,6 @@ pct_miss_table_single(dat, varname, round_digits = 1)
 a matrix
 }
 \description{
-Function to create a matrix with the percent of observations missing in each variable 
+Function to create a matrix with the percent of observations missing in each variable
 in a data frame or tibble grouped by another variable (generally appl_year)
 }

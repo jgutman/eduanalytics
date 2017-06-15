@@ -9,10 +9,10 @@ explore_missingness(df_list, plot = TRUE)
 \arguments{
 \item{df_list}{a list of tibbles or data frames}
 
-\item{plot}{a logical indicating whether the results should be plotted. if 
+\item{plot}{a logical indicating whether the results should be plotted. if
 plot = TRUE, plots missing proportions and patterns and prints
-proportions of missings in each var for each tibble in list. if plot = FALSE outputs 
-only the number of observations missing for each variable. if plot = FALSE and output 
+proportions of missings in each var for each tibble in list. if plot = FALSE outputs
+only the number of observations missing for each variable. if plot = FALSE and output
 is saved to an object, nothing automaitcally prints}
 }
 \value{
