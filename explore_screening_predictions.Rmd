@@ -1,0 +1,156 @@
+---
+title: "Model results exploration - screening"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_document:
+    toc: yes
+    toc_depth: '4'
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+---
+
+## Setup
+## Load packages
+## Read in database credentials and open connection
+
+```{r setup, message=FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook.R")
+```
+
+```{r setup_notebook}
+```
+
+```{r show_pkgs, echo = FALSE}
+print_loaded_pkgs()
+```
+
+
+```{r}
+library(DT)
+```
+
+
+```{r}
+
+screen_predictions_features  <- "deidentified$predictions$screening_features_with_risk_bucket" %>% 
+  dbUtilities::put_tbl_to_memory(edu_db_con, .)
+
+
+write.csv(screen_predictions_features, "/Volumes/IIME/EDS/data/admissions/write_csv_files_r_share/screening_spreadsheet.csv")
+
+```
+
+
+
+```{r}
+
+#remove 2017 app year
+screen_predictions_features %>%
+  filter(appl_year != 2017) -> screen_predictions_features
+
+
+#create urm corrected
+screen_predictions_features %>%
+  mutate(race_binary = if_else(is.na(race) | race %in% c("Asian", "Chinese", "Japanese", "Korean",
+                                                         "Other Asian", "Pakistani", "Vietnamese", 
+                                                         "White"), 'not_urm', 'urm'),
+         urm_corrected = if_else(urm == 'Y' | is_disadvantaged == 1 | race_binary == 'urm', 1, 0), 
+         predicted_interview_status = ifelse(risk_bucket >= 1 & risk_bucket <= 7 & urm_corrected == 0, "automatic_reject", "further_review")) -> screen_predictions_features
+
+
+
+# screen_predictions_features %>%
+#   filter(predicted_interview_status == "automatic_reject") %>% 
+#   group_by(risk_bucket) %>% 
+#   summarise(total = n())
+
+```
+
+
+
+
+
+## Statistics on applicants who would have been automatically rejected from interview BUT inivited for interview 
+
+
+
+
+
+```{r}
+
+DT::datatable(screen_predictions_features %>%
+  filter(predicted_interview_status == "automatic_reject" & is_invited_interview == 1) %>%
+  group_by(appl_year) %>% 
+  summarise(total = n(),
+            fra_female = round((sum(gender == 'F')/(sum(gender == 'F') + sum(gender == 'M'))), digits = 2), 
+            fra_male = round((sum(gender == 'M')/(sum(gender == 'F') + sum(gender == 'M'))), digits = 2), 
+            gpa_average = round(mean(total_gpa_cumulative, na.rm = TRUE), digits = 2), 
+            mcat_average = round(mean(total_percentile, na.rm = TRUE), digits = 2)))
+
+
+```
+
+
+
+
+
+## Statistics on applicants who would have been automatically rejected from interview BUT matriculated at NYU
+
+
+
+```{r}
+DT::datatable(screen_predictions_features %>%
+  filter(predicted_interview_status == "automatic_reject" & is_matriculated == 1) %>%
+  group_by(appl_year) %>% 
+  summarise(total = n(),
+            fra_female = round((sum(gender == 'F')/(sum(gender == 'F') + sum(gender == 'M'))), digits = 2), 
+            fra_male = round((sum(gender == 'M')/(sum(gender == 'F') + sum(gender == 'M'))), digits = 2), 
+            gpa_average = round(mean(total_gpa_cumulative, na.rm = TRUE), digits = 2), 
+            mcat_average = round(mean(total_percentile, na.rm = TRUE), digits = 2)))
+
+
+```
+
+
+
+
+```{r}
+
+school_metrics <- "deidentified$generated$in_school_performance" %>% put_tbl_to_memory(edu_db_con, .)
+
+aoa <- "deidentified$outcome$aoa" %>% put_tbl_to_memory(edu_db_con, .)
+
+worry_score_school_outcome <- "deidentified$outcome$worry_score_school_outcomes" %>% put_tbl_to_memory(edu_db_con, .)
+```
+
+
+```{r, message = FALSE, echo = FALSE, include=FALSE}
+
+model_reject_but_matriculated <- screen_predictions_features %>%
+  filter(predicted_interview_status == "automatic_reject" & is_matriculated == 1) %>% 
+  select(study_id) %>% 
+  left_join(., school_metrics, join_by = c("study_id", "appl_year")) %>% 
+  left_join(., aoa, join_by = c("study_id", "appl_year")) %>% 
+  rename(aoa = outcome) %>% 
+  left_join(., worry_score_school_outcome, join_by = c("study_id", "appl_year")) %>% 
+  rename(worry_score_school_outcome_val = outcome)
+
+```
+
+
+```{r}
+DT::datatable(model_reject_but_matriculated %>% 
+  group_by(appl_year) %>% 
+  summarise(total_clerkship_honors_count = sum(clerkship_honors_count, na.rm = TRUE), 
+            total_clerkship_pass_count = sum(clerkship_pass_count, na.rm = TRUE), 
+            total_course_clerkship_failed_count = sum(course_clerkships_failed_count, na.rm = TRUE), 
+            total_shef_exam_below65_count = sum(shelf_exam_below65_count, na.rm = TRUE), 
+            total_school_exam_above90_count = sum(school_exam_above90_count, na.rm = TRUE), 
+            total_aoa = sum(aoa, na.rm = TRUE), 
+            total_worry_score_school_outcome = sum(worry_score_school_outcome_val, na.rm = TRUE)))
+```
+
+
