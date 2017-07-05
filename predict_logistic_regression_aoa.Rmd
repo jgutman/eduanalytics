@@ -1,0 +1,138 @@
+---
+title: "Run logistic regression model - AOA"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_document:
+    toc: yes
+    toc_depth: '4'
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+---
+
+## Setup
+## Load packages
+## Read in database credentials and open connection
+
+```{r setup, message=FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook.R")
+```
+
+```{r setup_notebook}
+```
+
+```{r show_pkgs, echo = FALSE}
+print_loaded_pkgs()
+```
+
+
+```{r}
+
+library(glmnet)
+library(caret)
+library(recipes)
+library(ROCR)
+
+```
+
+
+```{r}
+aoa_admissions_inschool <- "deidentified$model_data$aoa_admissions" %>% 
+  put_tbl_to_memory(edu_db_con, .) 
+
+
+
+```
+
+
+
+```{r}
+aoa_admissions_inschool <- aoa_admissions_inschool %>% mutate(mcat_type = ifelse(is.na(mcat_type), "new", mcat_type))
+
+aoa_admissions_inschool <- aoa_admissions_inschool %>% mutate_if(is.character, as.factor)
+
+```
+
+
+
+```{r}
+is_binary <- function(col) {
+  n_distinct(col, na.rm = TRUE) == 2
+}
+
+aoa_admissions_inschool <- aoa_admissions_inschool %>% 
+  mutate_if(is_binary, as.factor) %>% 
+  mutate_at(vars(ends_with("_counts")), as.numeric) #%>%
+#  mutate_at(vars(outcome), as.numeric)
+
+
+```
+
+
+
+```{r}
+aoa_admissions_inschool <- aoa_admissions_inschool %>%
+  mutate_if(is.factor, addNA, ifany = TRUE) %>%
+  mutate_if(is.factor, funs(forcats::fct_recode(., `N/A` = NA_character_)))
+
+```
+
+
+
+```{r}
+
+trainIndex <- caret::createDataPartition(aoa_admissions_inschool$outcome, p = .8,
+                                  list = FALSE,
+                                  times = 1)
+
+
+aoa_train <- aoa_admissions_inschool[trainIndex,]
+
+aoa_test <- aoa_admissions_inschool[-trainIndex,]
+```
+
+
+
+
+```{r}
+
+rec <- recipe(outcome ~ ., data = aoa_train)
+
+
+all_preprocessing_steps <- rec %>%
+  add_role(study_id, new_role = "id_var") %>%
+  step_nzv(all_predictors()) %>%
+  step_meanimpute(all_numeric(), -appl_year) %>%
+  step_center(all_numeric(), -appl_year) %>%
+  step_scale(all_numeric(), -appl_year) %>%
+  step_other(race) %>%
+  step_dummy(all_nominal(), -all_outcomes(), -has_role("id_var"))
+
+summary(all_preprocessing_steps)
+
+trained_rec <- prepare(all_preprocessing_steps, training = aoa_train)
+
+
+train_data <- bake(trained_rec, newdata = aoa_train)
+test_data  <- bake(trained_rec, newdata = aoa_test)
+
+
+```
+
+
+```{r}
+outcome <- aoa_train$outcome
+cv.out <- cv.glmnet(as.matrix(train_data), outcome, alpha=1, family = "binomial", type.measure = "auc")
+lasso.pred <- predict(cv.out$glmnet.fit, s = cv.out$lambda.min, newx = as.matrix(test_data))
+
+
+
+pred <- prediction(lasso.pred, aoa_test$outcome)
+perf <- performance(pred,"auc")
+perf@y.values
+
+
+```
+
