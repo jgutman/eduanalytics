@@ -42,6 +42,8 @@ library(ROCR)
 aoa_admissions_inschool <- "deidentified$model_data$aoa_admissions" %>% 
   put_tbl_to_memory(edu_db_con, .) 
 
+
+
 ```
 
 
@@ -62,8 +64,8 @@ is_binary <- function(col) {
 
 aoa_admissions_inschool <- aoa_admissions_inschool %>% 
   mutate_if(is_binary, as.factor) %>% 
-  mutate_at(vars(ends_with("_counts")), as.numeric) %>%
-  mutate_at(vars(outcome), as.numeric)
+  mutate_at(vars(ends_with("_counts")), as.numeric) #%>%
+#  mutate_at(vars(outcome), as.numeric)
 
 
 ```
@@ -102,11 +104,11 @@ rec <- recipe(outcome ~ ., data = aoa_train)
 all_preprocessing_steps <- rec %>%
   add_role(study_id, new_role = "id_var") %>%
   step_nzv(all_predictors()) %>%
-  step_meanimpute(all_numeric(), -all_outcomes(), -appl_year) %>%
-  step_center(all_numeric(), -all_outcomes(), -appl_year) %>%
-  step_scale(all_numeric(), -all_outcomes(), -appl_year) %>%
+  step_meanimpute(all_numeric(), -appl_year) %>%
+  step_center(all_numeric(), -appl_year) %>%
+  step_scale(all_numeric(), -appl_year) %>%
   step_other(race) %>%
-  step_dummy(all_nominal(), -has_role("id_var"))
+  step_dummy(all_nominal(), -all_outcomes(), -has_role("id_var"))
 
 summary(all_preprocessing_steps)
 
@@ -117,7 +119,6 @@ train_data <- bake(trained_rec, newdata = aoa_train)
 test_data  <- bake(trained_rec, newdata = aoa_test)
 
 
-
 ```
 
 
@@ -125,7 +126,7 @@ test_data  <- bake(trained_rec, newdata = aoa_test)
 outcome <- aoa_train$outcome
 cv.out <- cv.glmnet(as.matrix(train_data), outcome, alpha=1, family = "binomial", type.measure = "auc")
 lasso.pred <- predict(cv.out$glmnet.fit, s = cv.out$lambda.min, newx = as.matrix(test_data))
-mean((lasso.pred-aoa_test$outcome)^2)
+
 
 
 pred <- prediction(lasso.pred, aoa_test$outcome)
