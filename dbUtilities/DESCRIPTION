@@ -22,7 +22,8 @@ Imports: tidyverse,
 	 purrrlyr,
 	 tibble,
 	 dplyr,
-   dbplyr
+	 dbplyr
+
 LazyData: true
 Suggests: testthat
 RoxygenNote: 6.0.1
