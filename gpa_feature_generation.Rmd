@@ -125,7 +125,7 @@ total_gpa_trend <- gpa %>%
   select(study_id, appl_year, aca_status_desc, total_gpa) %>% 
   spread(aca_status_desc, total_gpa) %>% 
   mutate(total_gpa_soph_higher = as.numeric(Sophomore > Freshman),
-         total_gpa_juni_higher = as.numeric(Junior > Freshman),
+         total_gpa_juni_higher = as.numeric(Junior > Sophomore),
          total_gpa_seni_higher = as.numeric(Senior > Junior)) %>% 
   select(-Freshman, -Sophomore, -Junior, -Senior) 
  
