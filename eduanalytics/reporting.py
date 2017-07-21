@@ -6,6 +6,8 @@ import itertools, os
 from collections import OrderedDict
 from sklearn.externals import joblib
 
+### needs to be changed
+### add docstring
 def get_results(clf, X, y, lb):
     """Get a data frame with study_id, appl_year, outcome
 
@@ -23,7 +25,8 @@ def get_results(clf, X, y, lb):
         scores = convert_binary_predictions(raw_scores, lb, X.index)
     return y_flat.join([appl_year, scores])
 
-
+### needs to be changed
+### add docstring
 def convert_multiclass_predictions(scores, lb, study_ids):
     """
 

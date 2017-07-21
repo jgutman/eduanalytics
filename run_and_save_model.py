@@ -17,6 +17,10 @@ def fit_pipeline(model_matrix, grid_path,
         scoring = 'roc_auc', # 'f1_micro',
         write_predictions = False,
         path = None, group = None, tbl_name = None):
+
+    # other possible steps:
+    # feature_selection.VarianceThreshold
+    # add imputer__strategy: "most_frequent"
     pipeline = make_pipeline(pipeline_tools.DummyEncoder(),
                 preprocessing.Imputer(),
                 ensemble.RandomForestClassifier(random_state = 1100))
