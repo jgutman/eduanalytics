@@ -1,0 +1,12 @@
+cohorts:
+    tbl: urm_or_disadvantaged
+    col: urm
+    included:
+        - not urm
+
+features:
+    - experiences
+    - grades
+
+outcomes:
+    screening

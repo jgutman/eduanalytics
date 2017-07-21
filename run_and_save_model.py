@@ -44,12 +44,8 @@ def fit_pipeline(model_matrix, grid_path,
 
 def main(args=None):
     parser = ArgumentParser()
-    parser.add_argument('--tbl', dest = 'tbl_name',
-        help = 'Table name suffix containing model data')
-    parser.add_argument('--id', dest = 'tbl_id',
-        help = 'Staging area of table (first prefix)')
-    parser.add_argument('--status', dest = 'tbl_status',
-        help = 'Schema name of table (second prefix)')
+    parser.add_argument('--dyaml', dest = 'data_yaml',
+        help = 'Path to the model data yaml file')
     parser.add_argument('--credpath', dest = 'path',
         help = 'Path to the db credentials file')
     parser.add_argument('--credgroup', dest = 'group',
@@ -58,26 +54,26 @@ def main(args=None):
         help = 'Path to the grid search options yaml file')
     parser.add_argument('--pkldir', dest = 'pkldir',
         help = 'Path to store binary compressed model files')
-    parser.set_defaults(path = eduanalytics.credentials_path,
+    parser.set_defaults(
+        path = eduanalytics.credentials_path,
         group = eduanalytics.credentials_group,
-        tbl_id = 'deidentified',
-        tbl_status = 'model_data',
+        dyaml = 'model_data_opts.yaml',
         grid_path = 'grid_options.yaml',
         pkldir = 'pkls')
     args = parser.parse_args()
 
     engine = model_data.connect_to_database(args.path, args.group)
-    # print(*engine.table_names(), sep = '\n')
-    model_matrix = model_data.get_data_for_modeling(engine,
-        tbl_name = args.tbl_name,
-        id = args.tbl_id, status = args.tbl_status)
+    model_matrix = model_data.get_data_for_modeling(
+        filename = args.dyaml, engine = engine)
 
     assert ('outcome' in model_matrix.columns
-        ), "missing outcome column in {}${}${}".format(
-        args.tbl_name, args.tbl_id, args.tbl_status)
-    # print(model_matrix.outcome.value_counts())
+        ), "missing outcome column"
+    assert ('aamc_id' in model_matrix.index.names
+        and 'application_year' in model_matrix.index.names
+        ), "invalid index cols"
 
-    pipeline = fit_pipeline(model_matrix, args.grid_path,
+    pipeline = fit_pipeline(model_matrix,
+        args.grid_path,
         write_predictions = True,
         path = args.path, group = args.group, tbl_name = args.tbl_name)
 
