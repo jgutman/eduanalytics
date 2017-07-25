@@ -1,7 +1,7 @@
 from sklearn.pipeline import TransformerMixin
 from sklearn.base import BaseEstimator
 import pandas as pd
-import re, yaml
+import re, yaml, logging
 import time, datetime
 
 def extract_step_from_pipeline(cv_pipeline, step_name):
@@ -142,7 +142,7 @@ class Timer(object):
 
     def __exit__(self, type, value, traceback):
         if self.name:
-            print("{}: ".format(self.name))
+            logging.info("{}: ".format(self.name))
         self.end_time = self.time_check()
-        print('Time elapsed: {}'.format(
+        logging.info('Time elapsed: {}'.format(
             datetime.timedelta(seconds=int(self.end_time))))

@@ -40,17 +40,16 @@ def convert_categorical(data):
         Pandas.DataFrame: dataframe with mix of categoricals and numeric cols
     """
     binary_cols = set(col for col in data if (
-        data[col].nunique() == 2 and not re.search(
-        '_[ABCDF]$', col)))
+        data[col].nunique() == 2 and not re.search('_[ABCDF]$', col)))
     string_cols = set(col for col in data if data[col].dtype == 'O')
     categoricals = binary_cols.union(string_cols)
     data_categorical = data.astype({col: 'category' for col in categoricals})
     return data_categorical
 
 
-def get_data_for_modeling(filename, engine):
-    """Return a dataframe for the desired table from the database.
-    Currently does not handle datetime variables or unstructured text.
+def get_data_for_prediction(filename, engine):
+    """Return a dataframe for the desired data for the current unlabeled
+    cohort with the features specified in the yaml file.
 
     Args:
         filename (str): path to YAML file with cohort, outcome, and
@@ -59,6 +58,47 @@ def get_data_for_modeling(filename, engine):
     Returns:
         Pandas.DataFrame: dataframe with Multi-index of aamc id and application year
             for applicants with known outcomes and qualifying cohort variables
+        str: algorithm_id description for database and pkl file to denote
+            which algorithm settings were used in fitting the model
+    """
+    with open(filename) as f:
+        model_opts = yaml.load(f)
+
+    current_applicants_query = """select aamc_id, application_year
+        from vw$filtered${}""".format(model_opts['predictions'])
+    feature_tbls = ["vw$features${}".format(
+        tbl_name) for tbl_name in model_opts['features']]
+
+    features = list()
+    for feature_tbl in feature_tbls:
+        get_features = """select * from `{feature_tbl}`
+        where (aamc_id, application_year) in
+        ({query})""".format(
+            feature_tbl = feature_tbl,
+            query = current_applicants_query)
+        feature_data = pd.read_sql_query(get_features, engine,
+            index_col = ['aamc_id', 'application_year'])
+        features.append(feature_data)
+
+    current_data = features[0].join(features[1:])
+    current_data = convert_categorical(current_data)
+    return current_data, model_opts['algorithm_id']
+
+
+def get_data_for_modeling(filename, engine):
+    """Return a dataframe containing features specified by the yaml file for
+    records meeting the cohort criteria specified in the yaml file.
+    Includes the true outcome label from the database.
+
+    Args:
+        filename (str): path to YAML file with cohort, outcome, and
+            feature specification for desired model data
+        engine (sqlalchemy.Engine): a connection to the MySQL database
+    Returns:
+        Pandas.DataFrame: dataframe with Multi-index of aamc id and application year
+            for applicants with known outcomes and qualifying cohort variables
+        str: algorithm_id description for database and pkl file to denote
+            which algorithm settings were used in fitting the model
     """
     with open(filename) as f:
         model_opts = yaml.load(f)
@@ -84,6 +124,7 @@ def get_data_for_modeling(filename, engine):
     feature_tbls = ["vw$features${}".format(
         tbl_name) for tbl_name in model_opts['features']]
 
+    features = list()
     for feature_tbl in feature_tbls:
         get_features = """select * from `{feature_tbl}`
         where (aamc_id, application_year) in
@@ -92,15 +133,15 @@ def get_data_for_modeling(filename, engine):
             cohort_query = get_cohort)
         feature_data = pd.read_sql_query(get_features, engine,
             index_col = ['aamc_id', 'application_year'])
-        outcome_data = outcome_data.merge(feature_data, how = 'left',
-            left_index = True, right_index = True)
+        features.append(feature_data)
 
-    outcome_data = convert_categorical(outcome_data)
-    return outcome_data
+    model_data = outcome_data.join(features)
+    model_data = convert_categorical(model_data)
+    return model_data, model_opts['algorithm_id']
 
 
 def split_data(model_matrix, outcome_name = 'outcome',
-        seed = 1100, test_size = .33):
+        seed = 1100, test_size = .25):
     """Splits a data set into training and test and separates features (X)
     from target variable (y).
 

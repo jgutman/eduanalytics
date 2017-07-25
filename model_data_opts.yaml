@@ -4,9 +4,20 @@ cohorts:
     included:
         - not urm
 
+# list columns to exclude from table, by default include all
 features:
-    - experiences
-    - grades
+    - experiences :
+        []
+    - grades:
+        []
+    - mcat:
+        []
 
 outcomes:
     screening
+
+predictions:
+    screen_eligible
+
+algorithm_id:
+    debug

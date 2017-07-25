@@ -325,3 +325,63 @@ school_name, degree_name
 from vwScreenSchool
 where appl_year >= 2013
 order by appl_year, aamc_id
+
+select * from vwScreenApplicationInfo 
+where (aamc_id, application_year) in
+(select aamc_id, application_year
+from vwScreenEligible
+where URM is null
+and is_eligible = 1
+and application_year = 2018);
+
+select * 
+from 
+(select i.aamc_id, i.application_year, i.grad_year_und,
+	EXTRACT(YEAR from g.grad_year_undergrad) grad_year_vw
+from vwScreenApplicationInfo i
+left JOIN
+graduation_dates g
+on (g.aamc_id = i.aamc_id 
+and g.application_year = i.application_year)) bb
+where bb.grad_year_und != bb.grad_year_vw
+
+select degree_cd, degree_desc, count(*)
+from vwScreenSchool
+where undergrad_ind
+group by degree_cd, degree_desc
+
+select *
+from vwScreenSchool
+where PRIMARY_UNDERGRAD_INST_IND
+and degree_cd not in ('BA', 'BS', 'BH')
+and appl_year >= 2013
+order by aamc_id, appl_year;
+
+select aamc_id, application_year, 
+	extract(year from min(degree_dt)) graduation_year_undergrad
+from vwScreenSchool
+where degree_cd in ('BA', 'BS', 'BH')
+group by aamc_id, application_year;
+
+
+
+select * from `vw$features$mcat`
+group by aamc_id, application_year
+having count(*) > 1
+
+
+create or replace view `vw$filtered$screen_eligible` as
+select *
+from vwScreenApplicationInfo
+where appl_type_desc in ('Regular M.D.',
+                'Combined Medical Degree/Graduate')
+and (not status REGEXP 'M[[:upper:]]{2}')
+and app_submit_date is not NULL
+and appl_complete_date is not NULL
+and application_year = (
+	select max(application_year) from vwScreenApplicationInfo)
+and (aamc_id, application_year) in (
+	select aamc_id, application_year
+	from vwScreenEligible
+	where urm is NULL
+	and is_eligible = 1);

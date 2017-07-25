@@ -2,68 +2,127 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, precision_recall_curve, roc_auc_score
+from eduanalytics import model_data
 import itertools, os
 from collections import OrderedDict
 from sklearn.externals import joblib
 
-### needs to be changed
-### add docstring
 def get_results(clf, X, y, lb):
-    """Get a data frame with study_id, appl_year, outcome
+    """Takes a trained model, model matrix, and output data and
+    returns a DataFrame of true and predicted output for all X, y
 
     Args:
+        clf (sklearn.estimator): a fitted estimator with predict_proba
+            method (could eventually be extended to decision_function)
+        X (Pandas.DataFrame): df with index or Multi-index and all
+            features needed for clf.predict_proba method
+        y (Numpy array): a numpy array transformed with lb.transform
+            to hold a column for each class in lb.classes_, giving
+            true outcome in binarized one-hot encoded format
+        lb (sklearn.LabelBinarizer): a label binarizer holding the
+            original class labels and transformation mechanism
+
     Returns:
+        Pandas.DataFrame: a dataframe with index or Multi-index, and a
+        column for the true outcome, as well as one column per class (in
+        multiclass problems) giving the prediction score for that class
     """
-    y_flat = lb.inverse_transform(y)
-    y_flat = pd.DataFrame(y_flat,
-        columns = ['outcome'], index = X.index)
     raw_scores = clf.predict_proba(X)
-    appl_year = pd.DataFrame(X.appl_year)
     if len(lb.classes_) > 2:
         scores = convert_multiclass_predictions(raw_scores, lb, X.index)
     else:
         scores = convert_binary_predictions(raw_scores, lb, X.index)
-    return y_flat.join([appl_year, scores])
+    if y is not None:
+        y_flat = lb.inverse_transform(y)
+        y_flat = pd.DataFrame(y_flat,
+            columns = ['outcome'], index = X.index)
+        scores = y_flat.join(scores)
+    return scores
 
-### needs to be changed
-### add docstring
-def convert_multiclass_predictions(scores, lb, study_ids):
-    """
+
+def convert_multiclass_predictions(scores, lb, ids):
+    """Converts raw numpy array of one-hot encoded prediction scores to a
+    one row per record Pandas DataFrame with index and column names
 
     Args:
+        scores (list[Numpy array]): raw prediction scores in a list of
+            numpy arrays, with each element of the list giving binary
+            predictions in two columns i.e. (not class X, class X)
+        lb (sklearn.LabelBinarizer): a label binarizer holding the
+            original class labels
+        ids (Pandas.index): an index or Multi-index for the raw scores
     Returns:
+        Pandas.DataFrame: df with index and columns labeled
+        predicted_{class_name} for each class in LabelBinarizer
     """
     scores_per_class = [p[:,1] for p in scores]
     scores_flat = np.vstack(scores_per_class).T
-    class_names = ['predicted_{}'.format(int(p)) for p in lb.classes_]
+    class_names = ['predicted_{}'.format(p) for p in lb.classes_]
     scores_df = pd.DataFrame(scores_flat,
-        columns = class_names, index = study_ids)
+        columns = class_names, index = ids)
     return scores_df
 
-def convert_binary_predictions(scores, lb, study_ids):
-    """
+
+def convert_binary_predictions(scores, lb, ids):
+    """Converts raw numpy array of one-hot encoded prediction scores to a
+    one row per record Pandas DataFrame with index and column names
 
     Args:
+        scores (Numpy array): raw prediction scores with the second
+            column giving the probability of the positive class
+        lb (sklearn.LabelBinarizer): a label binarizer holding the
+            original positive and negative class labels
+        ids (Pandas.index): an index or Multi-index for the raw scores
     Returns:
+        Pandas.DataFrame: df with index and 1 column labeled
+        predicted_{class_name} for positive class in LabelBinarizer
     """
+    class_names = 'predicted_{}'.format(lb.classes_[1])
     scores_df = pd.DataFrame(scores[:,1],
-        columns = ['predicted'], index = study_ids)
+        columns = class_names, index = ids)
     return scores_df
 
 
-def output_predictions(train_results, test_results, conn, name,
-        id = 'deidentified', status = 'predictions'):
+def output_predictions(train_results, test_results, conn,
+    alg_id = 'debug', tbl_name = 'screening_train_val'):
     """Write the true labels and prediction scores to a table in the database.
 
     Args:
+        train_results (Pandas.DataFrame): indexed true and predicted output for
+            all training data
+        test_results (Pandas.DataFrame): indexed true and predicted output for
+            all test data
+        conn (sqlalchemy.Engine): a connection to the MySQL database
+        alg_id (str): a name for the algorithm id to store the model results by
+        tbl_name (str): a name for the database table holding all results
     Returns:
+        str: the name of the table in the database
     """
-    name = '{id}${status}${name}'.format(
-        id = id, status = status, name = name)
+    name = "out$predictions${}".format(tbl_name)
     train_results['set'] = 'train'
     test_results['set'] = 'test'
-    results = pd.concat([train_results, test_results]).reset_index()
-    results.to_sql(name, conn, if_exists = 'replace', index = False)
+    results = pd.concat([train_results, test_results])
+    results['algorithm_id'] = alg_id
+    results.to_sql(name, conn, if_exists = 'append',
+        index_label = results.index.names)
+    return "Added to database {}: algorithm_id = {}".format(name, alg_id)
+
+
+def write_current_predictions(clf, filename, conn, label_encoder,
+    tbl_name = 'screening_current_cohort'):
+    """
+
+    Args:
+    Returns:
+    """
+    current_data, alg_id = model_data.get_data_for_prediction(filename, conn)
+    results = get_results(clf, current_data,
+        y = None, lb = label_encoder)
+    name = "out$predictions${}".format(tbl_name)
+    results['algorithm_id'] = alg_id
+    results.to_sql(name, conn, if_exists = 'append',
+        index_label = results.index.names)
+    return "Added to database {}: algorithm_id = {}".format(name, alg_id)
 
 
 def build_confusion_matrix(true, predicted, class_names,
@@ -260,32 +319,34 @@ def plot_precision_recall_n(y_true, y_score, model_name):
     plt.show()
 
 
-def pickle_model(clf, pkl_path, tbl_name, model_tag):
+def pickle_model(clf, pkl_path, alg_id, model_tag):
     """Write a sklearn object to disk in binary compressed format.
 
     Args:
         clf (sklearn.GridSearchCV/Estimator): the model to persist to disk
         pkl_path (str): name of the directory to store the pkl files
-        tbl_name (str): shortname of the model data to tag the model with
-        model_tag (str): other info such as model type to tag the model with
+        tbl_name (str): shortname of the algorithm id for the model
+        model_tag (str): other info to tag the model with
+    Returns:
+        str: a message giving the path where the model has been saved
     """
-    filename = '{tbl_name}_{model_tag}.pkl.z'.format(
-        tbl_name = tbl_name, model_tag = model_tag)
+    filename = "{}_{}.pkl.z".format(alg_id, model_tag)
     joblib.dump(clf, os.path.join(pkl_path, filename))
-    print('Written to: {} in {}'.format(filename, pkl_path))
+    output = "Written compressed model to: {} in {}".format(
+        filename, pkl_path)
+    return output
 
 
-def load_model(pkl_path, tbl_name, model_tag):
+def load_model(pkl_path, alg_id, model_tag):
     """Load a sklearn object from disk saved in binary compressed format.
 
     Args:
         pkl_path (str): name of the directory to store the pkl files
-        tbl_name (str): shortname of the model data to tag the model with
+        alg_id (str): shortname of the algorithm_id for the model
         model_tag (str): other info such as model type to tag the model with
     Returns:
         sklearn.GridSearchCV or Estimator: uncompressed sklearn model
     """
-    filename = '{tbl_name}_{model_tag}.pkl.z'.format(
-        tbl_name = tbl_name, model_tag = model_tag)
+    filename = '{}_{}.pkl.z'.format(alg_id, model_tag)
     clf = joblib.load(os.path.join(pkl_path, filename))
     return clf
