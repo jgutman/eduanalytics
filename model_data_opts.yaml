@@ -6,12 +6,9 @@ cohorts:
 
 # list columns to exclude from table, by default include all
 features:
-    - experiences :
-        []
-    - grades:
-        []
-    - mcat:
-        []
+    - experiences
+    - grades
+    - mcat
 
 outcomes:
     screening
@@ -19,5 +16,5 @@ outcomes:
 predictions:
     screen_eligible
 
-algorithm_id:
+algorithm_name:
     debug

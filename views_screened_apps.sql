@@ -369,6 +369,30 @@ select * from `vw$features$mcat`
 group by aamc_id, application_year
 having count(*) > 1
 
+create or replace view graduation_dates as 
+select s.aamc_id, s.appl_year as application_year, 
+extract(year from min(s.degree_dt)) as graduation_year_undergrad
+from vwScreenSchool s
+where s.degree_cd in ('BA', 'BS', 'BH')
+left JOIN
+vwScreenApplicationInfo a
+on (a.aamc_id = s.aamc_id and a.application_year = s.appl_year)
+group by s.aamc_id, s.appl_year;
+
+select count(*) from `vw$filtered$screen_eligible`
+
+DELETE FROM edu_analytics.algorithm;
+ALTER TABLE edu_analytics.algorithm AUTO_INCREMENT = 1
+
+delete from out$predictions$screening_current_cohort;
+delete from out$predictions$screening_train_val;
+
+select column_name
+from information_schema.columns
+where table_name in ('vw$features$mcat', 'vw$features$grades', 'vw$features$experiences')
+and column_name not in ('aamc_id', 'application_year');
+
+select count(*) from vwScreenApplicationInfo where application_year = 2018 and appl_complete_date is not null and app_submit_date;
 
 create or replace view `vw$filtered$screen_eligible` as
 select *

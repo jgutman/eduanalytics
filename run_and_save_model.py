@@ -40,7 +40,7 @@ def fit_pipeline(model_matrix, grid_path, pkldir,
         grid_search.fit(X_train, y_train)
 
     logging.info(reporting.pickle_model(grid_search,
-        pkldir, alg_id, model_tag = 'screening_rf'))
+        pkldir, lb, alg_id, model_tag = 'screening_rf'))
 
     if write_predictions:
         engine = model_data.connect_to_database(path, group)
@@ -76,6 +76,8 @@ def main(args=None):
     logging.basicConfig(format = "%(asctime)s\t%(levelname)s: %(message)s",
         level = logging.DEBUG, datefmt = "%m/%d/%y %I:%M %p")
     engine = model_data.connect_to_database(args.path, args.group)
+
+
     model_matrix, alg_id = model_data.get_data_for_modeling(
         filename = args.dyaml, engine = engine)
 
@@ -86,7 +88,7 @@ def main(args=None):
     if args.predict_current:
         logging.info(reporting.write_current_predictions(pipeline,
             filename = args.dyaml, conn = engine,
-            label_encoder = label_encoder))
+            label_encoder = label_encoder, alg_id = alg_id))
 
 
 if __name__ == '__main__':

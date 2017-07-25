@@ -108,14 +108,14 @@ def output_predictions(train_results, test_results, conn,
     return "Added to database {}: algorithm_id = {}".format(name, alg_id)
 
 
-def write_current_predictions(clf, filename, conn, label_encoder,
+def write_current_predictions(clf, filename, conn, label_encoder, alg_id,
     tbl_name = 'screening_current_cohort'):
     """
 
     Args:
     Returns:
     """
-    current_data, alg_id = model_data.get_data_for_prediction(filename, conn)
+    current_data = model_data.get_data_for_prediction(filename, conn)
     results = get_results(clf, current_data,
         y = None, lb = label_encoder)
     name = "out$predictions${}".format(tbl_name)
@@ -319,7 +319,7 @@ def plot_precision_recall_n(y_true, y_score, model_name):
     plt.show()
 
 
-def pickle_model(clf, pkl_path, alg_id, model_tag):
+def pickle_model(clf, pkl_path, label_encoder, alg_id, model_tag):
     """Write a sklearn object to disk in binary compressed format.
 
     Args:
@@ -330,8 +330,10 @@ def pickle_model(clf, pkl_path, alg_id, model_tag):
     Returns:
         str: a message giving the path where the model has been saved
     """
-    filename = "{}_{}.pkl.z".format(alg_id, model_tag)
-    joblib.dump(clf, os.path.join(pkl_path, filename))
+    filename = "id{}_{}.pkl.z".format(alg_id, model_tag)
+    model_plus_encoder = {'pipeline': clf, 'encoder': label_encoder}
+    joblib.dump(model_plus_encoder,
+        os.path.join(pkl_path, filename))
     output = "Written compressed model to: {} in {}".format(
         filename, pkl_path)
     return output
@@ -347,6 +349,8 @@ def load_model(pkl_path, alg_id, model_tag):
     Returns:
         sklearn.GridSearchCV or Estimator: uncompressed sklearn model
     """
-    filename = '{}_{}.pkl.z'.format(alg_id, model_tag)
-    clf = joblib.load(os.path.join(pkl_path, filename))
-    return clf
+    filename = "id{}_{}.pkl.z".format(alg_id, model_tag)
+    model_plus_encoder = joblib.load(os.path.join(pkl_path, filename))
+    clf = model_plus_encoder['pipeline']
+    encoder = model_plus_encoder['encoder']
+    return clf, encoder

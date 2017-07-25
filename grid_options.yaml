@@ -1,7 +1,7 @@
 imputer:
-    strategy: ['mean' 'median', 'most_frequent']
+    strategy: ['mean' ] #, 'median', 'most_frequent']
 randomforestclassifier:
-    n_estimators: [10, 50 100, 200, 500, 1000]
+    n_estimators: [10, 50 ] #, 100, 200, 500, 1000]
     max_depth: [1, 5, 10, 20, 50]
     max_features: ['sqrt', 'log2']
     min_samples_split: [2, 5, 10]

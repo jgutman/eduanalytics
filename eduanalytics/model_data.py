@@ -1,7 +1,8 @@
 import configparser
 import sqlalchemy
 import pandas as pd
-import string, os, re, yaml
+import string, os, re
+import yaml, json
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
 
@@ -47,6 +48,36 @@ def convert_categorical(data):
     return data_categorical
 
 
+def describe_model(filename, engine):
+    """
+    """
+    with open(filename) as f:
+        model_opts = yaml.load(f)
+
+    algorithm_name = model_opts['algorithm_name']
+    algorithm_description = json.dumps(model_opts)
+
+    feature_tbls = ["'vw$features${}'".format(tbl)
+        for tbl in model_opts['features']]
+
+    column_query = """select column_name
+    from information_schema.columns
+    where table_name in ({feature_string})
+    and column_name not in ('aamc_id', 'application_year');""".format(
+        feature_string = ", ".join(feature_tbls))
+    column_names = pd.read_sql_query(column_query, engine)
+    algorithm_details = json.dumps(column_names.column_name.tolist())
+
+    x = pd.DataFrame({'algorithm_name': [algorithm_name],
+            'algorithm_description': [algorithm_description],
+            'algorithm_details': [algorithm_details]})
+    x.to_sql('algorithm', engine, index = False, if_exists = 'append')
+
+    algorithm_id = pd.read_sql_query('select max(id) from algorithm',
+        engine).iloc[0,0]
+    return model_opts, algorithm_id
+
+
 def get_data_for_prediction(filename, engine):
     """Return a dataframe for the desired data for the current unlabeled
     cohort with the features specified in the yaml file.
@@ -82,7 +113,7 @@ def get_data_for_prediction(filename, engine):
 
     current_data = features[0].join(features[1:])
     current_data = convert_categorical(current_data)
-    return current_data, model_opts['algorithm_id']
+    return current_data
 
 
 def get_data_for_modeling(filename, engine):
@@ -100,8 +131,7 @@ def get_data_for_modeling(filename, engine):
         str: algorithm_id description for database and pkl file to denote
             which algorithm settings were used in fitting the model
     """
-    with open(filename) as f:
-        model_opts = yaml.load(f)
+    model_opts, algorithm_id = describe_model(filename, engine)
 
     cohort_vals = model_opts['cohorts']['included']
     get_cohort = """select aamc_id, application_year
@@ -137,7 +167,7 @@ def get_data_for_modeling(filename, engine):
 
     model_data = outcome_data.join(features)
     model_data = convert_categorical(model_data)
-    return model_data, model_opts['algorithm_id']
+    return model_data, algorithm_id
 
 
 def split_data(model_matrix, outcome_name = 'outcome',
