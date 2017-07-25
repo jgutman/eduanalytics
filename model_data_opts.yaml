@@ -4,11 +4,11 @@ cohorts:
     included:
         - not urm
 
-# list columns to exclude from table, by default include all
+# add functionality to exclude specific columns
 features:
-    - experiences
-    - grades
-    - mcat
+    experiences: []
+    grades: []
+    mcat: []
 
 outcomes:
     screening

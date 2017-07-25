@@ -2,7 +2,7 @@ import configparser
 import sqlalchemy
 import pandas as pd
 import string, os, re
-import yaml, json
+import yaml, json, itertools
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
 
@@ -57,16 +57,24 @@ def describe_model(filename, engine):
     algorithm_name = model_opts['algorithm_name']
     algorithm_description = json.dumps(model_opts)
 
-    feature_tbls = ["'vw$features${}'".format(tbl)
-        for tbl in model_opts['features']]
+    feature_tbls = {"'vw$features${}'".format(tbl_name): cols_to_drop
+        for tbl_name, cols_to_drop
+        in model_opts['features'].items()}
 
     column_query = """select column_name
     from information_schema.columns
     where table_name in ({feature_string})
     and column_name not in ('aamc_id', 'application_year');""".format(
-        feature_string = ", ".join(feature_tbls))
+        feature_string = ", ".join(feature_tbls.keys()))
+
     column_names = pd.read_sql_query(column_query, engine)
-    algorithm_details = json.dumps(column_names.column_name.tolist())
+    column_names = set(column_names.column_name)
+    drop_cols = set(itertools.chain(*feature_tbls.values()))
+
+    if drop_cols:
+        column_names = column_names - drop_cols
+
+    algorithm_details = json.dumps(column_names)
 
     x = pd.DataFrame({'algorithm_name': [algorithm_name],
             'algorithm_description': [algorithm_description],
@@ -97,23 +105,34 @@ def get_data_for_prediction(filename, engine):
 
     current_applicants_query = """select aamc_id, application_year
         from vw$filtered${}""".format(model_opts['predictions'])
-    feature_tbls = ["vw$features${}".format(
-        tbl_name) for tbl_name in model_opts['features']]
 
-    features = list()
-    for feature_tbl in feature_tbls:
-        get_features = """select * from `{feature_tbl}`
-        where (aamc_id, application_year) in
-        ({query})""".format(
-            feature_tbl = feature_tbl,
-            query = current_applicants_query)
-        feature_data = pd.read_sql_query(get_features, engine,
-            index_col = ['aamc_id', 'application_year'])
-        features.append(feature_data)
+    features = loop_through_features(engine, model_opts['features'],
+        subquery = current_applicants_query)
 
     current_data = features[0].join(features[1:])
     current_data = convert_categorical(current_data)
     return current_data
+
+
+def loop_through_features(engine, features_dict, subquery):
+    """
+    """
+    feature_tbls = {"vw$features${}".format(tbl_name): cols_to_drop
+        for tbl_name, cols_to_drop
+        in features_dict.items()}
+
+    features = list()
+    for feature_tbl, drop_cols in feature_tbls.items():
+        get_features = """select * from `{feature_tbl}`
+        where (aamc_id, application_year) in ({query})""".format(
+            feature_tbl = feature_tbl,
+            query = subquery)
+        feature_data = pd.read_sql_query(get_features, engine,
+            index_col = ['aamc_id', 'application_year'])
+        if drop_cols:
+            feature_data.drop(drop_cols, axis = 1, inplace = True)
+        features.append(feature_data)
+    return features
 
 
 def get_data_for_modeling(filename, engine):
@@ -151,19 +170,8 @@ def get_data_for_modeling(filename, engine):
     outcome_data = pd.read_sql_query(get_outcomes, engine,
         index_col = ['aamc_id', 'application_year'])
 
-    feature_tbls = ["vw$features${}".format(
-        tbl_name) for tbl_name in model_opts['features']]
-
-    features = list()
-    for feature_tbl in feature_tbls:
-        get_features = """select * from `{feature_tbl}`
-        where (aamc_id, application_year) in
-        ({cohort_query})""".format(
-            feature_tbl = feature_tbl,
-            cohort_query = get_cohort)
-        feature_data = pd.read_sql_query(get_features, engine,
-            index_col = ['aamc_id', 'application_year'])
-        features.append(feature_data)
+    features = loop_through_features(engine, model_opts['features'],
+        subquery = get_cohort)
 
     model_data = outcome_data.join(features)
     model_data = convert_categorical(model_data)
