@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 import sklearn
 
 from sklearn.pipeline import make_pipeline
-from sklearn import ensemble, linear_model, metrics, preprocessing
+from sklearn import ensemble, linear_model, metrics
+from sklearn import feature_selection, preprocessing
 from sklearn.model_selection import GridSearchCV
 from argparse import ArgumentParser
 
@@ -22,8 +23,9 @@ def fit_pipeline(model_matrix, grid_path, pkldir,
     # other possible steps:
     # feature_selection.VarianceThreshold
     pipeline = make_pipeline(pipeline_tools.DummyEncoder(),
-                preprocessing.Imputer(),
-                ensemble.RandomForestClassifier(random_state = 1100))
+            feature_selection.VarianceThreshold(),
+            preprocessing.Imputer(),
+            ensemble.RandomForestClassifier(random_state = 1100))
     param_grid = pipeline_tools.build_param_grid(pipeline, grid_path)
     grid_search = GridSearchCV(pipeline,
         n_jobs = -1,

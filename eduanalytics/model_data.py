@@ -74,7 +74,7 @@ def describe_model(filename, engine):
     if drop_cols:
         column_names = column_names - drop_cols
 
-    algorithm_details = json.dumps(column_names)
+    algorithm_details = json.dumps(list(column_names))
 
     x = pd.DataFrame({'algorithm_name': [algorithm_name],
             'algorithm_description': [algorithm_description],
@@ -110,7 +110,6 @@ def get_data_for_prediction(filename, engine):
         subquery = current_applicants_query)
 
     current_data = features[0].join(features[1:])
-    current_data = convert_categorical(current_data)
     return current_data
 
 

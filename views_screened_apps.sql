@@ -387,6 +387,27 @@ ALTER TABLE edu_analytics.algorithm AUTO_INCREMENT = 1
 delete from out$predictions$screening_current_cohort;
 delete from out$predictions$screening_train_val;
 
+select age, count(*)
+from `vw$features$app_info`
+where application_year >= 2013
+group by age
+;
+
+select d.aamc_id, d.application_year, d.is_disadvantaged, i.is_disadvantaged
+from `vw$cohorts$urm_or_disadvantaged` d
+left join 
+`vw$features$app_info` i
+on d.aamc_id = i.aamc_id and d.application_year = i.application_year
+where d.is_disadvantaged = 'not disadvantaged' and i.is_disadvantaged is null
+
+
+select distinct(month_app_completed)
+from `vw$features$app_info`
+where (aamc_id, application_year) in
+(select aamc_id, application_year from `vw$filtered$screen_eligible`)
+
+
+
 select column_name
 from information_schema.columns
 where table_name in ('vw$features$mcat', 'vw$features$grades', 'vw$features$experiences')

@@ -6,9 +6,21 @@ cohorts:
 
 # add functionality to exclude specific columns
 features:
-    experiences: []
-    grades: []
-    mcat: []
+    experiences:
+        - exp_publications
+        - exp_publications_hours
+    grades:
+        - Math_D
+        - Math_F
+        - Physics_D
+        - Physics_F
+    mcat:
+        []
+    gpa:
+        - total_gpa_postbac_or_cum
+        - bcpm_gpa_postbac_or_cum
+    app_info:
+        []
 
 outcomes:
     screening
@@ -17,4 +29,4 @@ predictions:
     screen_eligible
 
 algorithm_name:
-    debug
+    test_exclude_features

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, precision_recall_curve, roc_auc_score
-from eduanalytics import model_data
+from eduanalytics import model_data, pipeline_tools
 import itertools, os
 from collections import OrderedDict
 from sklearn.externals import joblib
@@ -116,6 +116,11 @@ def write_current_predictions(clf, filename, conn, label_encoder, alg_id,
     Returns:
     """
     current_data = model_data.get_data_for_prediction(filename, conn)
+
+    dummy_encoder = pipeline_tools.extract_encoder_from_pipeline(clf)
+    current_data = current_data.astype({col: 'category'
+        for col in dummy_encoder.columns})
+        
     results = get_results(clf, current_data,
         y = None, lb = label_encoder)
     name = "out$predictions${}".format(tbl_name)

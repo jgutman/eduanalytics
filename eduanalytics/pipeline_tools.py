@@ -53,6 +53,18 @@ def extract_model_from_pipeline(cv_pipeline):
     return model_step
 
 
+def extract_encoder_from_pipeline(cv_pipeline):
+    """
+    """
+    steps = describe_pipeline_steps(cv_pipeline)
+    pattern = "encoder$"
+    prog = re.compile(pattern)
+    encoder_step_name = [step for step in steps if bool(prog.search(step))]
+    encoder_step = extract_step_from_pipeline(
+        cv_pipeline, encoder_step_name[-1])
+    return encoder_step
+
+
 def get_transformed_columns(cv_pipeline):
     """Returns a list of column names in the transformed data after applying an
     encoder transformation to the data.
@@ -63,11 +75,7 @@ def get_transformed_columns(cv_pipeline):
     Returns:
         pandas.Index: an index of all column names in the transformed data
     """
-    steps = describe_pipeline_steps(cv_pipeline)
-    pattern = "encoder$"
-    prog = re.compile(pattern)
-    encoder_step_name = [step for step in steps if bool(prog.search(step))]
-    encoder_step = extract_step_from_pipeline(cv_pipeline, encoder_step_name[-1])
+    encoder_step = extract_encoder_from_pipeline(cv_pipeline)
     return encoder_step.transformed_columns
 
 
@@ -109,7 +117,8 @@ class DummyEncoder(BaseEstimator, TransformerMixin):
     def transform(self, X, y=None, **kwargs):
         transformed = pd.get_dummies(X,
             columns = self.columns,
-            drop_first = True,
+            drop_first = False, # do not drop in transform
+            # drop only in fit, and set transformed_columns in fit method
             dummy_na = True)
         return transformed[self.transformed_columns]
 
@@ -120,9 +129,9 @@ class DummyEncoder(BaseEstimator, TransformerMixin):
             columns = self.columns,
             drop_first = True,
             dummy_na = True)
-
-        cols = transformed.apply(pd.Series.nunique)
-        transformed = transformed.drop(cols[cols == 1].index, axis = 1)
+        # MOVE THESE STEPS TO VARIANCE THRESHOLD STEP
+        ##cols = transformed.apply(pd.Series.nunique)
+        ##transformed = transformed.drop(cols[cols == 1].index, axis = 1)
         self.transformed_columns = transformed.columns
         return self
 
