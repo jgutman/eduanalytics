@@ -86,7 +86,8 @@ def describe_model(filename, engine):
     return model_opts, algorithm_id
 
 
-def get_data_for_prediction(filename, engine):
+def get_data_for_prediction(filename, engine, alg_id,
+    prediction_tbl = "out$predictions$screening_current_cohort"):
     """Return a dataframe for the desired data for the current unlabeled
     cohort with the features specified in the yaml file.
 
@@ -97,14 +98,18 @@ def get_data_for_prediction(filename, engine):
     Returns:
         Pandas.DataFrame: dataframe with Multi-index of aamc id and application year
             for applicants with known outcomes and qualifying cohort variables
-        str: algorithm_id description for database and pkl file to denote
-            which algorithm settings were used in fitting the model
     """
     with open(filename) as f:
         model_opts = yaml.load(f)
 
     current_applicants_query = """select aamc_id, application_year
-        from vw$filtered${}""".format(model_opts['predictions'])
+        from `vw$filtered${eligible_tbl}`
+        where (aamc_id, application_year, {alg_id}) not in
+        (select aamc_id, application_year, algorithm_id
+        from `{prediction_tbl}`)""".format(
+            eligible_tbl = model_opts['predictions'],
+            alg_id = algorithm_id,
+            prediction_tbl = prediction_tbl)
 
     features = loop_through_features(engine, model_opts['features'],
         subquery = current_applicants_query)

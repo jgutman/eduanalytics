@@ -14,11 +14,19 @@ from sklearn.model_selection import GridSearchCV
 from argparse import ArgumentParser
 
 
+def predict_from_pretrained(pkl_path, alg_id, filename, engine,
+    model_tag = "screening_rf"):
+    """
+    """
+
+
+
 def fit_pipeline(model_matrix, grid_path, pkldir,
-        scoring = 'roc_auc', # 'f1_micro',
-        alg_id = 'debug',
-        write_predictions = True,
-        path = None, group = None):
+    scoring = 'roc_auc', # 'f1_micro',
+    alg_id = 'debug', write_predictions = True,
+    path = None, group = None):
+    """
+    """
 
     pipeline = make_pipeline(pipeline_tools.DummyEncoder(),
             preprocessing.Imputer(),
@@ -63,31 +71,42 @@ def main(args=None):
         help = 'Path to the grid search options yaml file')
     parser.add_argument('--pkldir', dest = 'pkldir',
         help = 'Path to store binary compressed model files')
-    parser.add_argument('--pretrain', dest = 'predict_current',
-        default = True, action = 'store_false')
+    parser.add_argument('--fit', dest = 'train_model',
+        default = False, action = 'store_true',
+        help = 'Train the model from scratch')
+    parser.add_argument('--predict', dest = 'predict_new',
+        default = False, action = 'store_true',
+        help = 'Generate predictions on new data')
+    parser.add_argument('--id', dest = 'alg_id', type = int,
+        help = 'Algorithm id for pre-trained models')
     parser.set_defaults(
         path = eduanalytics.credentials_path,
         group = eduanalytics.credentials_group,
         dyaml = 'model_data_opts.yaml',
         grid_path = 'grid_options.yaml',
-        pkldir = eduanalytics.pkl_path)
+        pkldir = eduanalytics.pkl_path,
+        alg_id = 0)
     args = parser.parse_args()
 
     logging.basicConfig(format = "%(asctime)s\t%(levelname)s: %(message)s",
         level = logging.DEBUG, datefmt = "%m/%d/%y %I:%M %p")
     engine = model_data.connect_to_database(args.path, args.group)
 
+    if args.train_model:
+        model_matrix, alg_id = model_data.get_data_for_modeling(
+            filename = args.dyaml, engine = engine)
+        pipeline, label_encoder = fit_pipeline(
+            model_matrix, args.grid_path,
+            pkldir = args.pkldir, alg_id = alg_id,
+            path = args.path, group = args.group)
+    else:
+        alg_id = args.alg_id
+        pipeline, label_encoder = reporting.load_model(
+            args.pkldir, alg_id, model_tag = "screening_rf")
 
-    model_matrix, alg_id = model_data.get_data_for_modeling(
-        filename = args.dyaml, engine = engine)
-
-    pipeline, label_encoder = fit_pipeline(model_matrix, args.grid_path,
-        pkldir = args.pkldir, alg_id = alg_id,
-        path = args.path, group = args.group)
-
-    if args.predict_current:
-        logging.info(reporting.write_current_predictions(pipeline,
-            filename = args.dyaml, conn = engine,
+    if args.predict_new:
+        logging.info(reporting.write_current_predictions(
+            pipeline, filename = args.dyaml, conn = engine,
             label_encoder = label_encoder, alg_id = alg_id))
 
 

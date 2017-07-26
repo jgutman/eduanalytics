@@ -382,7 +382,7 @@ group by s.aamc_id, s.appl_year;
 select count(*) from `vw$filtered$screen_eligible`
 
 DELETE FROM edu_analytics.algorithm;
-ALTER TABLE edu_analytics.algorithm AUTO_INCREMENT = 1
+ALTER TABLE edu_analytics.algorithm AUTO_INCREMENT = 3
 
 delete from out$predictions$screening_current_cohort;
 delete from out$predictions$screening_train_val;
@@ -406,6 +406,9 @@ from `vw$features$app_info`
 where (aamc_id, application_year) in
 (select aamc_id, application_year from `vw$filtered$screen_eligible`)
 
+SELECT
+from vwScreenApplicationInfo
+left 
 
 
 select column_name
