@@ -20,11 +20,9 @@ def fit_pipeline(model_matrix, grid_path, pkldir,
         write_predictions = True,
         path = None, group = None):
 
-    # other possible steps:
-    # feature_selection.VarianceThreshold
     pipeline = make_pipeline(pipeline_tools.DummyEncoder(),
-            feature_selection.VarianceThreshold(),
             preprocessing.Imputer(),
+            feature_selection.VarianceThreshold(),
             ensemble.RandomForestClassifier(random_state = 1100))
     param_grid = pipeline_tools.build_param_grid(pipeline, grid_path)
     grid_search = GridSearchCV(pipeline,

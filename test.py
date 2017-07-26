@@ -39,3 +39,22 @@ with pipeline_tools.Timer() as t:
 
 train_results = reporting.get_results(grid_search, X_train, y_train, lb)
 test_results = reporting.get_results(grid_search, X_test, y_test, lb)
+
+
+############
+
+import eduanalytics
+from eduanalytics import model_data, reporting, pipeline_tools
+
+pkl_path = eduanalytics.pkl_path
+engine = model_data.connect_to_database(eduanalytics.credentials_path,
+    eduanalytics.credentials_group)
+alg_id = 3
+model_tag = "screening_rf"
+clf, label_encoder = reporting.load_model(pkl_path, alg_id, model_tag)
+
+filename = "model_data_opts.yaml"
+current_data = model_data.get_data_for_prediction(filename, engine)
+
+results = reporting.get_results(clf, current_data,
+    y = None, lb = label_encoder)

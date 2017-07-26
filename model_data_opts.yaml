@@ -4,21 +4,15 @@ cohorts:
     included:
         - not urm
 
-# add functionality to exclude specific columns
 features:
     experiences:
-        - exp_publications
-        - exp_publications_hours
+        []
     grades:
-        - Math_D
-        - Math_F
-        - Physics_D
-        - Physics_F
+        []
     mcat:
         []
     gpa:
-        - total_gpa_postbac_or_cum
-        - bcpm_gpa_postbac_or_cum
+        []
     app_info:
         []
 
@@ -29,4 +23,4 @@ predictions:
     screen_eligible
 
 algorithm_name:
-    test_exclude_features
+    non_urm_debugging

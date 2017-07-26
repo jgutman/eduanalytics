@@ -117,21 +117,19 @@ class DummyEncoder(BaseEstimator, TransformerMixin):
     def transform(self, X, y=None, **kwargs):
         transformed = pd.get_dummies(X,
             columns = self.columns,
-            drop_first = False, # do not drop in transform
-            # drop only in fit, and set transformed_columns in fit method
+            drop_first = False, # do not drop in transform method!
             dummy_na = True)
-        return transformed[self.transformed_columns]
+        transformed = transformed.loc[:,self.transformed_columns]
+        return transformed
 
     def fit(self, X, y=None, **kwargs):
         self.columns = X.select_dtypes(
             include = ['object', 'category']).columns
+
         transformed = pd.get_dummies(X,
             columns = self.columns,
-            drop_first = True,
+            drop_first = False, # need to be careful about dropping this
             dummy_na = True)
-        # MOVE THESE STEPS TO VARIANCE THRESHOLD STEP
-        ##cols = transformed.apply(pd.Series.nunique)
-        ##transformed = transformed.drop(cols[cols == 1].index, axis = 1)
         self.transformed_columns = transformed.columns
         return self
 

@@ -116,11 +116,6 @@ def write_current_predictions(clf, filename, conn, label_encoder, alg_id,
     Returns:
     """
     current_data = model_data.get_data_for_prediction(filename, conn)
-
-    dummy_encoder = pipeline_tools.extract_encoder_from_pipeline(clf)
-    current_data = current_data.astype({col: 'category'
-        for col in dummy_encoder.columns})
-        
     results = get_results(clf, current_data,
         y = None, lb = label_encoder)
     name = "out$predictions${}".format(tbl_name)
