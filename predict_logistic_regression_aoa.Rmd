@@ -64,7 +64,8 @@ is_binary <- function(col) {
 
 aoa_admissions_inschool <- aoa_admissions_inschool %>% 
   mutate_if(is_binary, as.factor) %>% 
-  mutate_at(vars(ends_with("_counts")), as.numeric) #%>%
+  mutate_at(vars(ends_with("_counts")), as.numeric) 
+# %>%
 #  mutate_at(vars(outcome), as.numeric)
 
 

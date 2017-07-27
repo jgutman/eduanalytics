@@ -1,0 +1,101 @@
+---
+title: "Model results exploration - worry score school outcomes"
+author: "Jacqueline Gutman, Suvam Paul"
+date: 'Last updated: `r format(Sys.Date(), "%B %d, %Y") ` '
+output:
+  html_document:
+    toc: yes
+    toc_depth: '4'
+  html_notebook:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+    toc_depth: 4
+---
+
+# Setup
+## Load packages
+## Read in database credentials and open connection
+
+```{r setup, message=FALSE, echo = FALSE}
+knitr::read_chunk("setup_notebook.R")
+```
+
+```{r setup_notebook}
+```
+
+```{r show_pkgs, echo = FALSE}
+print_loaded_pkgs()
+```
+
+
+```{r}
+predictions  <- "out$predictions$screening_train_val" %>% 
+  dbUtilities::put_tbl_to_memory(edu_db_con, .)
+
+
+predictions$score <- predictions$predicted_invite - predictions$predicted_reject
+
+predictions_test <- predictions %>% filter(set == "test")
+
+```
+
+
+
+```{r}
+
+predictions_test %>% 
+  group_by(outcome) %>% 
+  summarise(mean = mean(score), 
+            median = median(score), 
+            twenty_five_p = quantile(score, .25),
+            seventy_five_p = quantile(score, .75))
+  
+actually_interview  <- "vw$filtered$screened" %>% 
+  dbUtilities::put_tbl_to_memory(edu_db_con, .) %>% 
+  select(aamc_id, application_year, is_invited_interview, is_offered_admission, accept_date) %>% 
+  mutate(is_accepted = !is.na(accept_date))
+
+predictions_test <- left_join(predictions_test, actually_interview, by = c("aamc_id", "application_year"))
+
+
+
+threshold_reject <- -.20
+threshold_invite <- .40
+
+
+predictions_test %>% 
+  mutate(automatic_reject = score < threshold_reject, 
+         automatic_invited = score > threshold_invite, 
+         model_screen = !automatic_reject & !automatic_invited,
+         model_interview = automatic_invited | (model_screen & is_invited_interview), 
+         model_offer = model_interview & is_offered_admission) -> predictions_test
+
+
+predictions_test %>% 
+  summarise(actual_screened = n(), 
+            model_screened = sum(model_screen),
+            automatic_reject = sum(automatic_reject),
+            actual_interviewed = sum(is_invited_interview), 
+            model_interviewed = sum(model_interview),
+            automatic_invited = sum(automatic_invited),
+            actual_offered = sum(is_offered_admission), 
+            model_offered = sum(model_offer))
+
+predictions_test %>%
+  filter(automatic_reject) %>%
+  summarize(would_have_been_interviewed = mean(is_invited_interview))
+
+predictions_test %>%
+  filter(automatic_invited) %>%
+  summarize(would_not_have_been_interviewed = mean(!is_invited_interview))
+
+
+table(actual_interview = predictions_test$is_invited_interview, faculty_screener = predictions_test$outcome, automatic_reject = predictions_test$automatic_reject)[,,2]  
+
+table(actual_interview = predictions_test$is_invited_interview, faculty_screener = predictions_test$outcome, automatic_interview = predictions_test$automatic_invited)[,,2] 
+
+
+
+```
+
