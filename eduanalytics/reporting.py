@@ -107,16 +107,21 @@ def output_predictions(train_results, test_results, conn,
 
 def write_current_predictions(clf, filename, conn, label_encoder, alg_id,
     tbl_name = 'screening_current_cohort'):
-    """
+    """Write the predictions for the new test data, only if (aamc_id,
+    application_year) does not already have a prediction score for that
+    algorithm_id
 
     Args:
     Returns:
     """
     current_data = model_data.get_data_for_prediction(filename, conn, alg_id)
+    if current_data.empty:
+        return "No new applicant data for algorithm_id = {}".format(alg_id)
     results = get_results(clf, current_data, y = None, lb = label_encoder)
-    
+
     name = "out$predictions${}".format(tbl_name)
-    results['algorithm_id'] = alg_id
+    results = results.assign(algorithm_id = alg_id,
+        score = lambda x: np.round(x.predicted_invite - x.predicted_reject, 2))
     results.to_sql(name, conn, if_exists = 'append',
         index_label = results.index.names)
     return "Added to database {}: algorithm_id = {}".format(name, alg_id)

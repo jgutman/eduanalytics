@@ -1,7 +1,7 @@
 import configparser
 import sqlalchemy
 import pandas as pd
-import string, os, re
+import string, os, re, logging
 import yaml, json, itertools
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
@@ -25,8 +25,8 @@ def connect_to_database(credentials_path, group,
         password = reader.get(group, 'password'),
         host = reader.get(group, 'host'),
         port = reader.get(group, 'port'),
-        dbname = reader.get(group, 'database')
-    )
+        dbname = reader.get(group, 'database'))
+
     engine = sqlalchemy.create_engine(connection_string)
     return engine
 
@@ -86,7 +86,7 @@ def describe_model(filename, engine):
     return model_opts, algorithm_id
 
 
-def get_data_for_prediction(filename, engine, alg_id,
+def get_data_for_prediction(filename, engine, algorithm_id,
     prediction_tbl = "out$predictions$screening_current_cohort"):
     """Return a dataframe for the desired data for the current unlabeled
     cohort with the features specified in the yaml file.
@@ -110,11 +110,17 @@ def get_data_for_prediction(filename, engine, alg_id,
             eligible_tbl = model_opts['predictions'],
             alg_id = algorithm_id,
             prediction_tbl = prediction_tbl)
+    n_applicants = pd.read_sql_query(current_applicants_query,
+        engine).shape[0]
+    if n_applicants == 0:
+        return pd.DataFrame()
 
     features = loop_through_features(engine, model_opts['features'],
         subquery = current_applicants_query)
 
     current_data = features[0].join(features[1:])
+    logging.info("pulled new testing data for {n} applicants in {ncol} features".format(
+        n = current_data.shape[0], ncol = current_data.shape[1]))
     return current_data
 
 
@@ -179,6 +185,8 @@ def get_data_for_modeling(filename, engine):
 
     model_data = outcome_data.join(features)
     model_data = convert_categorical(model_data)
+    logging.info("pulled training/validation data for {n} applicants in {ncol} features".format(
+        n = model_data.shape[0], ncol = model_data.shape[1] - 1))
     return model_data, algorithm_id
 
 

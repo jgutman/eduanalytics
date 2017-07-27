@@ -14,13 +14,6 @@ from sklearn.model_selection import GridSearchCV
 from argparse import ArgumentParser
 
 
-def predict_from_pretrained(pkl_path, alg_id, filename, engine,
-    model_tag = "screening_rf"):
-    """
-    """
-
-
-
 def fit_pipeline(model_matrix, grid_path, pkldir,
     scoring = 'roc_auc', # 'f1_micro',
     alg_id = 'debug', write_predictions = True,
@@ -41,7 +34,7 @@ def fit_pipeline(model_matrix, grid_path, pkldir,
 
     # Adjust test_size for debugging runs
     X_train, X_test, y_train, y_test, lb = model_data.split_data(
-        model_matrix, test_size = .99)
+        model_matrix, test_size = .20)
 
     with pipeline_tools.Timer() as t:
         logging.info('fitting the grid search')
@@ -54,10 +47,10 @@ def fit_pipeline(model_matrix, grid_path, pkldir,
         engine = model_data.connect_to_database(path, group)
         train_results = reporting.get_results(grid_search, X_train, y_train, lb)
         test_results = reporting.get_results(grid_search, X_test, y_test, lb)
-        reporting.output_predictions(train_results, test_results,
-            engine, alg_id = alg_id)
-
+        logging.info(reporting.output_predictions(
+            train_results, test_results, engine, alg_id = alg_id))
     return grid_search, lb
+
 
 def main(args=None):
     parser = ArgumentParser()
@@ -88,8 +81,8 @@ def main(args=None):
         alg_id = 0)
     args = parser.parse_args()
 
-    logging.basicConfig(format = "%(asctime)s\t%(levelname)s: %(message)s",
-        level = logging.DEBUG, datefmt = "%m/%d/%y %I:%M %p")
+    logging.basicConfig(format = "%(asctime)s\t %(message)s",
+        level = logging.DEBUG, datefmt = "%m/%d/%y %I:%M:%S %p")
     engine = model_data.connect_to_database(args.path, args.group)
 
     if args.train_model:

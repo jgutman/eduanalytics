@@ -378,14 +378,22 @@ left JOIN
 vwScreenApplicationInfo a
 on (a.aamc_id = s.aamc_id and a.application_year = s.appl_year)
 group by s.aamc_id, s.appl_year;
-
 select count(*) from `vw$filtered$screen_eligible`
 
 DELETE FROM edu_analytics.algorithm;
 ALTER TABLE edu_analytics.algorithm AUTO_INCREMENT = 3
 
+select max(parent_less_high_school), max(parent_high_school), max(parent_associate), max(parent_bachelor), max(parent_masters),
+	max(parent_doctoral_non_medical), max(parent_medical)
+from vw$features$parent
+
 delete from out$predictions$screening_current_cohort;
 delete from out$predictions$screening_train_val;
+
+CREATE TABLE out$predictions$screening_current_cohort (
+	aamc_id bigint(20), application_year int(4),
+    predicted_hold double, predicted_invite double, predicted_reject DOUBLE,
+    score double, algorithm_id bigint(20));
 
 select age, count(*)
 from `vw$features$app_info`
@@ -417,6 +425,10 @@ where table_name in ('vw$features$mcat', 'vw$features$grades', 'vw$features$expe
 and column_name not in ('aamc_id', 'application_year');
 
 select count(*) from vwScreenApplicationInfo where application_year = 2018 and appl_complete_date is not null and app_submit_date;
+
+select distinct(edu_level_desc)
+from vwScreenParent
+where application_year >= 2013;
 
 create or replace view `vw$filtered$screen_eligible` as
 select *

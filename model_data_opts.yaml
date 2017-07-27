@@ -15,6 +15,10 @@ features:
         []
     app_info:
         []
+    parent:
+        []
+    school:
+        []
 
 outcomes:
     screening
@@ -23,4 +27,4 @@ predictions:
     screen_eligible
 
 algorithm_name:
-    non_urm_debugging
+    first_run_all_non_urm_eligible
