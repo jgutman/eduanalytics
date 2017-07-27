@@ -380,6 +380,26 @@ on (a.aamc_id = s.aamc_id and a.application_year = s.appl_year)
 group by s.aamc_id, s.appl_year;
 select count(*) from `vw$filtered$screen_eligible`
 
+select screeenr_1_score, screeenr_2_score, screener_dec from vwScreenApplicationInfo
+where application_year = 2018
+and screeenr_1_score is not null and screeenr_2_score is not null
+
+select s.aamc_id,I.URM,s.score,I.`screeenr_1_score`,I.`screeenr_2_score`, (I.`screeenr_1_score`+I.`screeenr_2_score`) from out$predictions$screening_current_cohort s
+ left join vwScreenApplicationInfo I on s.`aamc_id`=I.`aamc_id`
+ where I.`screeenr_1_score` is not null and I.`screeenr_2_score` is not null and s.`application_year`=2018;
+
+select rr.outcome, avg(rr.score), count(*)
+from (select p.aamc_id, p.application_year, p.score, 
+(case when s.screener_dec = 2 then 'invite'
+when s.screener_dec in (3,4) then 'hold'
+when s.screener_dec in (5,6) then 'reject'
+else null end) outcome
+from `out$predictions$screening_current_cohort` p
+join current_year_screened s
+where (s.aamc_id = p.aamc_id and s.application_year = p.application_year)
+and p.algorithm_id = 3) rr
+group by outcome;
+
 DELETE FROM edu_analytics.algorithm;
 ALTER TABLE edu_analytics.algorithm AUTO_INCREMENT = 3
 
@@ -450,6 +470,8 @@ where (aamc_id, application_year) in
 (select aamc_id, application_year
 from vw$filtered$screen_eligible)
 and screener_dec is not null);
+
+
 
 select i.* 
 from vwScreenApplicationInfo i
