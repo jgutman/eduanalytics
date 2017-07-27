@@ -30,7 +30,8 @@ def fit_pipeline(model_matrix, grid_path, pkldir,
         n_jobs = -1,
         cv = 5,
         param_grid = param_grid,
-        scoring = scoring)
+        scoring = scoring,
+        verbose = 1)
 
     # Adjust test_size for debugging runs
     X_train, X_test, y_train, y_test, lb = model_data.split_data(

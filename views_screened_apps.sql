@@ -414,11 +414,6 @@ from `vw$features$app_info`
 where (aamc_id, application_year) in
 (select aamc_id, application_year from `vw$filtered$screen_eligible`)
 
-SELECT
-from vwScreenApplicationInfo
-left 
-
-
 select column_name
 from information_schema.columns
 where table_name in ('vw$features$mcat', 'vw$features$grades', 'vw$features$experiences')
@@ -445,3 +440,47 @@ and (aamc_id, application_year) in (
 	from vwScreenEligible
 	where urm is NULL
 	and is_eligible = 1);
+	
+select * from 
+current_year_screened
+where (aamc_id, application_year, screener_dec) 
+not in (select aamc_id, application_year, screener_dec
+from vwScreenApplicationInfo
+where (aamc_id, application_year) in 
+(select aamc_id, application_year
+from vw$filtered$screen_eligible)
+and screener_dec is not null);
+
+select i.* 
+from vwScreenApplicationInfo i
+left join
+vwScreenEligible e
+on i.aamc_id = e.aamc_id and i.application_year = e.application_year
+where i.aamc_id =  13578091
+and (e.is_eligible = 1 or i.screener_dec is not null)
+and ;
+
+select count(*)
+from `vw$filtered$screened`
+where appl_type_desc = 'Combined Medical Degree/Graduate'
+
+select * 
+from vwScreenEligible
+where aamc_id =  13578091;
+	
+select aamc_id, application_year, screener_dec, screening_complete_date, status
+from vwScreenApplicationInfo where application_year = 2018;
+
+select *
+from vwScreenEligible
+where aamc_id = 13396290;
+
+create or replace view current_year_screened as
+select i.aamc_id, i.application_year, i.screener_dec, i.urm, e.is_eligible
+from vwScreenApplicationInfo i
+left JOIN
+vwScreenEligible e
+on i.aamc_id = e.aamc_id and i.application_year = e.application_year
+where i.application_year = (select max(application_year) from vwScreenApplicationInfo)
+and i.screener_dec is not null
+and i.urm is null;
