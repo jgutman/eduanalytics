@@ -380,6 +380,26 @@ on (a.aamc_id = s.aamc_id and a.application_year = s.appl_year)
 group by s.aamc_id, s.appl_year;
 select count(*) from `vw$filtered$screen_eligible`
 
+select screeenr_1_score, screeenr_2_score, screener_dec from vwScreenApplicationInfo
+where application_year = 2018
+and screeenr_1_score is not null and screeenr_2_score is not null
+
+select s.aamc_id,I.URM,s.score,I.`screeenr_1_score`,I.`screeenr_2_score`, (I.`screeenr_1_score`+I.`screeenr_2_score`) from out$predictions$screening_current_cohort s
+ left join vwScreenApplicationInfo I on s.`aamc_id`=I.`aamc_id`
+ where I.`screeenr_1_score` is not null and I.`screeenr_2_score` is not null and s.`application_year`=2018;
+
+select rr.outcome, avg(rr.score), count(*)
+from (select p.aamc_id, p.application_year, p.score, 
+(case when s.screener_dec = 2 then 'invite'
+when s.screener_dec in (3,4) then 'hold'
+when s.screener_dec in (5,6) then 'reject'
+else null end) outcome
+from `out$predictions$screening_current_cohort` p
+join current_year_screened s
+where (s.aamc_id = p.aamc_id and s.application_year = p.application_year)
+and p.algorithm_id = 3) rr
+group by outcome;
+
 DELETE FROM edu_analytics.algorithm;
 ALTER TABLE edu_analytics.algorithm AUTO_INCREMENT = 3
 
@@ -414,11 +434,6 @@ from `vw$features$app_info`
 where (aamc_id, application_year) in
 (select aamc_id, application_year from `vw$filtered$screen_eligible`)
 
-SELECT
-from vwScreenApplicationInfo
-left 
-
-
 select column_name
 from information_schema.columns
 where table_name in ('vw$features$mcat', 'vw$features$grades', 'vw$features$experiences')
@@ -445,3 +460,49 @@ and (aamc_id, application_year) in (
 	from vwScreenEligible
 	where urm is NULL
 	and is_eligible = 1);
+	
+select * from 
+current_year_screened
+where (aamc_id, application_year, screener_dec) 
+not in (select aamc_id, application_year, screener_dec
+from vwScreenApplicationInfo
+where (aamc_id, application_year) in 
+(select aamc_id, application_year
+from vw$filtered$screen_eligible)
+and screener_dec is not null);
+
+
+
+select i.* 
+from vwScreenApplicationInfo i
+left join
+vwScreenEligible e
+on i.aamc_id = e.aamc_id and i.application_year = e.application_year
+where i.aamc_id =  13578091
+and (e.is_eligible = 1 or i.screener_dec is not null)
+and ;
+
+select count(*)
+from `vw$filtered$screened`
+where appl_type_desc = 'Combined Medical Degree/Graduate'
+
+select * 
+from vwScreenEligible
+where aamc_id =  13578091;
+	
+select aamc_id, application_year, screener_dec, screening_complete_date, status
+from vwScreenApplicationInfo where application_year = 2018;
+
+select *
+from vwScreenEligible
+where aamc_id = 13396290;
+
+create or replace view current_year_screened as
+select i.aamc_id, i.application_year, i.screener_dec, i.urm, e.is_eligible
+from vwScreenApplicationInfo i
+left JOIN
+vwScreenEligible e
+on i.aamc_id = e.aamc_id and i.application_year = e.application_year
+where i.application_year = (select max(application_year) from vwScreenApplicationInfo)
+and i.screener_dec is not null
+and i.urm is null;
