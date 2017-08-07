@@ -460,7 +460,78 @@ and (aamc_id, application_year) in (
 	from vwScreenEligible
 	where urm is NULL
 	and is_eligible = 1);
-	
+
+select s.aamc_id, I.URM, s.score, I.screeenr_1_score, I.screeenr_2_score
+from out$predictions$screening_current_cohort s
+left join vwScreenApplicationInfo I on 
+(s.`aamc_id`=I.`aamc_id`) # and s.application_year=I.application_year)
+where I.screeenr_1_score is not null 
+and I.screeenr_2_score is not null 
+and s.`application_year`=2018;
+
+select outcome, 
+avg(score) avg_score, 
+count(*) n from
+(select aamc_id, application_year, outcome, 
+predicted_invite - predicted_hold as score
+from `out$predictions$screening_train_val`
+where algorithm_id = 3
+and `set` = 'test') t
+group by outcome;
+
+select is_eligible, count(*)
+from `vw$filtered$screen_eligible`
+group by is_eligible
+
+select aamc_id, application_year 
+from vw$screen$send$predictions
+group by aamc_id, application_year
+having count(*) > 1
+
+select *
+from `out$predictions$screening_current_cohort`
+where (aamc_id, application_year) not in 
+(select aamc_id, application_year from `vw$screen$send$predictions`)
+and (aamc_id, application_year) not in 
+(select aamc_id, application_year from vwScreenApplicationInfo
+where screening_complete_date is not null
+and urm is NULL
+and application_year = 2018
+and appl_type_desc in ('Regular M.D.', 'Combined  Medical Degree/Graduate'));
+
+select * from vwScreenApplicationInfo
+where screening_complete_date is not null
+and urm is NULL
+and application_year = 2018
+and appl_type_desc in ('Regular M.D.', 'Combined  Medical Degree/Graduate')
+and (aamc_id, application_year) in
+(select aamc_id, application_year from `vw$filtered$screen_eligible` where is_eligible = 1)
+
+select *
+from `out$predictions$screening_current_cohort`
+where (aamc_id, application_year) not in 
+(select aamc_id, application_year from `vw$screen$send$predictions`);
+
+select count(*)
+from vw$screen$send$predictions;
+
+select count(distinct(aamc_id)) n_applicants
+from `out$predictions$screening_current_cohort`
+where algorithm_id = 3
+
+SELECT *
+from vwScreenApplicationInfo
+where screening_complete_date is not null
+and urm is NULL
+and application_year = 2018
+and appl_type_desc in ('Regular M.D.', 'Combined  Medical Degree/Graduate')
+and (aamc_id, application_year) in 
+(select aamc_id, application_year from `vw$screen$send$predictions`)
+
+update algorithm
+set is_production = 1
+where id = 3;
+
 select * from 
 current_year_screened
 where (aamc_id, application_year, screener_dec) 
@@ -469,8 +540,50 @@ from vwScreenApplicationInfo
 where (aamc_id, application_year) in 
 (select aamc_id, application_year
 from vw$filtered$screen_eligible)
-and screener_dec is not null);
+and scr_dec is not null);
 
+select * 
+from current_year_screened
+order by score;
+
+select race, count(*) n
+from vwScreenRace
+where application_year >= 2013
+group by race
+order by n desc
+
+select distinct application_year from vwScreenApplicationInfo;
+
+
+select urm, count(*)
+from vwScreenApplicationInfo
+where (aamc_id, application_year) in
+(select aamc_id, application_year 
+from vwScreenRace
+where application_year >= 2013
+group by aamc_id, application_year
+having sum(race like ('Bangladeshi')) > 0)
+group by urm
+
+select *
+from `out$predictions$screening_current_cohort`
+where score > .8;
+
+select *
+from `vw$features$app_info` i
+left join 
+`vw$features$experiences` e
+on (i.aamc_id = e.aamc_id and i.application_year = e.application_year)
+left join 
+`vw$features$gpa` gpa
+on (i.aamc_id = gpa.aamc_id and i.application_year = gpa.application_year)
+left join 
+`vw$features$grades` gr
+on (i.aamc_id = gr.aamc_id and i.application_year = gr.application_year)
+where i.aamc_id = 14423329 and e.application_year = 2018
+
+
+select count(*) from `vw$screen$send$predictions`
 
 
 select i.* 
