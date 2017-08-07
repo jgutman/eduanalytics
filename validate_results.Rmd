@@ -84,16 +84,30 @@ predictions_test %>%
 
 predictions_test %>%
   filter(automatic_reject) %>%
-  summarize(would_have_been_interviewed = mean(is_invited_interview))
+  summarize(would_have_been_interviewed = mean(is_invited_interview),
+            pct_invite = mean(outcome == 'invite'),
+            pct_hold = mean(outcome == 'hold'),
+            pct_reject = mean(outcome == 'reject'))
 
 predictions_test %>%
   filter(automatic_invited) %>%
-  summarize(would_not_have_been_interviewed = mean(!is_invited_interview))
+  summarize(would_not_have_been_interviewed = mean(!is_invited_interview),
+            pct_invite = mean(outcome == 'invite'),
+            pct_hold = mean(outcome == 'hold'),
+            pct_reject = mean(outcome == 'reject'))
+
+predictions_test %>%
+  filter(!automatic_invited&!automatic_reject) %>%
+  summarize(
+            pct_invite = mean(outcome == 'invite'),
+            pct_hold = mean(outcome == 'hold'),
+            pct_reject = mean(outcome == 'reject'))
 
 
 table(actual_interview = predictions_test$is_invited_interview, faculty_screener = predictions_test$outcome, automatic_reject = predictions_test$automatic_reject)[,,2]  
 
 table(actual_interview = predictions_test$is_invited_interview, faculty_screener = predictions_test$outcome, automatic_interview = predictions_test$automatic_invited)[,,2] 
+
 
 
 
