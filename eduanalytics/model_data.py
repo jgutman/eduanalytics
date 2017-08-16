@@ -171,7 +171,6 @@ def get_data_for_prediction(filename, engine, algorithm_id,
     n_applicants = pd.read_sql_query(
         current_applicants_query, engine).shape[0]
     if n_applicants == 0:
-        logging.info("no new applicants for algorithm id {}".format(alg_id))
         return pd.DataFrame()
 
     features = loop_through_features(engine, model_opts['features'],
