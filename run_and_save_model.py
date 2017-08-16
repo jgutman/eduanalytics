@@ -46,7 +46,7 @@ def fit_pipeline(model_matrix, grid_path, pkldir,
     param_grid = pipeline_tools.build_param_grid(pipeline, grid_path)
     grid_search = GridSearchCV(pipeline, n_jobs = -1, cv = 5,
         param_grid = param_grid, scoring = scoring,
-        verbose = 1) # show folds and model fits as they complete
+        verbose = 2) # show folds and model fits as they complete
 
     # Adjust test_size for debugging runs
     X_train, X_test, y_train, y_test, lb = model_data.split_data(
