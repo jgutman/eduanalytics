@@ -86,10 +86,10 @@ def describe_model(filename, engine):
     return model_opts, algorithm_id
 
 
-def get_data_for_prediction(filename, engine, algorithm_id,
-    prediction_tbl = "out$predictions$screening_current_cohort"):
-    """Return a dataframe for the desired data for the current unlabeled
-    cohort with the features specified in the yaml file.
+def get_data_for_modeling(filename, engine):
+    """Return a dataframe containing features specified by the yaml file for
+    records meeting the cohort criteria specified in the yaml file.
+    Includes the true outcome label from the database.
 
     Args:
         filename (str): path to YAML file with cohort, outcome, and
@@ -98,28 +98,88 @@ def get_data_for_prediction(filename, engine, algorithm_id,
     Returns:
         Pandas.DataFrame: dataframe with Multi-index of aamc id and application year
             for applicants with known outcomes and qualifying cohort variables
+        str: algorithm_id description for database and pkl file to denote
+            which algorithm settings were used in fitting the model
+    """
+    model_opts, algorithm_id = describe_model(filename, engine)
+
+    cohort_vals = model_opts['cohorts']['included']
+    get_cohort = """select aamc_id, application_year
+        from `vw$cohorts${cohort_tbl}`
+        where {cohort_col} in ({cohort_vals})
+        and fit_or_predict = 'fit'""".format(
+            cohort_tbl = model_opts['cohorts']['tbl'],
+            cohort_col = model_opts['cohorts']['col'],
+            cohort_vals = ",".join(["'{}'".format(i) for i in cohort_vals]))
+
+    get_outcomes = """select *
+        from `vw$outcomes${outcome_tbl}`
+        where (aamc_id, application_year) in
+        ({cohort_query})""".format(
+            outcome_tbl = model_opts['outcomes'],
+            cohort_query = get_cohort)
+
+    outcome_data = pd.read_sql_query(get_outcomes, engine,
+        index_col = ['aamc_id', 'application_year'])
+
+    features = loop_through_features(engine, model_opts['features'],
+        subquery = get_cohort)
+
+    model_data = outcome_data.join(features)
+    model_data = convert_categorical(model_data)
+    logging.info("pulled training/validation data for {n} applicants in {ncol} features".format(
+        n = model_data.shape[0], ncol = model_data.shape[1] - 1))
+    return model_data, algorithm_id, model_opts['algorithm_name']
+
+
+def get_data_for_prediction(filename, engine, algorithm_id,
+        prediction_tbl = "out$predictions$screening_current_cohort"):
+    """Return a dataframe for the desired data for the current unlabeled
+    cohort with the features specified in the yaml file.
+
+    Args:
+        filename (str): path to YAML file with cohort, outcome, and
+            feature specification for desired model data
+        engine (sqlalchemy.Engine): a connection to the MySQL database
+    Returns:
+        Pandas.DataFrame: dataframe with Multi-index (aamc id, application year)
+            for applicants with known outcomes and qualifying cohort variables
     """
     with open(filename) as f:
         model_opts = yaml.load(f)
+
+    cohort_vals = model_opts['cohorts']['included']
+    get_cohort = """select aamc_id, application_year
+        from `vw$cohorts${cohort_tbl}`
+        where {cohort_col} in ({cohort_vals})
+        and fit_or_predict = 'predict'""".format(
+            cohort_tbl = model_opts['cohorts']['tbl'],
+            cohort_col = model_opts['cohorts']['col'],
+            cohort_vals = ",".join(["'{}'".format(i) for i in cohort_vals]))
 
     current_applicants_query = """select aamc_id, application_year
         from `vw$filtered${eligible_tbl}`
         where (aamc_id, application_year, {alg_id}) not in
         (select aamc_id, application_year, algorithm_id
-        from `{prediction_tbl}`)""".format(
+        from `{prediction_tbl}`)
+        and (aamc_id, application_year) in
+        ({cohort_query})""".format(
             eligible_tbl = model_opts['predictions'],
             alg_id = algorithm_id,
-            prediction_tbl = prediction_tbl)
-    n_applicants = pd.read_sql_query(current_applicants_query,
-        engine).shape[0]
+            prediction_tbl = prediction_tbl,
+            cohort_query = get_cohort)
+    n_applicants = pd.read_sql_query(
+        current_applicants_query, engine).shape[0]
     if n_applicants == 0:
+        logging.info("no new applicants for algorithm id {}".format(alg_id))
         return pd.DataFrame()
 
     features = loop_through_features(engine, model_opts['features'],
         subquery = current_applicants_query)
 
     current_data = features[0].join(features[1:])
-    logging.info("pulled new testing data for {n} applicants in {ncol} features".format(
+    logging.info(
+        "pulled new testing data for {n} applicants in {ncol} features".format(
         n = current_data.shape[0], ncol = current_data.shape[1]))
     return current_data
 
@@ -143,51 +203,6 @@ def loop_through_features(engine, features_dict, subquery):
             feature_data.drop(drop_cols, axis = 1, inplace = True)
         features.append(feature_data)
     return features
-
-
-def get_data_for_modeling(filename, engine):
-    """Return a dataframe containing features specified by the yaml file for
-    records meeting the cohort criteria specified in the yaml file.
-    Includes the true outcome label from the database.
-
-    Args:
-        filename (str): path to YAML file with cohort, outcome, and
-            feature specification for desired model data
-        engine (sqlalchemy.Engine): a connection to the MySQL database
-    Returns:
-        Pandas.DataFrame: dataframe with Multi-index of aamc id and application year
-            for applicants with known outcomes and qualifying cohort variables
-        str: algorithm_id description for database and pkl file to denote
-            which algorithm settings were used in fitting the model
-    """
-    model_opts, algorithm_id = describe_model(filename, engine)
-
-    cohort_vals = model_opts['cohorts']['included']
-    get_cohort = """select aamc_id, application_year
-        from `vw$cohorts${cohort_tbl}`
-        where {cohort_col} in ({cohort_vals})""".format(
-            cohort_tbl = model_opts['cohorts']['tbl'],
-            cohort_col = model_opts['cohorts']['col'],
-            cohort_vals = ",".join(["'{}'".format(i) for i in cohort_vals]))
-
-    get_outcomes = """select *
-        from `vw$outcomes${outcome_tbl}`
-        where (aamc_id, application_year) in
-        ({cohort_query})""".format(
-            outcome_tbl = model_opts['outcomes'],
-            cohort_query = get_cohort)
-
-    outcome_data = pd.read_sql_query(get_outcomes, engine,
-        index_col = ['aamc_id', 'application_year'])
-
-    features = loop_through_features(engine, model_opts['features'],
-        subquery = get_cohort)
-
-    model_data = outcome_data.join(features)
-    model_data = convert_categorical(model_data)
-    logging.info("pulled training/validation data for {n} applicants in {ncol} features".format(
-        n = model_data.shape[0], ncol = model_data.shape[1] - 1))
-    return model_data, algorithm_id
 
 
 def split_data(model_matrix, outcome_name = 'outcome',

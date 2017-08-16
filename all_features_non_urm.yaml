@@ -1,0 +1,30 @@
+cohorts:
+    tbl: urm_or_disadvantaged
+    col: urm
+    included:
+        - not urm
+
+features:
+    experiences:
+        []
+    grades:
+        []
+    mcat:
+        []
+    gpa:
+        []
+    app_info:
+        []
+    parent:
+        []
+    school:
+        []
+
+outcomes:
+    screening
+
+predictions:
+    screen_eligible
+
+algorithm_name:
+    all_features_non_urm

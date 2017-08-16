@@ -1,0 +1,9 @@
+imputer:
+    strategy: ['mean']
+variancethreshold:
+    threshold: [0]
+randomforestclassifier:
+    n_estimators: [10, 50]
+    max_depth: [1, 5]
+    max_features: ['sqrt']
+    min_samples_split: [2]

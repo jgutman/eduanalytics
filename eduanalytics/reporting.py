@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from eduanalytics import model_data, pipeline_tools
-import os
+import os, fnmatch
 from sklearn.externals import joblib
 
 def get_results(clf, X, y, lb):
@@ -106,12 +106,14 @@ def output_predictions(train_results, test_results, conn,
 
 
 def write_current_predictions(clf, filename, conn, label_encoder, alg_id,
-    tbl_name = 'screening_current_cohort'):
+        tbl_name = 'screening_current_cohort'):
     """Write the predictions for the new test data, only if (aamc_id,
     application_year) does not already have a prediction score for that
     algorithm_id
 
     Args:
+        clf (sklearn.GridSearchCV/Estimator):
+        
     Returns:
     """
     current_data = model_data.get_data_for_prediction(filename, conn, alg_id)
@@ -134,7 +136,7 @@ def pickle_model(clf, pkl_path, label_encoder, alg_id, model_tag):
         clf (sklearn.GridSearchCV/Estimator): the model to persist to disk
         pkl_path (str): name of the directory to store the pkl files
         tbl_name (str): shortname of the algorithm id for the model
-        model_tag (str): other info to tag the model with
+        model_tag (str): algorithm name to tag the model with
     Returns:
         str: a message giving the path where the model has been saved
     """
@@ -147,18 +149,18 @@ def pickle_model(clf, pkl_path, label_encoder, alg_id, model_tag):
     return output
 
 
-def load_model(pkl_path, alg_id, model_tag):
+def load_model(pkl_path, alg_id):
     """Load a sklearn object from disk saved in binary compressed format.
 
     Args:
         pkl_path (str): name of the directory to store the pkl files
         alg_id (str): shortname of the algorithm_id for the model
-        model_tag (str): other info such as model type to tag the model with
     Returns:
         sklearn.GridSearchCV or Estimator: uncompressed sklearn model
     """
-    filename = "id{}_{}.pkl.z".format(alg_id, model_tag)
-    model_plus_encoder = joblib.load(os.path.join(pkl_path, filename))
+    pattern = "id{}_*.pkl.z".format(alg_id)
+    filename = fnmatch.filter(os.listdir(pkl_path), pattern)
+    model_plus_encoder = joblib.load(os.path.join(pkl_path, filename[0]))
     clf = model_plus_encoder['pipeline']
     encoder = model_plus_encoder['encoder']
     return clf, encoder
