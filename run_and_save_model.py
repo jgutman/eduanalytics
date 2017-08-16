@@ -47,7 +47,7 @@ def fit_pipeline(model_matrix, grid_path, pkldir,
     grid_search = GridSearchCV(pipeline, n_jobs = -1, cv = 5,
         param_grid = param_grid, scoring = scoring,
         # verbose output suppressed during multiprocessing
-        verbose = 2) # show folds and model fits as they complete
+        verbose = 1) # show folds and model fits as they complete
 
     # Adjust test_size for debugging runs
     X_train, X_test, y_train, y_test, lb = model_data.split_data(
@@ -106,6 +106,7 @@ def main(args=None):
         for dyaml in args.data_yaml:
             model_matrix, alg_id, alg_name = model_data.get_data_for_modeling(
                 filename = dyaml,
+                # by default, sqlalchemy.create_engine has no default timeout 
                 engine = model_data.connect_to_database(args.path, args.group))
             alg_id_list.append(alg_id)
             pipelines.append(

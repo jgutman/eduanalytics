@@ -1,0 +1,12 @@
+['Biology_A', 'Biology_B', 'Biology_C', 'Biology_D', 'Biology_F', 'Chemistry_A', 'Chemistry_B', 'Chemistry_C',
+'Chemistry_D', 'Chemistry_F', 'Math_A', 'Math_B', 'Math_C', 'Math_D', 'Math_F', 'Physics_A', 'Physics_B', 'Physics_C',
+'Physics_D', 'Physics_F', 'age', 'attended_grad_school', 'bcpm_gpa_cumulative', 'bcpm_gpa_postbac', 'bcpm_hours_cumulative',
+'bcpm_hours_postbac', 'count_mcat', 'degree_type_bachelor', 'degree_type_doctoral_non_medical', 'degree_type_master',
+'degree_type_medical', 'did_postbacc', 'exp_athletics', 'exp_athletics_hours', 'exp_leadership', 'exp_leadership_hours',
+'exp_medical', 'exp_medical_hours', 'exp_military', 'exp_military_hours', 'exp_publications', 'exp_publications_hours',
+'exp_research', 'exp_research_hours', 'exp_shadowing', 'exp_shadowing_hours', 'gender', 'highest_degree_type',
+'is_disadvantaged', 'is_top_25', 'junior_bcpm_gpa_higher', 'junior_gpa_higher', 'mcat_percentile_bio',
+'mcat_percentile_chemphy', 'mcat_percentile_overall', 'mcat_version', 'median_census_income', 'month_app_completed',
+'parent_associate', 'parent_bachelor', 'parent_doctoral_non_medical', 'parent_high_school', 'parent_less_high_school',
+'parent_masters', 'parent_medical', 'residency_state', 'senior_bcpm_gpa_higher', 'senior_gpa_higher',
+'sophomore_bcpm_gpa_higher', 'sophomore_gpa_higher', 'total_gpa_cumulative', 'total_gpa_postbac', 'years_since_undergrad']

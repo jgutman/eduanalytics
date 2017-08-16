@@ -213,3 +213,29 @@ where urm = 'Y';
 
 select count(*) from `vw$filtered$screen_eligible`
 where urm is null;
+
+select count(*) from `vw$filtered$screened`
+where urm = 'Y';
+
+select * 
+from `out$predictions$screening_current_cohort`
+where algorithm_id <> 3
+group by aamc_id, application_year
+having count(*) > 1;
+
+
+select * 
+from `out$predictions$screening_train_val`
+where algorithm_id <> 3
+group by aamc_id, application_year
+having count(*) > 1;
+
+select count(*) from `vw$filtered$screened`
+where urm is null;
+
+select * from `vw$filtered$screened`
+where urm is null 
+and (aamc_id, application_year) not in 
+(select aamc_id, application_year
+from `out$predictions$screening_train_val`
+where algorithm_id = 13)
