@@ -46,7 +46,8 @@ def fit_pipeline(model_matrix, grid_path, pkldir,
     param_grid = pipeline_tools.build_param_grid(pipeline, grid_path)
     grid_search = GridSearchCV(pipeline, n_jobs = -1, cv = 5,
         param_grid = param_grid, scoring = scoring,
-        verbose = 2) # show folds and model fits as they complete
+        # verbose output suppressed during multiprocessing
+        verbose = 1) # show folds and model fits as they complete
 
     # Adjust test_size for debugging runs
     X_train, X_test, y_train, y_test, lb = model_data.split_data(
@@ -98,14 +99,14 @@ def main(args=None):
 
     logging.basicConfig(format = "%(asctime)s\t %(message)s",
         level = logging.DEBUG, datefmt = "%m/%d/%y %I:%M:%S %p")
-    engine = model_data.connect_to_database(args.path, args.group)
 
     if args.train_model:
         alg_id_list = []
         pipelines = []
         for dyaml in args.data_yaml:
             model_matrix, alg_id, alg_name = model_data.get_data_for_modeling(
-                filename = dyaml, engine = engine)
+                filename = dyaml,
+                engine = model_data.connect_to_database(args.path, args.group))
             alg_id_list.append(alg_id)
             pipelines.append(
                 fit_pipeline(model_matrix, args.grid_path,
