@@ -1,0 +1,2 @@
+MAILTO=""
+0 12 * * 1-5 cd /Users/gutmaj03/Desktop/admissions && source set_env.sh && source run_simple.sh
