@@ -100,6 +100,8 @@ def main(args=None):
     logging.basicConfig(format = "%(asctime)s\t %(message)s",
         level = logging.DEBUG, datefmt = "%m/%d/%y %I:%M:%S %p")
 
+    #engine = model_data.connect_to_database(args.path, args.group)
+
     if args.train_model:
         alg_id_list = []
         pipelines = []
@@ -121,7 +123,8 @@ def main(args=None):
         for pipeline, dyaml, alg_id in zip(
                 pipelines, args.data_yaml, alg_id_list):
             logging.info(reporting.write_current_predictions(
-                pipeline[0], filename = dyaml, conn = engine,
+                pipeline[0], filename = dyaml,
+                conn = model_data.connect_to_database(args.path, args.group),
                 label_encoder = pipeline[1], alg_id = alg_id))
 
 if __name__ == '__main__':
