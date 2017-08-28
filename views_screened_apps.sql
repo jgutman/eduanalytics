@@ -151,8 +151,12 @@ where
     )
 
 update algorithm
-set is_production = 1
+set is_production = 0
 where id = 3;
+
+update algorithm
+set is_production = 1
+where id in (13, 23);
 
 delete from algorithm where id > 3;
 delete from `out$predictions$screening_current_cohort` where algorithm_id > 3;
@@ -208,8 +212,30 @@ where algorithm_id = 33;
 select count(*) from out$predictions$screening_current_cohort
 where algorithm_id = 43;
 
-select count(*) from `vw$filtered$screen_eligible`
-where urm = 'Y';
+select aamc_id from
+(select aamc_id
+from vw$screen$send$predictions
+union 
+select aamc_id
+from application_algorithm_screening_score) a
+where a.aamc_id not IN
+(select aamc_id from `vw$filtered$screen_eligible`)
+
+select * from application_algorithm_screening_score
+where aamc_id = 13663780 and application_year = 2018;
+
+select * from vwScreen2006_2014_mcat
+where aamc_id = 13663780 and application_year = 2018;
+
+select urm from vwScreenApplicationInfo
+where aamc_id = 13663780 and application_year = 2018;
+
+select * from vwScreenEligible
+where aamc_id = 13663780 and application_year = 2018;
+
+select * from `vw$filtered$screen_eligible`
+where aamc_id = 13663780 and application_year = 2018;
+
 
 select count(*) from `vw$filtered$screen_eligible`
 where urm is null;
@@ -217,12 +243,20 @@ where urm is null;
 select count(*) from `vw$filtered$screened`
 where urm = 'Y';
 
-select * 
+select *
 from `out$predictions$screening_current_cohort`
 where algorithm_id <> 3
 group by aamc_id, application_year
 having count(*) > 1;
 
+
+select count(*)
+from `out$predictions$screening_current_cohort`
+where algorithm_id <> 3
+
+select count(*)
+from `vw$screen$send$predictions`;
+where algorithm_id <> 3
 
 select * 
 from `out$predictions$screening_train_val`
@@ -232,6 +266,25 @@ having count(*) > 1;
 
 select count(*) from `vw$filtered$screened`
 where urm is null;
+
+select * from vwScreenSchool
+where undergrad_ind = 1 and prog_type_desc = "Graduate"
+
+select * from vwScreenSchool
+where aamc_id = 12223679 and appl_year = 2006;
+
+select * from vwScreenGradesTransposed
+where aamc_id = 14534149 and application_year = 2018;
+
+select aamc_id
+from vwScreenApplicationInfo
+where app_submit_date = '2017-08-17 00:43:30';
+
+select count(*) from `vw$screen$send$predictions`
+#where (aamc_id, application_year) in 
+#(select aamc_id, application_year 
+#from `vw$filtered$screen_eligible`
+#where urm is null);
 
 select * from `vw$filtered$screened`
 where urm is null 
