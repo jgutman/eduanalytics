@@ -20,10 +20,7 @@
 	<string>gutmaj03</string>
 
 	<key>ProgramArguments</key>
-	<array>
-		<string>source</string>
-		<string>run_simple.sh</string>
-	</array>
+		<string>/Users/gutmaj03/Desktop/admissions/run_simple.sh</string>
 	<key>StartCalendarInterval</key>
 	<array>
 		<dict>
@@ -67,6 +64,6 @@
 			<integer>5</integer>
 		</dict>
 	</array>
-	
+
 </dict>
 </plist>
