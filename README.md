@@ -22,3 +22,5 @@ There should be a table or view in the database with the `aamc_id, application_y
 This part of the model specification file should list a model tag to be used as the `algorithm_name` to refer to the algorithm constructed from this specification. This `algorithm_name` will be referenced in the `algorithm` table in the database linking an `algorithm_id` with its specification details. This `algorithm_name` will also be referenced in the compressed model `.pkl.z` file storing the binary representation of the trained model.
 
 ## Constructing training, validation, and test sets
+### Training and validation sets
+Currently, all applicants eligible under the algorithm for the training and validation sets (regardless of cohort) are listed in the table `vw$filtered$screened`. This table begins with applicants from application year 2013 and excludes the maximum application year (currently 2018). Since these application cycles have all been completed, all of these applicants should have known screening outcomes (currently listed in `vw$outcomes$screening`, see [Model Specification](#model-specification) for further details).
