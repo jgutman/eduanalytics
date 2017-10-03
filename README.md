@@ -1,4 +1,4 @@
-# Admissions Screening process
+# Admissions Screening modeling process
 
 ## Feature generation
 Feature generation used to be done in R using the `dbUtilities` package developed by Suvam Paul and Jacqueline Gutman (see [our deprecated README](README_old.md)) but is now done predominantly in the research database directly using SQL views. For detailed documentation on the structure of these views and how they are generated, see documentation in the [Google Drive](https://drive.google.com/open?id=0B__nBZCrcLwjc2t4eU5pd0V3RGM) for this project, specifically our [data dictionary](https://docs.google.com/document/d/1OnS4kOclTdohz-5x7vS5auKelp7B4DySRKl6F-EU3cI/edit?usp=sharing) and [view construction specification](https://docs.google.com/a/med.nyu.edu/document/d/1OWY1iZsXPYPBHA8oou08APH5wQGFfYNZPpK1K7bTF_w/edit?usp=sharing). Raw input data for the views is provided by AMP developers and managed by EDS.
@@ -29,3 +29,9 @@ Currently, all applicants eligible under the algorithm for the test set (regardl
 
 ## Cohorts: generating predictions for multiple subgroups
 *Note that I refer to differing subgroups (i.e. URM, financially disadvantaged, postbacc) here as cohorts, but they are not cohorts in the traditional sense of belonging to a particular class year/application year.*
+
+By creating multiple model specification files, we can train parallel models over multiple subgroups of eligible applicants. For each cohort grouping, there should be a column in a cohort specification view in the database (`vw$cohorts$<cohort_name>`) identifying which subgroup each eligible applicant (both historical and current) belongs to. A separate model will be fitted for each subgroup, each with its own corresponding `algorithm_id`, and we can make the same features available to each subgroup model. If we have subgroups A, B, and C, an algorithm will be trained only on the historical data for subgroup A and will generate predictions only on the current data for subgroup A, a second algorithm will be trained only on the historical data for subgroup B and will generate predictions only on the current data for subgroup B, and so on. Therefore there may be multiple algorithms marked as in production at a given time, each corresponding to a different cohort. When generating new predictions, the Bash script should specify all relevant production-level algorithms, and the modeling code will look up each new applicant in the database and determine which algorithm is appropriate to apply to that applicant. Scores for each of these applicants will be written to the database in the `out$predictions$screening_current_cohort` along with the `algorithm_id` that was used to generate the score. If this `algorithm_id` is `in_production = 1` and the score has not yet been sent to Admissions, the score will appear in the `vw$screen$send$predictions` table until the nightly push to EduDW and AMP.
+
+# Training a model
+
+# Generating new predictions
