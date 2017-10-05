@@ -37,5 +37,3 @@ dependencies:
 - zlib=1.2.11=0
 - pip:
   - pymysql==0.7.11
-prefix: /Users/gutmaj03/anaconda/envs/edu_analytics_simple
-
