@@ -32,6 +32,46 @@ Currently, all applicants eligible under the algorithm for the test set (regardl
 
 By creating multiple model specification files, we can train parallel models over multiple subgroups of eligible applicants. For each cohort grouping, there should be a column in a cohort specification view in the database (`vw$cohorts$<cohort_name>`) identifying which subgroup each eligible applicant (both historical and current) belongs to. A separate model will be fitted for each subgroup, each with its own corresponding `algorithm_id`, and we can make the same features available to each subgroup model. If we have subgroups A, B, and C, an algorithm will be trained only on the historical data for subgroup A and will generate predictions only on the current data for subgroup A, a second algorithm will be trained only on the historical data for subgroup B and will generate predictions only on the current data for subgroup B, and so on. Therefore there may be multiple algorithms marked as in production at a given time, each corresponding to a different cohort. When generating new predictions, the Bash script should specify all relevant production-level algorithms, and the modeling code will look up each new applicant in the database and determine which algorithm is appropriate to apply to that applicant. Scores for each of these applicants will be written to the database in the `out$predictions$screening_current_cohort` along with the `algorithm_id` that was used to generate the score. If this `algorithm_id` is `in_production = 1` and the score has not yet been sent to Admissions, the score will appear in the `vw$screen$send$predictions` table until the nightly push to EduDW and AMP.
 
-# Training a model
+# Training a model (once per application cycle)
+Once all the relevant views have been created in the database (generated features, historical outcome labels, eligibility criteria, cohort membership) and the model specification files have been created, the models are ready to be trained.
 
-# Generating new predictions
+## Running the training script
+To train new models, we need to run the `run_and_save_model.py` script with the `--fit` flag. Use the `--dyaml` flag to list the paths to each model specification file.
+
+```
+python run_and_save_model.py --fit --pkldir <path to store pkls> \
+--dyaml <model specification 1> <model specification 2> ... \
+--credpath <path to db credentials> &> <path to store logs>
+```
+See [train_models.sh shell script](train_models.sh) for an example.
+
+## Evaluating models and putting into production
+Once the models have been trained, they should be evaluated by examining the predictions for the held-out validation data along with their corresponding features and cohort values. The algorithm names are specified in the model specification file for each algorithm under `algorithm_name`.
+
+```
+select p.* from out$predictions$screening_current_cohort p
+where `set` = "test"
+and algorithm_id in
+(select id from algorithm
+where algorithm_name in (<list of algorithm names>)
+);
+```
+You can get the model data (features and outcomes) for each algorithm by running the following in Python:
+
+```
+from eduanalytics import model_data
+conn = model_data.connect_to_database(
+    <credentials path>, <credentials group>)
+
+data, algorithm_id, algorithm_name = model_data.get_data_for_modeling(
+    <model specification path>, conn)
+```
+
+If the models appear to be performing reasonably, set the new algorithms into production (and phase out any now-deprecated algorithms out of production).
+
+```
+update algorithm
+set is_production = if(id in (<list of algorithm IDs>), 1, 0);
+```
+
+# Generating new predictions (once per day during admissions season)
