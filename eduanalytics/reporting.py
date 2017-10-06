@@ -13,7 +13,7 @@ def get_results(clf, X, y, lb):
             method (could eventually be extended to decision_function)
         X (Pandas.DataFrame): df with index or Multi-index and all
             features needed for clf.predict_proba method
-        y (Numpy array): a numpy array transformed with lb.transform
+        y (numpy.ndarray): a numpy array transformed with lb.transform
             to hold a column for each class in lb.classes_, giving
             true outcome in binarized one-hot encoded format
         lb (sklearn.LabelBinarizer): a label binarizer holding the
@@ -81,7 +81,7 @@ def convert_binary_predictions(scores, lb, ids):
 
 
 def output_predictions(train_results, test_results, conn,
-    alg_id = 'debug', tbl_name = 'screening_train_val'):
+    alg_id = -1, tbl_name = 'screening_train_val'):
     """Write the true labels and prediction scores to a table in the database.
 
     Args:
@@ -90,8 +90,9 @@ def output_predictions(train_results, test_results, conn,
         test_results (Pandas.DataFrame): indexed true and predicted output for
             all test data
         conn (sqlalchemy.Engine): a connection to the MySQL database
-        alg_id (str): a name for the algorithm id to store the model results by
-        tbl_name (str): a name for the database table holding all results
+        alg_id (int): an algorithm id to store the model results by
+        tbl_name (str): a name for the database table holding all results on
+            the training and validation data
     Returns:
         str: the name of the table in the database
     """
@@ -107,14 +108,24 @@ def output_predictions(train_results, test_results, conn,
 
 def write_current_predictions(clf, filename, conn, label_encoder, alg_id,
         tbl_name = 'screening_current_cohort'):
-    """Write the predictions for the new test data, only if (aamc_id,
+    """Write out the predictions for the new testing data, only if (aamc_id,
     application_year) does not already have a prediction score for that
-    algorithm_id
+    algorithm_id, including the overall score (pr(invite) - pr(reject))
 
     Args:
-        clf (sklearn.GridSearchCV/Estimator):
-        
+        clf (sklearn.GridSearchCV/Estimator): the unpickled model estimator
+            that should be used to generate the predictions
+        filename (str): path to model specification file
+        conn (sqlalchemy.Engine): connection to the MySQL database
+        label_encoder (sklearn.LabelBinarizer): the label binarizer object
+            used to get the outcome names that correspond to predicted outcomes
+        alg_id (int): the algorithm id for the model that should be used to
+            generate the predictions
+        tbl_name (str): name of table in database where predictions for all
+            current applicants are written to
+
     Returns:
+        str: output message confirming predictions have been written correctly 
     """
     current_data = model_data.get_data_for_prediction(filename, conn, alg_id)
     if current_data.empty:
