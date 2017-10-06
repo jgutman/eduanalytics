@@ -49,7 +49,16 @@ def convert_categorical(data):
 
 
 def describe_model(filename, engine):
-    """
+    """Reads in a new model specification file, parses it, and appends a basic
+    description of the model (including a list of all its features) to the
+    algorithms table of the database.
+
+    Args:
+        filename (str): a path to the model specification file in yaml format
+        engine (sqlalchemy.Engine): a connection to the MySQL database
+    Returns:
+        dict: the model options specified in the file in dictionary format
+        int: the algorithm id for the model just added
     """
     with open(filename) as f:
         model_opts = yaml.load(f)
@@ -98,8 +107,8 @@ def get_data_for_modeling(filename, engine):
     Returns:
         Pandas.DataFrame: dataframe with Multi-index of aamc id and application year
             for applicants with known outcomes and qualifying cohort variables
-        str: algorithm_id description for database and pkl file to denote
-            which algorithm settings were used in fitting the model
+        int: the algorithm id for the model specified by the file
+        str: the algorithm name for the model specified by the file
     """
     model_opts, algorithm_id = describe_model(filename, engine)
 
@@ -134,13 +143,18 @@ def get_data_for_modeling(filename, engine):
 
 def get_data_for_prediction(filename, engine, algorithm_id,
         prediction_tbl = "out$predictions$screening_current_cohort"):
-    """Return a dataframe for the desired data for the current unlabeled
-    cohort with the features specified in the yaml file.
+    """Return a dataframe for the desired data for members of the current data
+    for whom predictions have not already been generated containing the features
+    specified in the model yaml file.
 
     Args:
         filename (str): path to YAML file with cohort, outcome, and
             feature specification for desired model data
         engine (sqlalchemy.Engine): a connection to the MySQL database
+        algorithm_id (int): the algorithm id for the model specified in the file
+            and used to generate predictions
+        prediction_tbl (str): the name of the table where previous predictions
+            have been written
     Returns:
         Pandas.DataFrame: dataframe with Multi-index (aamc id, application year)
             for applicants with known outcomes and qualifying cohort variables
@@ -185,6 +199,18 @@ def get_data_for_prediction(filename, engine, algorithm_id,
 
 def loop_through_features(engine, features_dict, subquery):
     """
+    Args:
+        engine (sqlalchemy.Engine): a connection to the mySQL database
+        features_dict (dict(list(str))): a dictionary where the keys are the
+            names of the feature tables and the values are lists of names of
+            columns that should be excluded for each table (may be empty to
+            include all features in the table)
+        subquery (str): a string containing the subquery giving the aamc_id and
+            application_year of the applicants of interest
+    Returns:
+        list(pandas.DataFrame): a list of dataframes containing all the features
+            specified in the feature dictionary for all the applicants returned
+            by the given subquery
     """
     feature_tbls = {"vw$features${}".format(tbl_name): cols_to_drop
         for tbl_name, cols_to_drop
@@ -205,7 +231,7 @@ def loop_through_features(engine, features_dict, subquery):
 
 
 def split_data(model_matrix, outcome_name = 'outcome',
-        seed = 1100, test_size = .25):
+        seed = 1100, test_size = .2):
     """Splits a data set into training and test and separates features (X)
     from target variable (y).
 
@@ -217,15 +243,13 @@ def split_data(model_matrix, outcome_name = 'outcome',
     Returns:
         Pandas.DataFrame: training features
         Pandas.DataFrame: testing features
-        numpy.ndarray: training target labels
-        numpy.ndarray: testing target labels
+        numpy.ndarray: training target labels (if multiclass, a column for each class)
+        numpy.ndarray: testing target labels (if multiclass, a column for each class)
         sklearn.LabelBinarizer: transforms multiclass labels into binary dummies
     """
     X, y = model_matrix.drop(outcome_name, axis = 1), model_matrix[outcome_name]
     X_train, X_test, y_train, y_test = train_test_split(X, y,
             test_size = test_size, random_state = seed, stratify = y)
     lb = LabelBinarizer().fit(y_train)
-    y_train, y_test = lb.transform(y_train), lb.transform(y_test)
-    if len(lb.classes_) == 2:
-        y_train, y_test = y_train[:,1], y_test[:,1]
+    y_train, y_test = lb.transform(y_train).squeeze(), lb.transform(y_test).squeeze()
     return X_train, X_test, y_train, y_test, lb
