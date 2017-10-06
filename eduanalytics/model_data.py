@@ -201,7 +201,7 @@ def loop_through_features(engine, features_dict, subquery):
     """
     Args:
         engine (sqlalchemy.Engine): a connection to the mySQL database
-        features_dict (dict(list(str))): a dictionary where the keys are the
+        features_dict (dict(list[str])): a dictionary where the keys are the
             names of the feature tables and the values are lists of names of
             columns that should be excluded for each table (may be empty to
             include all features in the table)

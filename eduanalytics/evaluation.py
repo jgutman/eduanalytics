@@ -68,6 +68,7 @@ def plot_confusion_matrix(cm, class_names, title,
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+    plt.show()
 
 
 def compute_feature_importances_ensemble(clf, transformed_columns,
