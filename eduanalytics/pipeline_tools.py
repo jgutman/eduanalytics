@@ -9,8 +9,8 @@ def extract_step_from_pipeline(cv_pipeline, step_name):
     modeling pipeline.
 
     Args:
-        cv_pipeline (sklearn.Pipeline): a Pipeline object embedded in a
-            GridSearchCV object containing a list of named steps
+        cv_pipeline (sklearn.GridSearchCV): a GridSearchCV object with an embedded
+            Pipeline object containing a list of named steps
         step_name (str): a step name contained in the list of steps for the best
             fitted estimator found under GridSearch
     Returns:
@@ -25,8 +25,8 @@ def describe_pipeline_steps(cv_pipeline):
     """Returns a list of names of all steps in a fitted modeling pipeline.
 
     Args:
-        cv_pipeline (sklearn.Pipeline): a Pipeline object embedded in a
-            GridSearchCV object containing a list of named steps
+        cv_pipeline (sklearn.GridSearchCV): a GridSearchCV object with an embedded
+            Pipeline object containing a list of named steps
     Returns:
         list[str]: a list of strings containing all pipeline step names
     """
@@ -39,11 +39,11 @@ def extract_model_from_pipeline(cv_pipeline):
     (classifier or regressor) for the best fitted estimator of the pipeline.
 
     Args:
-        cv_pipeline (sklearn.Pipeline): a Pipeline object embedded in a
-            GridSearchCV object containing a list of named steps
+        cv_pipeline (sklearn.GridSearchCV): a GridSearchCV object with an embedded
+            Pipeline object containing a list of named steps
     Returns:
-        sklearn.estimator: a fitted model estimator object with a .predict()
-            method (and for classifiers, .predict_proba / .decision_function)
+        sklearn.estimator: a fitted model estimator object with a predict()
+            method (and for classifiers, predict_proba() or decision_function())
     """
     steps = describe_pipeline_steps(cv_pipeline)
     pattern = "(classifier|regressor)$"
@@ -54,7 +54,16 @@ def extract_model_from_pipeline(cv_pipeline):
 
 
 def extract_encoder_from_pipeline(cv_pipeline):
-    """
+    """Extract the encoder step used to transform categorical variables into
+    numerical dummy variables.
+
+    Args:
+        cv_pipeline (sklearn.GridSearchCV): a GridSearchCV object with an embedded
+            Pipeline object containing a list of named steps
+    Returns:
+        DummyEncoder: an encoder object with a fit(), transform(), and
+            inverse_transform() method to convert between categorical variables
+            and their dummy indicators
     """
     steps = describe_pipeline_steps(cv_pipeline)
     pattern = "encoder$"
@@ -70,8 +79,8 @@ def get_transformed_columns(cv_pipeline):
     encoder transformation to the data.
 
     Args:
-        cv_pipeline (sklearn.Pipeline): a Pipeline object embedded in a
-            GridSearchCV object containing a list of named steps
+        cv_pipeline (sklearn.GridSearchCV): a GridSearchCV object with an embedded
+            Pipeline object containing a list of named steps
     Returns:
         pandas.Index: an index of all column names in the transformed data
     """
@@ -109,6 +118,10 @@ class DummyEncoder(BaseEstimator, TransformerMixin):
 
     Suitable for use in a pipeline. Adds indicator variables for NAs,
     drops dummy for first level of categorical.
+
+    Usage:
+        d = DummyEncoder().fit(X_train)
+        X_train_enc, X_test_enc = d.transform(X_train), d.transform(X_test)
     """
     def __init__(self):
         self.columns = None
@@ -135,6 +148,13 @@ class DummyEncoder(BaseEstimator, TransformerMixin):
 
 
 class Timer(object):
+    """A Timer object that begins timing when entered and ends timing adding
+    elapsed time to a log when exited.
+    
+    Usage:
+        with Timer() as t:
+            # do something
+    """
     def __init__(self, name=None):
         self.name = name
         self.start_time = None
